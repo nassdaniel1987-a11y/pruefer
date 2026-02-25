@@ -1,0 +1,2748 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prüfer - Ferienversorgung</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary: #005A9C; --primary-light: #e6f0f8; --primary-dark: #004070;
+      --success: #28a745; --danger: #dc3545; --warning: #e6a817; --info: #17a2b8;
+      --bg: #f0f4f8; --surface: #ffffff; --surface2: #f8fafc;
+      --border: #dce4ee; --text: #1a2332; --text2: #556070;
+      --sidebar-w: 240px; --radius: 10px; --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    html.dark {
+      --primary: #4dabf7; --primary-light: #1e3a5f; --primary-dark: #74c0fc;
+      --bg: #0f1923; --surface: #1a2535; --surface2: #212e40;
+      --border: #2d3f55; --text: #e2eaf4; --text2: #8aa0b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── LOGIN ── */
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #004070 0%, #005A9C 60%, #0078cc 100%); }
+    .login-card { background: var(--surface); border-radius: 16px; padding: 2.5rem; width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+    .login-logo { text-align: center; margin-bottom: 2rem; }
+    .login-logo h1 { font-size: 1.8rem; color: var(--primary); font-weight: 800; letter-spacing: -0.5px; }
+    .login-logo p { color: var(--text2); font-size: 0.9rem; margin-top: 0.25rem; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text2); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: var(--radius); font-size: 1rem; background: var(--surface); color: var(--text); transition: border-color 0.2s; }
+    .form-input:focus { outline: none; border-color: var(--primary); }
+    .btn { padding: 0.75rem 1.5rem; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; font-size: 0.95rem; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .btn-primary:disabled { background: #aaa; cursor: not-allowed; transform: none; }
+    .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface2); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.85rem; }
+    .error-msg { background: #fee; border: 1px solid #fcc; color: #c00; padding: 0.75rem 1rem; border-radius: var(--radius); font-size: 0.9rem; margin-bottom: 1rem; }
+
+    /* ── LAYOUT ── */
+    .app-layout { display: flex; min-height: 100vh; }
+    .sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-header { padding: 1.5rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .sidebar-header h2 { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+    .sidebar-header p { font-size: 0.75rem; color: var(--text2); margin-top: 0.2rem; }
+    .sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; }
+    .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 1rem; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 0.9rem; font-weight: 500; transition: all 0.15s; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 700; }
+    .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 1rem 0.75rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem; }
+    .user-info { font-size: 0.8rem; color: var(--text2); padding: 0 0.25rem; }
+    .main-content { margin-left: var(--sidebar-w); flex: 1; padding: 2rem; min-height: 100vh; }
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { font-size: 1.6rem; font-weight: 800; }
+    .page-header p { color: var(--text2); margin-top: 0.25rem; font-size: 0.95rem; }
+
+    /* ── CARDS & STATS ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+    .stat-card { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .stat-card .stat-label { font-size: 0.8rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 800; color: var(--text); margin: 0.25rem 0; line-height: 1; }
+    .stat-card .stat-sub { font-size: 0.8rem; color: var(--text2); }
+    .stat-card.accent-green .stat-value { color: var(--success); }
+    .stat-card.accent-red .stat-value { color: var(--danger); }
+    .stat-card.accent-blue .stat-value { color: var(--primary); }
+    .stat-card.accent-orange .stat-value { color: var(--warning); }
+    .card { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { background: var(--surface2); color: var(--text2); font-weight: 600; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid var(--border); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.3px; }
+    td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .badge-green { background: rgba(40,167,69,0.12); color: var(--success); }
+    .badge-red { background: rgba(220,53,69,0.12); color: var(--danger); }
+    .badge-orange { background: rgba(230,168,23,0.12); color: var(--warning); }
+    .badge-blue { background: rgba(0,90,156,0.12); color: var(--primary); }
+
+    /* ── ABGLEICH-TOOL ── */
+    .wizard-bar { display: flex; gap: 0; margin-bottom: 2rem; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .wiz-step { flex: 1; padding: 0.85rem; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--text2); position: relative; border-right: 1px solid var(--border); }
+    .wiz-step:last-child { border-right: none; }
+    .wiz-step.active { background: var(--primary-light); color: var(--primary); }
+    .wiz-step.done { background: rgba(40,167,69,0.08); color: var(--success); }
+    .wiz-num { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: currentColor; color: white; font-size: 0.75rem; line-height: 22px; text-align: center; margin-right: 0.4rem; opacity: 0.8; }
+    .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 2rem; text-align: center; color: var(--text2); cursor: pointer; transition: all 0.2s; }
+    .upload-zone:hover, .upload-zone.drag { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+    .upload-zone.has-data { border-color: var(--success); background: rgba(40,167,69,0.05); color: var(--success); }
+    .upload-zone .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .match-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+    .match-card.high { border-left: 4px solid var(--success); }
+    .match-card.medium { border-left: 4px solid var(--warning); }
+    .match-card.low { border-left: 4px solid var(--danger); }
+    .match-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .score-pill { padding: 0.3rem 0.8rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; }
+    .score-pill.high { background: rgba(40,167,69,0.15); color: var(--success); }
+    .score-pill.medium { background: rgba(230,168,23,0.15); color: var(--warning); }
+    .score-pill.low { background: rgba(220,53,69,0.15); color: var(--danger); }
+    .name-tokens { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+    .token { padding: 0.2rem 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }
+    .token.matched { background: rgba(40,167,69,0.2); color: var(--success); font-weight: 700; }
+    .token.unmatched { background: rgba(220,53,69,0.1); color: var(--text2); text-decoration: line-through; }
+    .match-actions { display: flex; gap: 0.5rem; }
+    .action-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 1rem; }
+    .select-input { padding: 0.5rem 0.75rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.9rem; }
+    .result-section { background: var(--surface2); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--border); }
+    .result-section h4 { margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; }
+    .count-badge { background: var(--primary); color: white; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.78rem; font-weight: 700; }
+    .count-badge.red { background: var(--danger); }
+    .count-badge.green { background: var(--success); }
+    .result-list { list-style: none; max-height: 250px; overflow-y: auto; }
+    .result-list li { padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    .result-list li:last-child { border-bottom: none; }
+    .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 2rem auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .theme-toggle { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; cursor: pointer; color: var(--text2); font-size: 0.9rem; }
+    .textarea { width: 100%; min-height: 160px; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.9rem; background: var(--surface); color: var(--text); resize: vertical; }
+    .info-box { background: var(--primary-light); border: 1px solid var(--primary); border-radius: var(--radius); padding: 0.9rem 1.1rem; font-size: 0.88rem; color: var(--primary); margin-bottom: 1rem; }
+    .empty-state { text-align: center; padding: 3rem; color: var(--text2); }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .modal { background: var(--surface); border-radius: 14px; padding: 2rem; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .modal h3 { margin-bottom: 1.25rem; font-size: 1.1rem; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .ferienblock-select { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 0.6rem 1rem; font-size: 0.95rem; color: var(--text); cursor: pointer; font-weight: 600; }
+    .ferienblock-select:focus { outline: none; border-color: var(--primary); }
+    hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+    /* ── KINDER-VERZEICHNIS ── */
+    .search-wrap { position: relative; margin-bottom: 1.25rem; }
+    .search-wrap input { width: 100%; padding: 0.7rem 1rem 0.7rem 2.5rem; }
+    .search-wrap .search-icon { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text2); pointer-events: none; }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover td { background: var(--primary-light); }
+    th.sortable:hover { color: var(--primary) !important; }
+    .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+
+    /* ── KINDER AVATAR ── */
+    .avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; color: white; flex-shrink: 0; text-transform: uppercase; }
+    .avatar-sm { width: 32px; height: 32px; font-size: 0.72rem; }
+    .avatar-md { width: 44px; height: 44px; font-size: 0.88rem; }
+    .avatar-lg { width: 72px; height: 72px; font-size: 1.4rem; letter-spacing: 1px; }
+
+    /* ── KIND ROW (Listview) ── */
+    .kind-row { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    .kind-row:last-child { border-bottom: none; }
+    .kind-row:hover { background: var(--primary-light); }
+    .kind-row-info { flex: 1; min-width: 0; }
+    .kind-row-name { font-weight: 700; font-size: 0.95rem; }
+    .kind-row-meta { font-size: 0.8rem; color: var(--text2); margin-top: 0.1rem; }
+    .kind-row-stats { display: flex; gap: 0.75rem; align-items: center; flex-shrink: 0; }
+    .kind-mini-stat { text-align: center; min-width: 52px; }
+    .kind-mini-stat .val { font-weight: 700; font-size: 0.95rem; }
+    .kind-mini-stat .lbl { font-size: 0.65rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.3px; }
+    .kind-row-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
+
+    /* ── AKTE PROFIL-KARTE ── */
+    .akte-profile { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border-radius: var(--radius); padding: 2rem; color: white; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
+    .akte-profile::before { content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.06); pointer-events: none; }
+    .akte-profile-top { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .akte-profile .avatar-lg { border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+    .akte-profile-name { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
+    .akte-profile-klasse { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; margin-top: 0.3rem; }
+    .akte-profile-aliases { font-size: 0.8rem; opacity: 0.8; margin-top: 0.4rem; }
+    .akte-profile-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; }
+    .akte-profile-actions .btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(4px); }
+    .akte-profile-actions .btn:hover { background: rgba(255,255,255,0.25); }
+    .akte-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    .akte-stat { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 0.75rem; text-align: center; backdrop-filter: blur(4px); }
+    .akte-stat .val { font-size: 1.5rem; font-weight: 800; }
+    .akte-stat .lbl { font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.15rem; }
+
+    /* ── AKTE NOTIZEN ── */
+    .akte-notes { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+    .akte-notes-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .akte-notes-text { font-size: 0.88rem; color: var(--text2); line-height: 1.5; }
+
+    /* ── AKTE TIMELINE / BLOCKS ── */
+    .akte-timeline { position: relative; padding-left: 1.5rem; }
+    .akte-timeline::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .akte-block { position: relative; margin-bottom: 1.5rem; }
+    .akte-block::before { content: ''; position: absolute; left: -1.5rem; top: 0.6rem; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); border: 2px solid var(--surface); z-index: 1; }
+    .akte-block.status-ok::before { background: var(--success); }
+    .akte-block.status-warn::before { background: var(--warning); }
+    .akte-block.status-miss::before { background: var(--danger); }
+    .akte-block-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
+    .akte-block-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .akte-block-head h3 { font-size: 1rem; font-weight: 700; }
+    .akte-block-head .meta { font-size: 0.8rem; color: var(--text2); }
+    .akte-block-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    /* ── TAGE-GRID (Mini-Kalender) ── */
+    .days-grid { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+    .day-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 500; }
+    .day-chip.matched { background: rgba(40,167,69,0.12); color: var(--success); }
+    .day-chip.missing { background: rgba(220,53,69,0.12); color: var(--danger); }
+    .day-chip.extra { background: rgba(230,168,23,0.12); color: var(--warning); }
+    .day-chip .day-icon { font-size: 0.7rem; }
+    .days-section { margin-bottom: 0.75rem; }
+    .days-section-title { font-size: 0.75rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
+    .days-section-title .count { background: var(--surface2); padding: 0.1rem 0.45rem; border-radius: 10px; font-size: 0.7rem; }
+    .block-summary-row { display: flex; gap: 1.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--text2); }
+    .block-summary-row strong { color: var(--text); }
+
+    /* ── TOAST ── */
+    .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; max-width: 400px; }
+    .toast { padding: 0.75rem 1.1rem; border-radius: var(--radius); font-size: 0.88rem; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: toastIn 0.3s ease; display: flex; align-items: center; gap: 0.5rem; }
+    .toast-error { background: var(--danger); color: white; }
+    .toast-success { background: var(--success); color: white; }
+    .toast-info { background: var(--primary); color: white; }
+    @keyframes toastIn { from { opacity:0; transform:translateX(50px); } to { opacity:1; transform:translateX(0); } }
+
+    /* ── CONFIRM MODAL ── */
+    .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .confirm-box { background: var(--surface); border-radius: 14px; padding: 2rem; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .confirm-box h3 { margin-bottom: 0.75rem; }
+    .confirm-box p { color: var(--text2); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5; }
+    .confirm-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+      .sidebar-nav { flex-direction: row; overflow-x: auto; padding: 0.5rem; gap: 0.15rem; }
+      .nav-item { padding: 0.5rem 0.7rem; font-size: 0.8rem; white-space: nowrap; }
+      .nav-icon { display: none; }
+      .sidebar-header { padding: 0.75rem 1rem; }
+      .sidebar-header h2 { font-size: 1rem; }
+      .sidebar-header p { display: none; }
+      .sidebar-footer { flex-direction: row; justify-content: space-between; padding: 0.5rem 0.75rem; }
+      .main-content { margin-left: 0 !important; padding: 1rem; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+      .stat-card .stat-value { font-size: 1.4rem; }
+      .two-col { grid-template-columns: 1fr; }
+      .page-header h1 { font-size: 1.2rem; }
+      table { font-size: 0.78rem; }
+      th, td { padding: 0.4rem 0.5rem; }
+      .modal { padding: 1.25rem; max-width: 95vw; }
+      .toolbar { gap: 0.4rem; }
+      .btn-sm { padding: 0.35rem 0.6rem; font-size: 0.78rem; }
+      .login-card { width: 95vw; padding: 1.5rem; }
+      .akte-profile { padding: 1.25rem; }
+      .akte-profile-name { font-size: 1.2rem; }
+      .akte-stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+      .akte-stat .val { font-size: 1.1rem; }
+      .akte-profile-actions { position: static; margin-top: 0.75rem; }
+      .kind-row { flex-wrap: wrap; gap: 0.5rem; }
+      .kind-row-stats { width: 100%; justify-content: space-around; }
+      .kind-row-actions { width: 100%; justify-content: flex-end; }
+      .days-grid { gap: 0.25rem; }
+      .day-chip { padding: 0.2rem 0.45rem; font-size: 0.72rem; }
+    }
+    @media (max-width: 480px) {
+      .stat-grid { grid-template-columns: 1fr; }
+      .sidebar-nav { flex-wrap: nowrap; }
+      .akte-stats-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+// ─── TOAST SYSTEM ─────────────────────────────────────
+let _toastListeners = [];
+const toast = {
+  _list: [],
+  _notify() { _toastListeners.forEach(fn => fn([...this._list])); },
+  show(msg, type = 'info', duration = 4000) {
+    const id = Date.now() + Math.random();
+    this._list.push({ id, msg, type });
+    this._notify();
+    setTimeout(() => { this._list = this._list.filter(t => t.id !== id); this._notify(); }, duration);
+  },
+  error(msg) { this.show(msg, 'error', 6000); },
+  success(msg) { this.show(msg, 'success', 3000); },
+  info(msg) { this.show(msg, 'info', 4000); },
+};
+
+const ToastContainer = () => {
+  const [toasts, setToasts] = useState([]);
+  useEffect(() => { _toastListeners.push(setToasts); return () => { _toastListeners = _toastListeners.filter(f => f !== setToasts); }; }, []);
+  if (!toasts.length) return null;
+  return React.createElement('div', { className: 'toast-container' },
+    toasts.map(t => React.createElement('div', { key: t.id, className: `toast toast-${t.type}` }, t.msg))
+  );
+};
+
+// ─── CONFIRM DIALOG ───────────────────────────────────
+let _confirmResolver = null;
+let _confirmState = null;
+let _confirmListeners = [];
+const confirmDialog = (title, message, dangerLabel = 'Löschen') => {
+  return new Promise(resolve => {
+    _confirmResolver = resolve;
+    _confirmState = { title, message, dangerLabel };
+    _confirmListeners.forEach(fn => fn({..._confirmState}));
+  });
+};
+const ConfirmDialog = () => {
+  const [state, setState] = useState(null);
+  useEffect(() => { _confirmListeners.push(setState); return () => { _confirmListeners = _confirmListeners.filter(f => f !== setState); }; }, []);
+  if (!state) return null;
+  const close = (val) => { setState(null); _confirmState = null; if (_confirmResolver) { _confirmResolver(val); _confirmResolver = null; } };
+  return (
+    <div className="confirm-overlay" onClick={() => close(false)}>
+      <div className="confirm-box" onClick={e => e.stopPropagation()}>
+        <h3>{state.title}</h3>
+        <p>{state.message}</p>
+        <div className="confirm-actions">
+          <button className="btn btn-ghost" onClick={() => close(false)}>Abbrechen</button>
+          <button className="btn btn-danger" style={{width:'auto'}} onClick={() => close(true)}>{state.dangerLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── API ───────────────────────────────────────────────
+const API = {
+  base: '/.netlify/functions',
+  token: () => localStorage.getItem('token'),
+
+  headers() {
+    const h = { 'Content-Type': 'application/json' };
+    const t = this.token();
+    if (t) h['Authorization'] = `Bearer ${t}`;
+    return h;
+  },
+
+  async _fetch(url, opts) {
+    try {
+      const r = await fetch(url, opts);
+      const data = await r.json();
+      if (!r.ok) {
+        const msg = data.error || `Fehler ${r.status}`;
+        if (r.status === 401) {
+          localStorage.removeItem('token');
+          window.location.reload();
+          return data;
+        }
+        toast.error(msg);
+        return data;
+      }
+      return data;
+    } catch (err) {
+      toast.error('Verbindungsfehler — bitte prüfe deine Internetverbindung');
+      console.error('API Error:', err);
+      return { error: err.message };
+    }
+  },
+
+  async post(fn, body) {
+    return this._fetch(`${this.base}/${fn}`, { method: 'POST', headers: this.headers(), body: JSON.stringify(body) });
+  },
+  async get(fn, params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return this._fetch(`${this.base}/${fn}${q ? '?' + q : ''}`, { headers: this.headers() });
+  },
+  async put(fn, body) {
+    return this._fetch(`${this.base}/${fn}`, { method: 'PUT', headers: this.headers(), body: JSON.stringify(body) });
+  }
+};
+
+// ─── MATCHING-ALGORITHMEN (aus Originalversion) ────────
+const nicknames = { 'alex':'alexander','sandra':'alexandra','max':'maximilian','hans':'johannes','chris':'christoph','sepp':'josef','joe':'josef','jörg':'georg','joerg':'georg' };
+const tokenizeName = (name) => {
+  if (typeof name !== 'string') return [];
+  const stop = ['dr','von','van','de','und'];
+  let n = name.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,' ');
+  return n.split(/\s+/).map(p => nicknames[p] || p).filter(t => t && !stop.includes(t));
+};
+const koelnerPhonetik = (word) => {
+  if (!word) return '';
+  const map = {a:0,e:0,i:0,j:0,o:0,u:0,y:0,b:1,p:1,d:2,t:2,f:3,v:3,w:3,g:4,k:4,q:4,c:4,x:48,l:5,m:6,n:6,r:7,s:8,z:8,ß:8,h:'.'};
+  word = word.toLowerCase().replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ß/g,'ss');
+  let last = null, res = '';
+  for (let i = 0; i < word.length; i++) {
+    let ch = word[i], code;
+    if (ch === 'c' && i === 0 && 'ahkloqrux'.includes(word[i+1])) code = 4;
+    else if (ch === 'c' && 'sz'.includes(word[i-1])) code = 8;
+    else if ('dt'.includes(ch) && 'csz'.includes(word[i+1])) code = 8;
+    else code = map[ch];
+    if (code && code !== last && code !== '.') res += code;
+    last = code === '.' ? last : code;
+  }
+  return res;
+};
+const jaroWinkler = (s1, s2) => {
+  if (s1 === s2) return 1;
+  let m = 0, range = Math.floor(Math.max(s1.length, s2.length) / 2) - 1;
+  let m1 = new Array(s1.length).fill(false), m2 = new Array(s2.length).fill(false);
+  for (let i = 0; i < s1.length; i++) {
+    for (let j = Math.max(0,i-range); j < Math.min(i+range+1,s2.length); j++) {
+      if (!m2[j] && s1[i] === s2[j]) { m1[i]=m2[j]=true; m++; break; }
+    }
+  }
+  if (!m) return 0;
+  let k=0, t=0;
+  for (let i=0;i<s1.length;i++) { if(m1[i]){while(!m2[k])k++;if(s1[i]!==s2[k])t++;k++;} }
+  t/=2;
+  let jaro=(m/s1.length+m/s2.length+(m-t)/m)/3;
+  let l=0; while(l<4&&s1[l]===s2[l])l++;
+  return jaro+l*0.1*(1-jaro);
+};
+const calcScore = (nameA, nameB) => {
+  const tA = tokenizeName(nameA), tB = tokenizeName(nameB);
+  if (!tA.length || !tB.length) return { score: 0, reason: 'Leerer Name' };
+  let matches = [], avail = [...tB];
+  for (const a of tA) {
+    let best = { score: 0, partner: null, idx: -1 };
+    for (let i = 0; i < avail.length; i++) {
+      const jw = jaroWinkler(a, avail[i]) * 100;
+      const ph = koelnerPhonetik(a) === koelnerPhonetik(avail[i]) && koelnerPhonetik(a).length > 1 ? 75 : 0;
+      const s = Math.max(jw > 80 ? jw : 0, ph);
+      if (s > best.score) best = { score: s, partner: avail[i], idx: i };
+    }
+    if (best.partner) { matches.push(best.score); avail.splice(best.idx, 1); }
+  }
+  if (!matches.length) return { score: 0, reason: 'Keine Übereinstimmung' };
+  const avg = matches.reduce((a,b)=>a+b,0)/matches.length;
+  const penalty = (Math.abs(tA.length-matches.length)+avail.length)*15;
+  const score = Math.max(0, Math.round(avg-penalty));
+  const reason = avail.length > 0 ? `${avail.length} Teil(e) ohne Partner` : 'Alle Teile zugeordnet';
+  return { score, reason };
+};
+const analyzeMatch = (nameA, nameB) => {
+  const tA = tokenizeName(nameA), tB = tokenizeName(nameB);
+  const origA = nameA.split(/\s+/).filter(Boolean), origB = nameB.split(/\s+/).filter(Boolean);
+  let matchedA = new Set(), matchedB = new Set(), avail = [...tB];
+  for (let i = 0; i < tA.length; i++) {
+    let best = { score: 0, idx: -1 };
+    for (let j = 0; j < avail.length; j++) {
+      const jw = jaroWinkler(tA[i], avail[j]);
+      const ph = koelnerPhonetik(tA[i]) === koelnerPhonetik(avail[j]) && koelnerPhonetik(tA[i]).length > 1;
+      if ((jw > 0.8 || ph) && jw > best.score) best = { score: jw, idx: j };
+    }
+    if (best.idx !== -1) {
+      matchedA.add(i);
+      matchedB.add(tB.indexOf(avail[best.idx]));
+      avail.splice(best.idx, 1);
+    }
+  }
+  return {
+    tokensA: origA.map((t,i) => ({ token: t, matched: matchedA.has(i) })),
+    tokensB: origB.map((t,i) => ({ token: t, matched: matchedB.has(i) }))
+  };
+};
+const normalizeDate = (d) => {
+  if (d === null || d === undefined || d === '') return null;
+  // Excel Serial Number (Zahl oder String der nur aus Ziffern besteht, z.B. "46069")
+  const asNum = typeof d === 'number' ? d : (String(d).match(/^\d{5}$/) ? parseInt(d) : null);
+  if (asNum && asNum > 40000 && asNum < 60000) {
+    return new Date((asNum - 25569) * 86400 * 1000).toISOString().split('T')[0];
+  }
+  // ISO Format: 2026-02-16
+  if (String(d).match(/^\d{4}-\d{2}-\d{2}/)) return String(d).slice(0, 10);
+  // DD.MM.YYYY oder DD/MM/YY etc.
+  const m = String(d).match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
+  if (!m) return null;
+  let [,day,mon,yr] = m;
+  if (yr.length===2) yr = parseInt(yr)>50?`19${yr}`:`20${yr}`;
+  return `${yr}-${mon.padStart(2,'0')}-${day.padStart(2,'0')}`;
+};
+const fmtDate = (d) => { if (!d) return ''; const p = String(d).split('T')[0].split('-'); return `${p[2]}.${p[1]}.${p[0]}`; };
+const scoreClass = (s) => s >= 90 ? 'high' : s >= 75 ? 'medium' : 'low';
+
+// ─── KOMPONENTEN ──────────────────────────────────────
+
+const Spinner = () => <div className="spinner" />;
+
+// LOGIN
+const LoginPage = ({ onLogin }) => {
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true); setErr('');
+    const res = await API.post('auth', { action: 'login', username: user, password: pass });
+    setLoading(false);
+    if (res.success) {
+      localStorage.setItem('token', res.token);
+      onLogin(res.user);
+    } else {
+      setErr(res.error || 'Login fehlgeschlagen');
+    }
+  };
+
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-logo">
+          <h1>Prüfer</h1>
+          <p>Ferienversorgung Abgleich-System</p>
+        </div>
+        {err && <div className="error-msg">{err}</div>}
+        <form onSubmit={submit}>
+          <div className="form-group">
+            <label>Benutzername</label>
+            <input className="form-input" value={user} onChange={e=>setUser(e.target.value)} autoFocus />
+          </div>
+          <div className="form-group">
+            <label>Passwort</label>
+            <input className="form-input" type="password" value={pass} onChange={e=>setPass(e.target.value)} />
+          </div>
+          <button className="btn btn-primary" disabled={loading || !user || !pass}>
+            {loading ? 'Anmelden...' : 'Anmelden'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// DASHBOARD
+const Dashboard = ({ blocks, onNavigate, onReload }) => {
+  const [blockDetail, setBlockDetail] = useState({});
+  const [loadingDetail, setLoadingDetail] = useState({});
+  const [expandedBlock, setExpandedBlock] = useState(null);
+  const [abgleichDetail, setAbgleichDetail] = useState({});
+  const [loadingAbgleich, setLoadingAbgleich] = useState({});
+
+  // Für jeden Block: eindeutige Kinder zählen + letzten Abgleich laden
+  useEffect(() => {
+    if (!blocks.length) return;
+    // Cache leeren bei Neuladen
+    setAbgleichDetail({});
+    setExpandedBlock(null);
+    blocks.forEach(b => {
+      setLoadingDetail(prev => ({...prev, [b.id]: true}));
+      Promise.all([
+        API.get('listen', { ferienblock_id: b.id, liste: 'A' }),
+        API.get('listen', { ferienblock_id: b.id, liste: 'B' }),
+        API.get('abgleich', { ferienblock_id: b.id })
+      ]).then(async ([aRows, bRows, abglList]) => {
+        const aArr = Array.isArray(aRows) ? aRows : [];
+        const bArr = Array.isArray(bRows) ? bRows : [];
+        const abglArr = Array.isArray(abglList) ? abglList : [];
+
+        // Eindeutige Kinder in A (nach Nachname+Vorname)
+        const kinderA = new Set(aArr.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+        // Rohe eindeutige Kinder in B (vor Abgleich)
+        const kinderBroh = new Set(bArr.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+
+        // Letzter Abgleich — dort stehen die echten Ergebnisse
+        const letzter = abglArr.length > 0 ? abglArr[0] : null;
+
+        // Eindeutige Kinder aus Abgleich (nicht Zeilen!)
+        let matches = letzter ? parseInt(letzter.matches_kinder || letzter.matches_count || 0) : null;
+        let nur_in_a = letzter ? parseInt(letzter.nur_in_a_kinder || letzter.nur_in_a_count || 0) : null;
+        let nur_in_b = letzter ? parseInt(letzter.nur_in_b_kinder || letzter.nur_in_b_count || 0) : null;
+        // Zeilen-Counts für Tooltip
+        let matches_zeilen = letzter ? parseInt(letzter.matches_count || 0) : null;
+        let nur_in_a_zeilen = letzter ? parseInt(letzter.nur_in_a_count || 0) : null;
+        let nur_in_b_zeilen = letzter ? parseInt(letzter.nur_in_b_count || 0) : null;
+        let kinderBkorrigiert = kinderBroh.size;
+
+        // Wenn Abgleich existiert: echte Kinder-Zahl berechnen
+        // Matches (exact+fuzzy_accepted) = eindeutige Kinder die in A+B vorkommen
+        // Nur in B = extra Kinder die nur in B sind
+        // → Tatsächliche Kinder in B = matches + nur_in_b
+        if (letzter && matches !== null) {
+          kinderBkorrigiert = matches + (nur_in_b || 0);
+        }
+
+        setBlockDetail(prev => ({...prev, [b.id]: {
+          kinder_a: kinderA.size,
+          kinder_b: kinderBkorrigiert,
+          kinder_b_roh: kinderBroh.size,
+          eintraege_a: aArr.length,
+          eintraege_b: bArr.length,
+          abgleich_count: abglArr.length,
+          letzter_abgleich: letzter,
+          matches, nur_in_a, nur_in_b,
+          matches_zeilen, nur_in_a_zeilen, nur_in_b_zeilen
+        }}));
+        setLoadingDetail(prev => ({...prev, [b.id]: false}));
+      });
+    });
+  }, [blocks]);
+
+  // Gesamt-Statistiken über alle Blöcke
+  const vals = Object.values(blockDetail);
+  const gesamtKinderA   = vals.reduce((s,d) => s + (d?.kinder_a || 0), 0);
+  const gesamtKinderB   = vals.reduce((s,d) => s + (d?.kinder_b || 0), 0);
+  const gesamtMatches   = vals.reduce((s,d) => s + (d?.matches ?? 0), 0);
+  const gesamtFehltInB  = vals.reduce((s,d) => s + (d?.nur_in_a ?? 0), 0);
+  const hatAbgleich     = vals.some(d => d?.letzter_abgleich);
+
+  return (
+    <div>
+      <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+        <div>
+          <h1>Dashboard</h1>
+          <p>Übersicht aller Ferienblöcke und aktueller Status</p>
+        </div>
+        <button className="btn btn-ghost btn-sm" onClick={onReload}>↻ Aktualisieren</button>
+      </div>
+
+      <div className="stat-grid">
+        <div className="stat-card accent-blue">
+          <div className="stat-label">Ferienblöcke</div>
+          <div className="stat-value">{blocks.length}</div>
+          <div className="stat-sub">gesamt angelegt</div>
+        </div>
+        <div className="stat-card accent-blue">
+          <div className="stat-label">Kinder in A</div>
+          <div className="stat-value">{gesamtKinderA}</div>
+          <div className="stat-sub">eindeutige Anmeldungen</div>
+        </div>
+        <div className="stat-card accent-green">
+          <div className="stat-label">Kinder in B</div>
+          <div className="stat-value">{gesamtKinderB}</div>
+          <div className="stat-sub">eindeutige Buchungen</div>
+        </div>
+        {hatAbgleich ? (
+          <div className={`stat-card ${gesamtFehltInB > 0 ? 'accent-red' : 'accent-green'}`}>
+            <div className="stat-label">Fehlt in B</div>
+            <div className="stat-value">{gesamtFehltInB}</div>
+            <div className="stat-sub">{gesamtFehltInB > 0 ? 'Kinder ohne Buchung' : 'alle gebucht ✓'}</div>
+          </div>
+        ) : (
+          <div className="stat-card">
+            <div className="stat-label">Abgleich</div>
+            <div className="stat-value">–</div>
+            <div className="stat-sub">noch keiner durchgeführt</div>
+          </div>
+        )}
+      </div>
+
+      {blocks.length === 0 ? (
+        <div className="card">
+          <div className="empty-state">
+            <div className="icon">📅</div>
+            <p>Noch kein Ferienblock angelegt.</p>
+            <br />
+            <button className="btn btn-primary" style={{width:'auto'}} onClick={() => onNavigate('ferienblock')}>
+              Ersten Block anlegen
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="card">
+          <div className="card-title">
+            Alle Ferienblöcke
+            <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('ferienblock')}>+ Neu / Verwalten</button>
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Zeitraum</th>
+                  <th>€/Tag</th>
+                  <th>Kinder (A)</th>
+                  <th>Kinder (B)</th>
+                  <th>Übereinstimmung</th>
+                  <th>Fehlt in B</th>
+                  <th>Nur in B</th>
+                  <th>Abgleiche</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {blocks.map(b => {
+                  const d = blockDetail[b.id];
+                  const loading = loadingDetail[b.id];
+                  const hatErgebnis = d?.letzter_abgleich != null;
+                  return (
+                    <React.Fragment key={b.id}>
+                    <tr>
+                      <td><strong>{b.name}</strong></td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</td>
+                      <td>{parseFloat(b.preis_pro_tag).toFixed(2)} €</td>
+                      <td>
+                        {loading ? '…' : <span className="badge badge-blue">{d?.kinder_a ?? 0}</span>}
+                        {!loading && d && <span style={{fontSize:'0.7rem',color:'var(--text2)',marginLeft:4}}>({d.eintraege_a} Zeilen)</span>}
+                      </td>
+                      <td>
+                        {loading ? '…' : <span className="badge badge-blue">{d?.kinder_b ?? 0}</span>}
+                        {!loading && d && hatErgebnis && d.kinder_b !== d.kinder_b_roh && (
+                          <span style={{fontSize:'0.7rem',color:'var(--text2)',marginLeft:4}} title="Korrigiert durch Abgleich (Fuzzy-Matches zusammengeführt)">(roh: {d.kinder_b_roh})</span>
+                        )}
+                        {!loading && d && !hatErgebnis && <span style={{fontSize:'0.7rem',color:'var(--text2)',marginLeft:4}}>({d.eintraege_b} Zeilen)</span>}
+                      </td>
+                      <td title={hatErgebnis && d.matches_zeilen != null ? `${d.matches_zeilen} Einträge (Tage)` : ''}>
+                        {loading ? '…' : hatErgebnis
+                          ? <><span className="badge badge-green">{d.matches}</span>
+                            {d.matches !== d.matches_zeilen && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.matches_zeilen} Eintr.)</span>}</>
+                          : <span style={{color:'var(--text2)'}}>–</span>
+                        }
+                      </td>
+                      <td title={hatErgebnis && d.nur_in_a_zeilen != null ? `${d.nur_in_a_zeilen} Einträge (Tage)` : ''}>
+                        {loading ? '…' : hatErgebnis
+                          ? <><span className={`badge ${d.nur_in_a > 0 ? 'badge-red' : 'badge-green'}`}>{d.nur_in_a}</span>
+                            {d.nur_in_a !== d.nur_in_a_zeilen && d.nur_in_a > 0 && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.nur_in_a_zeilen} Eintr.)</span>}</>
+                          : <span style={{color:'var(--text2)'}}>–</span>
+                        }
+                      </td>
+                      <td title={hatErgebnis && d.nur_in_b_zeilen != null ? `${d.nur_in_b_zeilen} Einträge (Tage)` : ''}>
+                        {loading ? '…' : hatErgebnis
+                          ? <><span className="badge badge-orange">{d.nur_in_b}</span>
+                            {d.nur_in_b !== d.nur_in_b_zeilen && d.nur_in_b > 0 && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.nur_in_b_zeilen} Eintr.)</span>}</>
+                          : <span style={{color:'var(--text2)'}}>–</span>
+                        }
+                      </td>
+                      <td>{loading ? '…' : <span className="badge badge-blue">{d?.abgleich_count ?? 0}</span>}</td>
+                      <td style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
+                        {hatErgebnis && d.nur_in_a > 0 && (
+                          <button className="btn btn-danger btn-sm" style={{width:'auto'}} onClick={() => {
+                            // Aufklappen: letzten Abgleich laden um fehlende Kinder zu sehen
+                            if (expandedBlock === b.id) { setExpandedBlock(null); return; }
+                            setExpandedBlock(b.id);
+                            if (!abgleichDetail[b.id] && d.letzter_abgleich) {
+                              setLoadingAbgleich(prev => ({...prev, [b.id]: true}));
+                              API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
+                                setAbgleichDetail(prev => ({...prev, [b.id]: res}));
+                                setLoadingAbgleich(prev => ({...prev, [b.id]: false}));
+                              });
+                            }
+                          }}>
+                            ⚠ Fehlende anzeigen
+                          </button>
+                        )}
+                        <button className="btn btn-primary btn-sm" style={{width:'auto'}} onClick={() => onNavigate('abgleich', b.id)}>
+                          Abgleich starten
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedBlock === b.id && (
+                      <tr key={b.id + '-detail'}>
+                        <td colSpan="10" style={{padding:'1rem',background:'var(--surface2)'}}>
+                          {loadingAbgleich[b.id] ? (
+                            <p style={{color:'var(--text2)'}}>Lade Abgleich-Details…</p>
+                          ) : abgleichDetail[b.id]?.matches ? (() => {
+                            const am = abgleichDetail[b.id].matches;
+                            const fehlende = am.filter(m => m.match_typ === 'nur_in_a');
+                            const nurInB   = am.filter(m => m.match_typ === 'nur_in_b');
+                            const matched  = am.filter(m => m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted');
+                            return (
+                              <div>
+                                {fehlende.length > 0 && (
+                                  <div style={{marginBottom:'1rem'}}>
+                                    <h4 style={{color:'var(--danger)',marginBottom:'0.5rem'}}>
+                                      ⚠ {fehlende.length} Kinder OHNE Buchung (in A, fehlt in B)
+                                    </h4>
+                                    <div className="table-wrap">
+                                      <table>
+                                        <thead>
+                                          <tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th></tr>
+                                        </thead>
+                                        <tbody>
+                                          {fehlende.map((m, i) => (
+                                            <tr key={i} style={{background:'rgba(220,53,69,0.06)'}}>
+                                              <td>{i+1}</td>
+                                              <td><strong>{m.a_nachname}</strong></td>
+                                              <td>{m.a_vorname}</td>
+                                              <td>{m.a_klasse || '–'}</td>
+                                              <td>{fmtDate(m.a_datum)}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+                                {nurInB.length > 0 && (
+                                  <div style={{marginBottom:'1rem'}}>
+                                    <h4 style={{color:'var(--warning)',marginBottom:'0.5rem'}}>
+                                      ℹ {nurInB.length} Einträge NUR in Liste B (keine Anmeldung)
+                                    </h4>
+                                    <div className="table-wrap">
+                                      <table>
+                                        <thead>
+                                          <tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th><th>Menü</th></tr>
+                                        </thead>
+                                        <tbody>
+                                          {nurInB.map((m, i) => (
+                                            <tr key={i} style={{background:'rgba(230,168,23,0.06)'}}>
+                                              <td>{i+1}</td>
+                                              <td><strong>{m.b_nachname}</strong></td>
+                                              <td>{m.b_vorname}</td>
+                                              <td>{m.b_klasse || '–'}</td>
+                                              <td>{fmtDate(m.b_datum)}</td>
+                                              <td>{m.b_menu || '–'}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+                                {matched.length > 0 && (
+                                  <div>
+                                    <h4 style={{color:'var(--success)',marginBottom:'0.5rem'}}>
+                                      ✓ {matched.length} Übereinstimmungen
+                                    </h4>
+                                    <div className="table-wrap">
+                                      <table>
+                                        <thead>
+                                          <tr><th>#</th><th>Kind (A)</th><th>Buchung (B)</th><th>Typ</th><th>Score</th></tr>
+                                        </thead>
+                                        <tbody>
+                                          {matched.map((m, i) => (
+                                            <tr key={i}>
+                                              <td>{i+1}</td>
+                                              <td>{m.a_nachname} {m.a_vorname}</td>
+                                              <td>{m.b_nachname} {m.b_vorname}</td>
+                                              <td><span className={`badge ${m.match_typ==='exact' ? 'badge-green' : 'badge-orange'}`}>{m.match_typ === 'exact' ? 'Exakt' : 'Fuzzy'}</span></td>
+                                              <td>{m.score ? m.score + '%' : '–'}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })() : (
+                            <p style={{color:'var(--text2)'}}>Keine Abgleich-Daten verfügbar</p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// FERIENBLOCK VERWALTUNG
+const FerienblockPage = ({ blocks, onReload }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing]     = useState(null);
+  const [form, setForm]           = useState({ name: '', startdatum: '', enddatum: '', preis_pro_tag: '3.50' });
+  const [saving, setSaving]       = useState(false);
+  const [expanded, setExpanded]   = useState(null); // welcher Block ist aufgeklappt
+  const [detail, setDetail]       = useState({});   // { blockId: { a: [...], b: [...] } }
+  const [detailLoading, setDetailLoading] = useState({});
+
+  const openNew  = () => { setEditing(null); setForm({ name: '', startdatum: '', enddatum: '', preis_pro_tag: '3.50' }); setShowModal(true); };
+  const openEdit = (b) => {
+    setEditing(b);
+    setForm({ name: b.name, startdatum: String(b.startdatum).split('T')[0], enddatum: String(b.enddatum).split('T')[0], preis_pro_tag: String(b.preis_pro_tag) });
+    setShowModal(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    if (editing) await API.put('ferienblock', { ...form, id: editing.id });
+    else         await API.post('ferienblock', form);
+    setSaving(false);
+    setShowModal(false);
+    onReload();
+  };
+
+  const remove = async (id) => {
+    if (!window.confirm('Ferienblock und ALLE zugehörigen Daten (Listen A+B, Abgleiche) löschen?')) return;
+    await API.post('ferienblock', { action: 'delete', id });
+    onReload();
+  };
+
+  // Block aufklappen & Daten laden
+  const toggleExpand = async (blockId) => {
+    if (expanded === blockId) { setExpanded(null); return; }
+    setExpanded(blockId);
+    if (detail[blockId]) return; // schon geladen
+    setDetailLoading(prev => ({...prev, [blockId]: true}));
+    const [a, b] = await Promise.all([
+      API.get('listen', { ferienblock_id: blockId, liste: 'A' }),
+      API.get('listen', { ferienblock_id: blockId, liste: 'B' })
+    ]);
+    setDetail(prev => ({...prev, [blockId]: {
+      a: Array.isArray(a) ? a : [],
+      b: Array.isArray(b) ? b : []
+    }}));
+    setDetailLoading(prev => ({...prev, [blockId]: false}));
+  };
+
+  // Alle Einträge einer Liste löschen
+  const clearListe = async (blockId, liste) => {
+    if (!window.confirm(`Alle Einträge in Liste ${liste} für diesen Block löschen?`)) return;
+    await API.post('listen', { action: 'delete', ferienblock_id: blockId, liste });
+    // Detail-Cache leeren und neu laden
+    setDetail(prev => { const n = {...prev}; delete n[blockId]; return n; });
+    setExpanded(null);
+    setTimeout(() => toggleExpand(blockId), 100);
+    onReload();
+  };
+
+  // Einzelnen Eintrag löschen (nicht direkt in API, aber wir können über listen.js erweitern - vorerst ganze Liste neu laden)
+  const reloadDetail = async (blockId) => {
+    setDetailLoading(prev => ({...prev, [blockId]: true}));
+    const [a, b] = await Promise.all([
+      API.get('listen', { ferienblock_id: blockId, liste: 'A' }),
+      API.get('listen', { ferienblock_id: blockId, liste: 'B' })
+    ]);
+    setDetail(prev => ({...prev, [blockId]: {
+      a: Array.isArray(a) ? a : [],
+      b: Array.isArray(b) ? b : []
+    }}));
+    setDetailLoading(prev => ({...prev, [blockId]: false}));
+    onReload();
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Ferienblöcke</h1>
+        <p>Verwalte Ferienblöcke, Daten und Einträge</p>
+      </div>
+
+      <div style={{marginBottom:'1.5rem'}}>
+        <button className="btn btn-primary" style={{width:'auto'}} onClick={openNew}>+ Neuer Ferienblock</button>
+      </div>
+
+      {blocks.length === 0 ? (
+        <div className="card">
+          <div className="empty-state">
+            <div className="icon">📅</div>
+            <p>Noch kein Ferienblock vorhanden.</p>
+          </div>
+        </div>
+      ) : blocks.map(b => {
+        const isOpen = expanded === b.id;
+        const d = detail[b.id];
+        const loading = detailLoading[b.id];
+        return (
+          <div key={b.id} className="card" style={{marginBottom:'1rem'}}>
+            {/* Block-Header */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+                  <strong style={{fontSize:'1.05rem'}}>{b.name}</strong>
+                  <span style={{fontSize:'0.85rem',color:'var(--text2)'}}>
+                    {fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}
+                  </span>
+                  <span className="badge badge-orange">{parseFloat(b.preis_pro_tag).toFixed(2)} €/Tag</span>
+                </div>
+                {d && (
+                  <div style={{display:'flex',gap:'0.75rem',marginTop:'0.4rem',flexWrap:'wrap'}}>
+                    <span className="badge badge-blue">📋 {d.a.length} Anmeldungen</span>
+                    <span className="badge badge-green">🍽 {d.b.length} Buchungen</span>
+                    {d.a.length > d.b.length && (
+                      <span className="badge badge-red">⚠️ {d.a.length - d.b.length} fehlend</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
+                <button className="btn btn-ghost btn-sm" onClick={() => toggleExpand(b.id)}>
+                  {isOpen ? '▲ Zuklappen' : '▼ Details'}
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => openEdit(b)}>✏️ Bearbeiten</button>
+                <button className="btn btn-danger btn-sm" onClick={() => remove(b.id)}>🗑 Löschen</button>
+              </div>
+            </div>
+
+            {/* Aufgeklappte Details */}
+            {isOpen && (
+              <div style={{marginTop:'1.25rem',borderTop:'1px solid var(--border)',paddingTop:'1.25rem'}}>
+                {loading ? <Spinner /> : (
+                  <div className="two-col" style={{gap:'1rem'}}>
+                    {/* Liste A */}
+                    <div>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.75rem'}}>
+                        <strong style={{fontSize:'0.9rem'}}>📋 Liste A – Anmeldungen ({d?.a.length || 0})</strong>
+                        <div style={{display:'flex',gap:'0.5rem'}}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => reloadDetail(b.id)}>↻</button>
+                          {d?.a.length > 0 && (
+                            <button className="btn btn-danger btn-sm" onClick={() => clearListe(b.id, 'A')}>
+                              Alle löschen
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {!d?.a.length ? (
+                        <p style={{color:'var(--text2)',fontSize:'0.85rem'}}>Keine Einträge vorhanden.</p>
+                      ) : (
+                        <div style={{maxHeight:'300px',overflowY:'auto',border:'1px solid var(--border)',borderRadius:'8px'}}>
+                          <table style={{margin:0}}>
+                            <thead>
+                              <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th></tr>
+                            </thead>
+                            <tbody>
+                              {d.a.map(e => (
+                                <tr key={e.id}>
+                                  <td>{e.nachname}</td>
+                                  <td>{e.vorname}</td>
+                                  <td>{e.klasse || '–'}</td>
+                                  <td>{fmtDate(e.datum)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Liste B */}
+                    <div>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.75rem'}}>
+                        <strong style={{fontSize:'0.9rem'}}>🍽 Liste B – Buchungen ({d?.b.length || 0})</strong>
+                        <div style={{display:'flex',gap:'0.5rem'}}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => reloadDetail(b.id)}>↻</button>
+                          {d?.b.length > 0 && (
+                            <button className="btn btn-danger btn-sm" onClick={() => clearListe(b.id, 'B')}>
+                              Alle löschen
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {!d?.b.length ? (
+                        <p style={{color:'var(--text2)',fontSize:'0.85rem'}}>Keine Einträge vorhanden.</p>
+                      ) : (
+                        <div style={{maxHeight:'300px',overflowY:'auto',border:'1px solid var(--border)',borderRadius:'8px'}}>
+                          <table style={{margin:0}}>
+                            <thead>
+                              <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th><th>Menü</th></tr>
+                            </thead>
+                            <tbody>
+                              {d.b.map(e => (
+                                <tr key={e.id}>
+                                  <td>{e.nachname}</td>
+                                  <td>{e.vorname}</td>
+                                  <td>{e.klasse || '–'}</td>
+                                  <td>{fmtDate(e.datum)}</td>
+                                  <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{e.menu || '–'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>{editing ? 'Ferienblock bearbeiten' : 'Neuer Ferienblock'}</h3>
+            <div className="form-group">
+              <label>Name</label>
+              <input className="form-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="z.B. Winterferien 2026" autoFocus />
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
+              <div className="form-group">
+                <label>Startdatum</label>
+                <input className="form-input" type="date" value={form.startdatum} onChange={e => setForm({...form, startdatum: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>Enddatum</label>
+                <input className="form-input" type="date" value={form.enddatum} onChange={e => setForm({...form, enddatum: e.target.value})} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Preis pro Tag (€)</label>
+              <input className="form-input" type="number" step="0.01" value={form.preis_pro_tag} onChange={e => setForm({...form, preis_pro_tag: e.target.value})} />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Abbrechen</button>
+              <button className="btn btn-primary" style={{width:'auto'}} disabled={saving || !form.name || !form.startdatum || !form.enddatum} onClick={save}>
+                {saving ? 'Speichern...' : 'Speichern'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ABGLEICH-TOOL
+const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
+  const [blockId, setBlockId] = useState(initialBlockId || (blocks[0]?.id || ''));
+  const [step, setStep] = useState(1);
+  const [listA, setListA] = useState([]);
+  const [listB, setListB] = useState([]);
+  const [rawA, setRawA] = useState(null);
+  const [rawB, setRawB] = useState(null);
+  const [colMapA, setColMapA] = useState({ nachname: '', vorname: '', date: '' });
+  const [colMapB, setColMapB] = useState({ nachname: '', vorname: '', date: '' });
+  const [potentialMatches, setPotentialMatches] = useState([]);
+  const [reviewed, setReviewed] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [listADb, setListADb] = useState([]);
+  const [listBDb, setListBDb] = useState([]);
+
+  // Listen aus DB laden wenn Block gewählt
+  useEffect(() => {
+    if (!blockId) return;
+    setListA([]); setListB([]); setRawA(null); setRawB(null);
+    setStep(1); setPotentialMatches([]); setReviewed({});
+    API.get('listen', { ferienblock_id: blockId, liste: 'A' }).then(d => {
+      setListADb(Array.isArray(d) ? d : []);
+    });
+    API.get('listen', { ferienblock_id: blockId, liste: 'B' }).then(d => {
+      setListBDb(Array.isArray(d) ? d : []);
+    });
+  }, [blockId]);
+
+  const handleExcelUpload = (file, which) => {
+    if (!file) return;
+    setIsLoading(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array', cellDates: false });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+      if (!json || json.length === 0) { setIsLoading(false); return; }
+
+      // Prüfen ob erste Zeile ein echter Header ist (Texte) oder schon Daten (Zahlen/bekannte Namen)
+      const firstRow = json[0] || [];
+      const hasTextHeader = firstRow.every(cell =>
+        typeof cell === 'string' && !/^\d+$/.test(String(cell).trim()) && isNaN(cell)
+      );
+
+      let headers, dataRows;
+      if (hasTextHeader) {
+        // Normale Datei mit Headerzeile
+        headers = firstRow.map(h => String(h).trim());
+        dataRows = json.slice(1);
+      } else {
+        // Keine Headerzeile! Automatisch A, B, C... als Spaltennamen vergeben
+        headers = firstRow.map((_, i) => `Spalte ${String.fromCharCode(65 + i)}`);
+        dataRows = json;
+      }
+
+      const raw = { headers, data: dataRows, hasTextHeader };
+      if (which === 'A') { setRawA(raw); setColMapA({ nachname: '', vorname: '', date: '' }); }
+      else { setRawB(raw); setColMapB({ nachname: '', vorname: '', date: '' }); }
+      setIsLoading(false);
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const processAndUpload = async () => {
+    setIsLoading(true);
+
+    // Hilfsfunktion: Zeile -> { nachname, vorname, datum, ... }
+    const buildEntry = (row, headers, cm, extraCols = {}) => {
+      const ni = cm.nachname ? headers.indexOf(cm.nachname) : -1;
+      const vi = cm.vorname  ? headers.indexOf(cm.vorname)  : -1;
+      const di = cm.date     ? headers.indexOf(cm.date)     : -1;
+      const nachname = ni >= 0 ? String(row[ni] || '').trim() : '';
+      const vorname  = vi >= 0 ? String(row[vi] || '').trim() : '';
+      const datum    = di >= 0 ? normalizeDate(row[di]) : null;
+      if (!nachname && !vorname) return null;
+      if (!datum) return null;
+      const entry = { nachname, vorname, datum };
+      for (const [key, idx] of Object.entries(extraCols)) {
+        entry[key] = idx >= 0 ? row[idx] : null;
+      }
+      return entry;
+    };
+
+    // Liste A verarbeiten
+    let newA = [];
+    if (rawA && colMapA.nachname) {
+      newA = rawA.data.map(row => buildEntry(row, rawA.headers, colMapA)).filter(Boolean);
+      await API.post('listen', { ferienblock_id: blockId, liste: 'A', eintraege: newA });
+    }
+
+    // Liste B verarbeiten (mit extra Spalten: Klasse, Menü, Kontostand)
+    let newB = [];
+    if (rawB && colMapB.nachname) {
+      const h = rawB.headers;
+      const extraCols = {
+        klasse:     h.findIndex(x => /klasse/i.test(x)),
+        menu:       h.findIndex(x => /men[uü]/i.test(x)),
+        kontostand: h.findIndex(x => /konto/i.test(x)),
+      };
+      newB = rawB.data.map(row => buildEntry(row, h, colMapB, extraCols)).filter(Boolean);
+      await API.post('listen', { ferienblock_id: blockId, liste: 'B', eintraege: newB });
+    }
+
+    // Interne Listen für Abgleich aufbauen
+    const toMatchList = (entries) => entries.map((e, i) => ({
+      id: `${i}`, name: `${e.vorname} ${e.nachname}`.trim(), date: e.datum, dbId: e.id
+    }));
+
+    // DB neu laden
+    const [freshA, freshB] = await Promise.all([
+      API.get('listen', { ferienblock_id: blockId, liste: 'A' }),
+      API.get('listen', { ferienblock_id: blockId, liste: 'B' })
+    ]);
+    setListADb(Array.isArray(freshA) ? freshA : []);
+    setListBDb(Array.isArray(freshB) ? freshB : []);
+
+    const mA = (Array.isArray(freshA) ? freshA : []).map((e,i) => ({ id: `a${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
+    const mB = (Array.isArray(freshB) ? freshB : []).map((e,i) => ({ id: `b${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
+    setListA(mA); setListB(mB);
+    setIsLoading(false);
+    setStep(3);
+    runComparison(mA, mB);
+  };
+
+  const runComparison = (lA, lB) => {
+    setIsLoading(true);
+    setTimeout(() => {
+      const mapB = new Map((lB).map(i => [`${i.name}|${i.date}`, i]));
+      const nonA = (lA).filter(e => !mapB.has(`${e.name}|${e.date}`));
+      const mapA = new Map((lA).map(i => [`${i.name}|${i.date}`, i]));
+      const nonB = (lB).filter(e => !mapA.has(`${e.name}|${e.date}`));
+      const byDate = nonB.reduce((acc, i) => { (acc[i.date] = acc[i.date] || []).push(i); return acc; }, {});
+      const groups = {};
+      for (const eA of nonA) {
+        for (const eB of (byDate[eA.date] || [])) {
+          const { score, reason } = calcScore(eA.name, eB.name);
+          if (score >= 65) {
+            const key = `${tokenizeName(eA.name).sort().join('')}|${tokenizeName(eB.name).sort().join('')}`;
+            if (!groups[key]) groups[key] = { nameA: eA.name, nameB: eB.name, score, reason, entries: [] };
+            groups[key].entries.push({ entryA: eA, entryB: eB });
+          }
+        }
+      }
+      setPotentialMatches(Object.values(groups).sort((a,b) => b.score-a.score));
+      setIsLoading(false);
+    }, 50);
+  };
+
+  const startComparisonFromDb = () => {
+    const mA = listADb.map(e => ({ id: `a${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
+    const mB = listBDb.map(e => ({ id: `b${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
+    setListA(mA); setListB(mB);
+    setPotentialMatches([]); setReviewed({});
+    runComparison(mA, mB);
+    setStep(3);
+  };
+
+  const handleGroupAction = (group, action) => {
+    const nr = { ...reviewed };
+    group.entries.forEach(p => { nr[`${p.entryA.id}-${p.entryB.id}`] = action; });
+    setReviewed(nr);
+  };
+
+  const bulkAction = (action, threshold = 0) => {
+    const nr = { ...reviewed };
+    potentialMatches.filter(g => g.entries.some(e => !reviewed[`${e.entryA.id}-${e.entryB.id}`])).forEach(g => {
+      if (action === 'accept' && g.score < threshold) return;
+      g.entries.forEach(p => { nr[`${p.entryA.id}-${p.entryB.id}`] = action; });
+    });
+    setReviewed(nr);
+  };
+
+  const finalResults = useMemo(() => {
+    if (!listA.length || !listB.length) return { matches: [], onlyInA: [], onlyInB: [] };
+    const mapB = new Map(listB.map(i => [`${i.name}|${i.date}`, i.id]));
+    const exactMatches = listA.filter(i => mapB.has(`${i.name}|${i.date}`));
+    const exactBIds = new Set(exactMatches.map(i => mapB.get(`${i.name}|${i.date}`)));
+    const accA = new Set(), accB = new Set();
+    potentialMatches.forEach(g => g.entries.forEach(p => {
+      if (reviewed[`${p.entryA.id}-${p.entryB.id}`] === 'accept') { accA.add(p.entryA.id); accB.add(p.entryB.id); }
+    }));
+    return {
+      matches: listA.filter(i => exactMatches.some(m => m.id === i.id) || accA.has(i.id)),
+      onlyInA: listA.filter(i => !exactMatches.some(m => m.id === i.id) && !accA.has(i.id)),
+      onlyInB: listB.filter(i => !exactBIds.has(i.id) && !accB.has(i.id))
+    };
+  }, [listA, listB, potentialMatches, reviewed]);
+
+  const saveAbgleich = async () => {
+    setSaving(true);
+    const matchRows = [];
+
+    // Exact matches
+    const mapB = new Map(listB.map(i => [`${i.name}|${i.date}`, i]));
+    listA.forEach(eA => {
+      const eB = mapB.get(`${eA.name}|${eA.date}`);
+      if (eB) matchRows.push({ liste_a_id: eA.dbId, liste_b_id: eB.dbId, match_typ: 'exact', score: 100, grund: 'Exakte Übereinstimmung' });
+    });
+
+    // Fuzzy matches
+    potentialMatches.forEach(g => g.entries.forEach(p => {
+      const st = reviewed[`${p.entryA.id}-${p.entryB.id}`];
+      if (st === 'accept') matchRows.push({ liste_a_id: p.entryA.dbId, liste_b_id: p.entryB.dbId, match_typ: 'fuzzy_accepted', score: g.score, grund: g.reason });
+      if (st === 'reject') matchRows.push({ liste_a_id: p.entryA.dbId, liste_b_id: p.entryB.dbId, match_typ: 'fuzzy_rejected', score: g.score, grund: g.reason });
+    }));
+
+    // Nur in A
+    finalResults.onlyInA.forEach(e => matchRows.push({ liste_a_id: e.dbId, liste_b_id: null, match_typ: 'nur_in_a', score: null, grund: 'Keine Entsprechung in Liste B gefunden' }));
+
+    // Nur in B
+    finalResults.onlyInB.forEach(e => matchRows.push({ liste_a_id: null, liste_b_id: e.dbId, match_typ: 'nur_in_b', score: null, grund: 'Nicht in Liste A vorhanden' }));
+
+    const res = await API.post('abgleich', { ferienblock_id: blockId, matches: matchRows });
+    setSaving(false);
+    if (res.success) {
+      alert(`Abgleich gespeichert! ID: ${res.abgleich_id}`);
+      setStep(4);
+      if (onReload) onReload(); // Dashboard-Daten aktualisieren
+    } else {
+      alert('Fehler beim Speichern: ' + res.error);
+    }
+  };
+
+  const exportExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const fmt = (d) => fmtDate(d);
+    // Nur-in-A Sheet
+    if (finalResults.onlyInA.length > 0) {
+      const data = finalResults.onlyInA.map(i => {
+        const parts = i.name.split(/\s+/);
+        return { Vorname: parts.slice(0,-1).join(' '), Nachname: parts.pop()||'', Datum: fmt(i.date) };
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Fehlt in Liste B');
+    }
+    // Nur-in-B Sheet
+    if (finalResults.onlyInB.length > 0) {
+      const data = finalResults.onlyInB.map(i => {
+        const parts = i.name.split(/\s+/);
+        return { Vorname: parts.slice(0,-1).join(' '), Nachname: parts.pop()||'', Datum: fmt(i.date) };
+      });
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Nur in Liste B');
+    }
+    // Matches
+    const matchData = finalResults.matches.map(i => {
+      const parts = i.name.split(/\s+/);
+      return { Vorname: parts.slice(0,-1).join(' '), Nachname: parts.pop()||'', Datum: fmt(i.date), Status: 'Bestätigt' };
+    });
+    if (matchData.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matchData), 'Übereinstimmungen');
+
+    if (wb.SheetNames.length) XLSX.writeFile(wb, 'Abgleich_Ergebnis.xlsx');
+    else alert('Keine Daten zum Exportieren');
+  };
+
+  const openGroups = potentialMatches.filter(g => g.entries.some(e => !reviewed[`${e.entryA.id}-${e.entryB.id}`]));
+
+  const ColMapper = ({ raw, colMap, onChange, label }) => {
+    if (!raw) return (
+      <div className="upload-zone">
+        <div className="icon">📂</div>
+        <p>Noch keine Datei für Liste {label}</p>
+      </div>
+    );
+
+    // Zellwert für Vorschau lesbar machen (Datum konvertieren)
+    const previewCell = (val, colName) => {
+      if (val === null || val === undefined || val === '') return '–';
+      // Ist es die Datumsspalte?
+      if (colName === colMap.date && typeof val === 'number' && val > 40000 && val < 60000) {
+        return fmtDate(normalizeDate(val)) + ' ✓';
+      }
+      return String(val);
+    };
+
+    return (
+      <div>
+        <p style={{marginBottom:'0.5rem',fontSize:'0.88rem',color:'var(--text2)'}}>
+          <strong>{raw.data.length}</strong> Zeilen gefunden
+        </p>
+        {!raw.hasTextHeader && (
+          <div style={{background:'rgba(220,53,69,0.1)',border:'1px solid var(--danger)',borderRadius:'8px',padding:'0.6rem 0.9rem',marginBottom:'0.75rem',fontSize:'0.85rem',color:'var(--danger)'}}>
+            ⚠️ <strong>Keine Headerzeile erkannt!</strong> Die Spalten wurden automatisch benannt (Spalte A, B, C...).
+            Am besten füge in deiner Excel-Datei eine erste Zeile mit Spaltenüberschriften ein (z.B. <em>Vorname | Nachname | Datum</em>).
+          </div>
+        )}
+
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'0.75rem',marginBottom:'1rem'}}>
+          <div>
+            <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
+              Nachname-Spalte *
+            </label>
+            <select className="select-input" style={{width:'100%'}} value={colMap.nachname}
+              onChange={e => onChange({...colMap, nachname: e.target.value})}>
+              <option value="">– wählen –</option>
+              {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
+              Vorname-Spalte
+            </label>
+            <select className="select-input" style={{width:'100%'}} value={colMap.vorname}
+              onChange={e => onChange({...colMap, vorname: e.target.value})}>
+              <option value="">– optional –</option>
+              {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
+              Datums-Spalte *
+            </label>
+            <select className="select-input" style={{width:'100%'}} value={colMap.date}
+              onChange={e => onChange({...colMap, date: e.target.value})}>
+              <option value="">– wählen –</option>
+              {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <p style={{fontSize:'0.8rem',color:'var(--text2)',marginBottom:'0.5rem'}}>Vorschau (erste 3 Zeilen):</p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>{raw.headers.map(h => (
+                <th key={h} style={{
+                  color: (h===colMap.nachname||h===colMap.vorname) ? 'var(--success)' : h===colMap.date ? 'var(--primary)' : undefined
+                }}>
+                  {h}
+                  {h===colMap.nachname && ' 👤'}
+                  {h===colMap.vorname  && ' 👤'}
+                  {h===colMap.date     && ' 📅'}
+                </th>
+              ))}</tr>
+            </thead>
+            <tbody>
+              {raw.data.slice(0,3).map((row,i) => (
+                <tr key={i}>{raw.headers.map((h,j) => (
+                  <td key={j} style={{
+                    fontWeight: (h===colMap.nachname||h===colMap.vorname||h===colMap.date) ? 700 : undefined,
+                    color: (h===colMap.nachname||h===colMap.vorname) ? 'var(--success)' : h===colMap.date ? 'var(--primary)' : undefined
+                  }}>
+                    {previewCell(row[j], h)}
+                  </td>
+                ))}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Abgleich-Tool</h1>
+        <p>Vergleiche Anmeldungen (A) mit Essensbuchungen (B)</p>
+      </div>
+
+      {/* Ferienblock Auswahl */}
+      <div className="card">
+        <div className="card-title">Ferienblock</div>
+        <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
+          <option value="">– Block wählen –</option>
+          {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
+        </select>
+      </div>
+
+      {blockId && (
+        <>
+          {/* Wizard */}
+          <div className="wizard-bar">
+            {['Daten laden','Spalten zuordnen','Prüfen','Ergebnis'].map((n,i) => (
+              <div key={i} className={`wiz-step ${step===i+1?'active':step>i+1?'done':''}`}>
+                <span className="wiz-num">{i+1}</span>{n}
+              </div>
+            ))}
+          </div>
+
+          {isLoading && <Spinner />}
+
+          {/* SCHRITT 1: Daten laden */}
+          {!isLoading && step === 1 && (
+            <div>
+              {(listADb.length > 0 || listBDb.length > 0) && (
+                <div className="info-box" style={{marginBottom:'1rem'}}>
+                  In der Datenbank vorhanden: <strong>{listADb.length} Einträge Liste A</strong>, <strong>{listBDb.length} Einträge Liste B</strong>
+                  {listADb.length > 0 && listBDb.length > 0 && (
+                    <> – <button className="btn btn-primary btn-sm" style={{marginLeft:'0.75rem'}} onClick={startComparisonFromDb}>Direkt vergleichen</button></>
+                  )}
+                </div>
+              )}
+              <div className="two-col">
+                <div className="card">
+                  <div className="card-title">Liste A – Anmeldungen</div>
+                  <label className={`upload-zone ${rawA ? 'has-data' : ''}`}>
+                    <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'A')} />
+                    <div className="icon">{rawA ? '✅' : '📂'}</div>
+                    <p>{rawA ? `${rawA.data.length} Zeilen geladen` : 'Excel-Datei hochladen'}</p>
+                    <p style={{fontSize:'0.8rem',marginTop:'0.25rem'}}>.xlsx</p>
+                  </label>
+                </div>
+                <div className="card">
+                  <div className="card-title">Liste B – Essensbuchungen</div>
+                  <label className={`upload-zone ${rawB ? 'has-data' : ''}`}>
+                    <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'B')} />
+                    <div className="icon">{rawB ? '✅' : '📂'}</div>
+                    <p>{rawB ? `${rawB.data.length} Zeilen geladen` : 'Excel-Datei hochladen'}</p>
+                    <p style={{fontSize:'0.8rem',marginTop:'0.25rem'}}>.xlsx</p>
+                  </label>
+                </div>
+              </div>
+              {(rawA || rawB) && (
+                <div className="action-row">
+                  <span />
+                  <button className="btn btn-primary" onClick={() => setStep(2)} disabled={!rawA && !rawB}>
+                    Weiter: Spalten zuordnen
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SCHRITT 2: Spalten zuordnen */}
+          {!isLoading && step === 2 && (
+            <div>
+              <div className="two-col">
+                <div className="card">
+                  <div className="card-title">Liste A – Spalten</div>
+                  <ColMapper raw={rawA} colMap={colMapA} onChange={setColMapA} label="A" />
+                </div>
+                <div className="card">
+                  <div className="card-title">Liste B – Spalten</div>
+                  <ColMapper raw={rawB} colMap={colMapB} onChange={setColMapB} label="B" />
+                </div>
+              </div>
+              <div className="action-row">
+                <button className="btn btn-ghost" onClick={() => setStep(1)}>Zurück</button>
+                <button className="btn btn-primary" onClick={processAndUpload}
+                  disabled={!(rawA && colMapA.nachname && colMapA.date) && !(rawB && colMapB.nachname && colMapB.date)}>
+                  Verarbeiten & Vergleichen
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* SCHRITT 3: Prüfen */}
+          {!isLoading && step === 3 && (
+            <div>
+              <div className="card">
+                <div className="card-title">
+                  Mögliche Übereinstimmungen
+                  <span style={{fontSize:'0.85rem',color:'var(--text2)'}}>
+                    {openGroups.length} offen
+                  </span>
+                </div>
+                <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1.5rem'}}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => bulkAction('accept', 90)}>Alle &gt;90% akzeptieren</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
+                </div>
+
+                {openGroups.length === 0 && (
+                  <p style={{color:'var(--text2)'}}>Alle Vorschläge überprüft.</p>
+                )}
+
+                {openGroups.map(group => {
+                  const cls = scoreClass(group.score);
+                  const analysis = analyzeMatch(group.nameA, group.nameB);
+                  return (
+                    <div key={group.nameA+group.nameB} className={`match-card ${cls}`}>
+                      <div className="match-header">
+                        <div style={{display:'flex',alignItems:'center',gap:'1rem',flex:1,flexWrap:'wrap'}}>
+                          <span className={`score-pill ${cls}`}>{group.score}%</span>
+                          <div>
+                            <div className="name-tokens">
+                              <strong>A:</strong>
+                              {analysis.tokensA.map((t,i) => <span key={i} className={`token ${t.matched?'matched':'unmatched'}`}>{t.token}</span>)}
+                              <span style={{color:'var(--text2)',margin:'0 0.25rem'}}>↔</span>
+                              <strong>B:</strong>
+                              {analysis.tokensB.map((t,i) => <span key={i} className={`token ${t.matched?'matched':'unmatched'}`}>{t.token}</span>)}
+                            </div>
+                            <div style={{fontSize:'0.8rem',color:'var(--text2)',marginTop:'0.3rem'}}>
+                              {group.reason} · {group.entries.length} Einträge · {fmtDate(group.entries[0]?.entryA.date)}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="match-actions">
+                          <button className="btn btn-success btn-sm" onClick={() => handleGroupAction(group, 'accept')}>✓</button>
+                          <button className="btn btn-danger btn-sm" onClick={() => handleGroupAction(group, 'reject')}>✗</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="action-row">
+                <button className="btn btn-ghost" onClick={() => setStep(1)}>Zurück</button>
+                <button className="btn btn-primary" onClick={() => setStep(4)}>Ergebnisse anzeigen</button>
+              </div>
+            </div>
+          )}
+
+          {/* SCHRITT 4: Ergebnis */}
+          {!isLoading && step === 4 && (
+            <div>
+              <div className="stat-grid" style={{marginBottom:'1.5rem'}}>
+                <div className="stat-card accent-green">
+                  <div className="stat-label">Übereinstimmungen</div>
+                  <div className="stat-value">{finalResults.matches.length}</div>
+                </div>
+                <div className="stat-card accent-red">
+                  <div className="stat-label">Fehlt in Liste B</div>
+                  <div className="stat-value">{finalResults.onlyInA.length}</div>
+                  <div className="stat-sub">angemeldet, nicht gebucht</div>
+                </div>
+                <div className="stat-card accent-orange">
+                  <div className="stat-label">Nur in Liste B</div>
+                  <div className="stat-value">{finalResults.onlyInB.length}</div>
+                  <div className="stat-sub">gebucht, nicht angemeldet</div>
+                </div>
+              </div>
+
+              {finalResults.onlyInA.length > 0 && (
+                <div className="result-section">
+                  <h4>Fehlt in Liste B <span className="count-badge red">{finalResults.onlyInA.length}</span></h4>
+                  <ul className="result-list">
+                    {finalResults.onlyInA.map(i => <li key={i.id}>{i.name} – {fmtDate(i.date)}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              {finalResults.matches.length > 0 && (
+                <div className="result-section">
+                  <h4>Übereinstimmungen <span className="count-badge green">{finalResults.matches.length}</span></h4>
+                  <ul className="result-list">
+                    {finalResults.matches.map(i => <li key={i.id}>{i.name} – {fmtDate(i.date)}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              {finalResults.onlyInB.length > 0 && (
+                <div className="result-section">
+                  <h4>Nur in Liste B <span className="count-badge">{finalResults.onlyInB.length}</span></h4>
+                  <ul className="result-list">
+                    {finalResults.onlyInB.map(i => <li key={i.id}>{i.name} – {fmtDate(i.date)}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              <div className="action-row">
+                <button className="btn btn-ghost" onClick={() => setStep(3)}>Zurück</button>
+                <div style={{display:'flex',gap:'0.75rem'}}>
+                  <button className="btn btn-ghost" onClick={exportExcel}>Excel exportieren</button>
+                  <button className="btn btn-primary" disabled={saving} onClick={saveAbgleich}>
+                    {saving ? 'Speichern...' : 'In Datenbank speichern'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// FINANZEN
+const FinanzenPage = ({ blocks }) => {
+  const [blockId, setBlockId] = useState(blocks[0]?.id || '');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = async (id) => {
+    if (!id) return;
+    setLoading(true);
+    const res = await API.get('finanzen', { ferienblock_id: id });
+    setData(res);
+    setLoading(false);
+  };
+
+  useEffect(() => { if (blockId) load(blockId); }, [blockId]);
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Finanzen</h1>
+        <p>Kostenkalkulation: {data?.block?.preis_pro_tag || '3.50'} € pro Kind pro Tag</p>
+      </div>
+
+      <div className="card" style={{marginBottom:'1.5rem'}}>
+        <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
+          <option value="">– Block wählen –</option>
+          {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+      </div>
+
+      {loading && <Spinner />}
+
+      {!loading && data && data.statistik && (
+        <>
+          <div className="stat-grid">
+            <div className="stat-card accent-blue">
+              <div className="stat-label">Kinder mit Buchung</div>
+              <div className="stat-value">{data.statistik.kinder_mit_buchung}</div>
+            </div>
+            <div className="stat-card accent-green">
+              <div className="stat-label">Gesamt gebuchte Mahlzeiten</div>
+              <div className="stat-value">{data.statistik.gesamt_buchungen}</div>
+            </div>
+            <div className="stat-card accent-orange">
+              <div className="stat-label">Gesamtbetrag</div>
+              <div className="stat-value">{data.statistik.gesamt_betrag.toFixed(2)} €</div>
+            </div>
+            <div className="stat-card accent-red">
+              <div className="stat-label">Ohne Buchung</div>
+              <div className="stat-value">{data.statistik.kinder_ohne_buchung}</div>
+              <div className="stat-sub">in A, nicht in B</div>
+            </div>
+          </div>
+
+          {data.fehlende_buchungen?.length > 0 && (
+            <div className="card">
+              <div className="card-title" style={{color:'var(--danger)'}}>
+                Fehlende Buchungen
+                <span className="count-badge red">{data.fehlende_buchungen.length}</span>
+              </div>
+              <p style={{fontSize:'0.88rem',color:'var(--text2)',marginBottom:'1rem'}}>
+                Diese Kinder sind bei uns angemeldet, haben aber keine Buchung beim Caterer.
+              </p>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Tage angemeldet</th></tr></thead>
+                  <tbody>
+                    {data.fehlende_buchungen.map((k,i) => (
+                      <tr key={i}>
+                        <td>{k.nachname}</td><td>{k.vorname}</td><td>{k.klasse||'–'}</td><td>{k.tage_angemeldet}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="card">
+            <div className="card-title">Buchungen pro Kind</div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Tage</th><th>Gesamtbetrag</th><th>Kontostand</th></tr>
+                </thead>
+                <tbody>
+                  {data.buchungen.map((k,i) => (
+                    <tr key={i}>
+                      <td>{k.nachname}</td>
+                      <td>{k.vorname}</td>
+                      <td>{k.klasse||'–'}</td>
+                      <td>{k.tage_gebucht}</td>
+                      <td><strong>{parseFloat(k.gesamtbetrag).toFixed(2)} €</strong></td>
+                      <td>{k.kontostand ? `${parseFloat(k.kontostand).toFixed(2)} €` : '–'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// VERLAUF
+const VerlaufPage = ({ blocks }) => {
+  const [blockId, setBlockId] = useState(blocks[0]?.id || '');
+  const [verlauf, setVerlauf] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [openId, setOpenId]   = useState(null);
+  const [detail, setDetail]   = useState({});
+  const [detailLoading, setDetailLoading] = useState({});
+
+  const loadVerlauf = (id) => {
+    if (!id) return;
+    setLoading(true);
+    setOpenId(null);
+    API.get('abgleich', { ferienblock_id: id }).then(d => {
+      setVerlauf(Array.isArray(d) ? d : []);
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => { loadVerlauf(blockId); }, [blockId]);
+
+  const toggleDetail = async (id) => {
+    if (openId === id) { setOpenId(null); return; }
+    setOpenId(id);
+    if (detail[id]) return;
+    setDetailLoading(prev => ({...prev, [id]: true}));
+    const res = await API.get('abgleich', { abgleich_id: id });
+    setDetail(prev => ({...prev, [id]: res}));
+    setDetailLoading(prev => ({...prev, [id]: false}));
+  };
+
+  const typConfig = [
+    { key: 'exact',          label: '✅ Exakte Treffer',        badge: 'badge-green'  },
+    { key: 'fuzzy_accepted', label: '🟡 Angenommene Treffer',   badge: 'badge-orange' },
+    { key: 'fuzzy_rejected', label: '❌ Abgelehnte Vorschläge', badge: 'badge-red'    },
+    { key: 'nur_in_a',       label: '⚠️ Nur in Liste A',        badge: 'badge-red'    },
+    { key: 'nur_in_b',       label: '📋 Nur in Liste B',        badge: 'badge-blue'   },
+  ];
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Verlauf</h1>
+        <p>Gespeicherte Abgleiche einsehen</p>
+      </div>
+
+      <div className="card" style={{marginBottom:'1.5rem'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+          <select className="ferienblock-select" value={blockId}
+            onChange={e => { setBlockId(e.target.value); setVerlauf([]); }}>
+            <option value="">– Block wählen –</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
+          </select>
+          {blockId && <button className="btn btn-ghost btn-sm" onClick={() => loadVerlauf(blockId)}>↻ Neu laden</button>}
+        </div>
+      </div>
+
+      {loading && <Spinner />}
+
+      {!loading && !blockId && (
+        <div className="card"><div className="empty-state"><div className="icon">📋</div><p>Bitte einen Ferienblock auswählen.</p></div></div>
+      )}
+
+      {!loading && blockId && verlauf.length === 0 && (
+        <div className="card"><div className="empty-state"><div className="icon">📋</div><p>Noch keine Abgleiche für diesen Block gespeichert.</p></div></div>
+      )}
+
+      {!loading && verlauf.map(v => {
+        const isOpen = openId === v.id;
+        const d = detail[v.id];
+        const dLoading = detailLoading[v.id];
+        return (
+          <div key={v.id} className="card" style={{marginBottom:'1rem'}}>
+            {/* Abgleich-Kopfzeile */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'1rem'}}>
+              <div>
+                <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
+                  <strong>Abgleich vom {fmtDate(v.erstellt_am)}</strong>
+                  <span className="badge badge-green">{v.status}</span>
+                </div>
+                <div style={{display:'flex',gap:'0.75rem',marginTop:'0.4rem',flexWrap:'wrap',fontSize:'0.85rem'}}>
+                  <span className="badge badge-green">✅ {v.matches_count} Treffer</span>
+                  {parseInt(v.nur_in_a_count) > 0 && <span className="badge badge-red">⚠️ {v.nur_in_a_count} nur in A</span>}
+                  {parseInt(v.nur_in_b_count) > 0 && <span className="badge badge-blue">📋 {v.nur_in_b_count} nur in B</span>}
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => toggleDetail(v.id)}>
+                {isOpen ? '▲ Zuklappen' : '▼ Details anzeigen'}
+              </button>
+            </div>
+
+            {/* Detail-Bereich */}
+            {isOpen && (
+              <div style={{marginTop:'1.25rem',borderTop:'1px solid var(--border)',paddingTop:'1.25rem'}}>
+                {dLoading && <Spinner />}
+                {d && typConfig.map(({ key, label, badge }) => {
+                  const items = d.matches?.filter(m => m.match_typ === key) || [];
+                  if (!items.length) return null;
+                  return (
+                    <div key={key} style={{marginBottom:'1.25rem'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:'0.75rem',marginBottom:'0.6rem'}}>
+                        <strong style={{fontSize:'0.9rem'}}>{label}</strong>
+                        <span className={`badge ${badge}`}>{items.length}</span>
+                      </div>
+                      <div className="table-wrap">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Name A</th>
+                              <th>Datum A</th>
+                              {['exact','fuzzy_accepted','fuzzy_rejected'].includes(key) && <th>Name B</th>}
+                              {['exact','fuzzy_accepted','fuzzy_rejected'].includes(key) && <th>Datum B</th>}
+                              {['fuzzy_accepted','fuzzy_rejected'].includes(key) && <th>Score</th>}
+                              {['fuzzy_accepted','fuzzy_rejected'].includes(key) && <th>Grund</th>}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {items.map(m => (
+                              <tr key={m.id}>
+                                <td>{m.a_vorname} {m.a_nachname}</td>
+                                <td>{fmtDate(m.a_datum)}</td>
+                                {['exact','fuzzy_accepted','fuzzy_rejected'].includes(key) && <td>{m.b_vorname} {m.b_nachname}</td>}
+                                {['exact','fuzzy_accepted','fuzzy_rejected'].includes(key) && <td>{fmtDate(m.b_datum)}</td>}
+                                {['fuzzy_accepted','fuzzy_rejected'].includes(key) && <td><span className={`badge ${m.score>=90?'badge-green':m.score>=75?'badge-orange':'badge-red'}`}>{m.score}%</span></td>}
+                                {['fuzzy_accepted','fuzzy_rejected'].includes(key) && <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{m.grund}</td>}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// EINSTELLUNGEN
+const EinstellungenPage = ({ user, onLogout }) => {
+  const [pw1, setPw1] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+
+  const changePassword = async () => {
+    if (pw1 !== pw2) { setErr('Passwörter stimmen nicht überein'); return; }
+    if (pw1.length < 8) { setErr('Mindestens 8 Zeichen'); return; }
+    const res = await API.post('auth', { action: 'change-password', token: API.token(), newPassword: pw1 });
+    if (res.success) { setMsg('Passwort geändert!'); setPw1(''); setPw2(''); setErr(''); }
+    else setErr(res.error);
+  };
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Einstellungen</h1>
+        <p>Konto und Sicherheit</p>
+      </div>
+      <div className="card" style={{maxWidth:480}}>
+        <div className="card-title">Passwort ändern</div>
+        <p style={{fontSize:'0.88rem',color:'var(--text2)',marginBottom:'1rem'}}>
+          Angemeldet als: <strong>{user?.username}</strong>
+        </p>
+        {err && <div className="error-msg">{err}</div>}
+        {msg && <div style={{background:'#efe',border:'1px solid #8c8',padding:'0.75rem',borderRadius:'8px',marginBottom:'1rem',fontSize:'0.9rem'}}>{msg}</div>}
+        <div className="form-group">
+          <label>Neues Passwort</label>
+          <input className="form-input" type="password" value={pw1} onChange={e => setPw1(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label>Passwort wiederholen</label>
+          <input className="form-input" type="password" value={pw2} onChange={e => setPw2(e.target.value)} />
+        </div>
+        <button className="btn btn-primary" onClick={changePassword} disabled={!pw1||!pw2}>Passwort ändern</button>
+        <hr />
+        <button className="btn btn-danger" onClick={onLogout}>Abmelden</button>
+      </div>
+    </div>
+  );
+};
+
+// ─── KINDER-VERZEICHNIS ──────────────────────────────
+// Avatar-Farbe aus Name generieren (konsistent)
+const avatarColors = ['#005A9C','#28a745','#dc3545','#e6a817','#17a2b8','#6f42c1','#e83e8c','#fd7e14','#20c997','#4dabf7'];
+const getAvatarColor = (name) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return avatarColors[Math.abs(h) % avatarColors.length];
+};
+const Avatar = ({ vorname, nachname, size = 'md' }) => {
+  const initials = ((vorname||'').charAt(0) + (nachname||'').charAt(0)).toUpperCase();
+  const color = getAvatarColor((nachname || '') + (vorname || ''));
+  return <div className={`avatar avatar-${size}`} style={{background: color}}>{initials}</div>;
+};
+
+const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
+  const [kinder, setKinder] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [syncing, setSyncing] = useState(false);
+
+  // Akte-Detail
+  const [selectedKindId, setSelectedKindId] = useState(initialKindId || null);
+  const [akte, setAkte] = useState(null);
+  const [akteLoading, setAkteLoading] = useState(false);
+
+  // Import
+  const [showImport, setShowImport] = useState(false);
+  const [importData, setImportData] = useState(null);
+  const [importResult, setImportResult] = useState(null);
+  const [importing, setImporting] = useState(false);
+
+  // Edit-Modal
+  const [editKind, setEditKind] = useState(null);
+  const [editForm, setEditForm] = useState({ nachname: '', vorname: '', klasse: '', notizen: '' });
+
+  // Sortierung
+  const [sortBy, setSortBy] = useState('nachname');
+  const [sortDir, setSortDir] = useState('asc');
+  const toggleSort = (col) => {
+    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(col); setSortDir('asc'); }
+  };
+  const sortIndicator = (col) => sortBy === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+
+  const loadKinder = async () => {
+    setLoading(true);
+    const data = await API.get('kinder');
+    setKinder(Array.isArray(data) ? data : []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadKinder(); }, []);
+
+  // Akte laden wenn Kind ausgewählt
+  useEffect(() => {
+    if (!selectedKindId) { setAkte(null); return; }
+    setAkteLoading(true);
+    API.get('kinder', { id: selectedKindId }).then(data => {
+      setAkte(data.kind ? data : null);
+      setAkteLoading(false);
+    });
+  }, [selectedKindId]);
+
+  // Aus Listen synchronisieren
+  const syncFromLists = async () => {
+    setSyncing(true);
+    const res = await API.post('kinder', { action: 'sync' });
+    setSyncing(false);
+    toast.success(res.message || 'Synchronisiert');
+    loadKinder();
+  };
+
+  // Excel importieren
+  // Import: Spalten-Zuordnung
+  const [importCols, setImportCols] = useState({ name: '', nachname: '', vorname: '', klasse: '' });
+  const [importHeaders, setImportHeaders] = useState([]);
+  const [importPreview, setImportPreview] = useState([]);
+
+  const handleImportFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const wb = XLSX.read(evt.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      if (rows.length < 2) { toast.error('Datei ist leer'); return; }
+
+      // Header erkennen (erste Zeile Text = Header, sonst auto)
+      const firstRow = rows[0];
+      const isHeader = firstRow.every(c => typeof c === 'string' && c.trim().length > 0);
+      let headers;
+      let dataRows;
+      if (isHeader) {
+        headers = firstRow.map(h => String(h).trim());
+        dataRows = rows.slice(1);
+      } else {
+        headers = firstRow.map((_, i) => `Spalte ${String.fromCharCode(65 + i)}`);
+        dataRows = rows;
+      }
+
+      setImportHeaders(headers);
+      setImportData(dataRows);
+      setImportPreview(dataRows.slice(0, 5));
+      setImportResult(null);
+
+      // Auto-Zuordnung
+      const hLow = headers.map(h => h.toLowerCase());
+      const autoName = hLow.findIndex(h => h === 'name' || h === 'kind' || h === 'schüler');
+      const autoNachname = hLow.findIndex(h => h.includes('nachname'));
+      const autoVorname = hLow.findIndex(h => h.includes('vorname'));
+      const autoKlasse = hLow.findIndex(h => h.includes('klasse') || h.includes('class'));
+
+      if (autoNachname >= 0 && autoVorname >= 0) {
+        // Separate Nachname + Vorname Spalten
+        setImportCols({ name: '', nachname: String(autoNachname), vorname: String(autoVorname), klasse: autoKlasse >= 0 ? String(autoKlasse) : '' });
+      } else if (autoName >= 0) {
+        // Kombiniertes "Name" Feld
+        setImportCols({ name: String(autoName), nachname: '', vorname: '', klasse: autoKlasse >= 0 ? String(autoKlasse) : '' });
+      } else {
+        setImportCols({ name: '', nachname: '', vorname: '', klasse: '' });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // Name splitten: "Marie Müller" → { vorname: "Marie", nachname: "Müller" }
+  // "Müller, Marie" → { nachname: "Müller", vorname: "Marie" }
+  const splitName = (fullName) => {
+    const s = fullName.trim();
+    if (!s) return { vorname: '', nachname: '' };
+    // Komma-Trennung: "Müller, Marie"
+    if (s.includes(',')) {
+      const parts = s.split(',').map(p => p.trim());
+      return { nachname: parts[0], vorname: parts.slice(1).join(' ') };
+    }
+    // Leerzeichen-Trennung: "Marie Müller" → Vorname = alles bis auf letztes Wort
+    const parts = s.split(/\s+/);
+    if (parts.length === 1) return { vorname: parts[0], nachname: '' };
+    const nachname = parts.pop();
+    return { vorname: parts.join(' '), nachname };
+  };
+
+  const getImportPreviewEntries = () => {
+    const rows = importPreview;
+    return rows.map(row => {
+      let vorname = '', nachname = '', klasse = '';
+      if (importCols.name !== '') {
+        const split = splitName(String(row[parseInt(importCols.name)] || ''));
+        vorname = split.vorname;
+        nachname = split.nachname;
+      } else {
+        nachname = importCols.nachname !== '' ? String(row[parseInt(importCols.nachname)] || '').trim() : '';
+        vorname = importCols.vorname !== '' ? String(row[parseInt(importCols.vorname)] || '').trim() : '';
+      }
+      klasse = importCols.klasse !== '' ? String(row[parseInt(importCols.klasse)] || '').trim() : '';
+      return { vorname, nachname, klasse };
+    });
+  };
+
+  const executeImport = async () => {
+    if (!importData || importData.length === 0) return;
+    if (importCols.name === '' && importCols.nachname === '' && importCols.vorname === '') {
+      toast.error('Bitte mindestens Name oder Nachname+Vorname zuordnen');
+      return;
+    }
+    setImporting(true);
+
+    const eintraege = [];
+    for (const row of importData) {
+      let vorname = '', nachname = '', klasse = '';
+      if (importCols.name !== '') {
+        const split = splitName(String(row[parseInt(importCols.name)] || ''));
+        vorname = split.vorname;
+        nachname = split.nachname;
+      } else {
+        nachname = importCols.nachname !== '' ? String(row[parseInt(importCols.nachname)] || '').trim() : '';
+        vorname = importCols.vorname !== '' ? String(row[parseInt(importCols.vorname)] || '').trim() : '';
+      }
+      klasse = importCols.klasse !== '' ? String(row[parseInt(importCols.klasse)] || '').trim() : '';
+      if (nachname && vorname) eintraege.push({ nachname, vorname, klasse });
+    }
+
+    const res = await API.post('kinder', { action: 'import', eintraege });
+    setImportResult(res);
+    setImporting(false);
+    loadKinder();
+  };
+
+  // Kind bearbeiten
+  const startEdit = (k) => {
+    setEditKind(k);
+    setEditForm({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse || '', notizen: k.notizen || '' });
+  };
+  const saveEdit = async () => {
+    await API.post('kinder', { action: 'edit', id: editKind.id, ...editForm });
+    setEditKind(null);
+    loadKinder();
+    if (selectedKindId === editKind.id) setSelectedKindId(editKind.id); // refresh akte
+  };
+
+  // Kind löschen
+  const deleteKind = async (id) => {
+    const ok = await confirmDialog('Kind löschen', 'Kind aus Stammverzeichnis löschen? Die Listen-Einträge bleiben erhalten.', 'Löschen');
+    if (!ok) return;
+    await API.post('kinder', { action: 'delete', id });
+    toast.success('Kind gelöscht');
+    loadKinder();
+    if (selectedKindId === id) setSelectedKindId(null);
+  };
+
+  // Filter + Sortierung
+  const filtered = kinder.filter(k =>
+    (k.nachname + ' ' + k.vorname + ' ' + k.vorname + ' ' + k.nachname + ' ' + (k.klasse || ''))
+      .toLowerCase().includes(search.toLowerCase())
+  ).sort((a, b) => {
+    let va, vb;
+    switch (sortBy) {
+      case 'nachname': va = (a.nachname||'').toLowerCase(); vb = (b.nachname||'').toLowerCase(); break;
+      case 'vorname': va = (a.vorname||'').toLowerCase(); vb = (b.vorname||'').toLowerCase(); break;
+      case 'klasse': va = (a.klasse||'').toLowerCase(); vb = (b.klasse||'').toLowerCase(); break;
+      case 'bloecke': va = parseInt(a.block_count_a)||0; vb = parseInt(b.block_count_a)||0; break;
+      case 'anmeldungen': va = parseInt(a.anmeldungen_count)||0; vb = parseInt(b.anmeldungen_count)||0; break;
+      case 'buchungen': va = parseInt(a.buchungen_count)||0; vb = parseInt(b.buchungen_count)||0; break;
+      default: va = (a.nachname||'').toLowerCase(); vb = (b.nachname||'').toLowerCase();
+    }
+    if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb, 'de') : vb.localeCompare(va, 'de');
+    return sortDir === 'asc' ? va - vb : vb - va;
+  });
+
+  // ═══════════════════════════════════════
+  // AKTE-DETAILANSICHT (Design-Upgrade)
+  // ═══════════════════════════════════════
+  if (selectedKindId) {
+    if (akteLoading) return <div style={{display:'flex',justifyContent:'center',padding:'4rem'}}><Spinner /></div>;
+    if (!akte) return <div className="card"><p style={{color:'var(--danger)',padding:'2rem',textAlign:'center'}}>Kind nicht gefunden</p><button className="btn btn-ghost btn-sm" onClick={() => setSelectedKindId(null)}>← Zurück zur Liste</button></div>;
+
+    const { kind, aliases, blocks: akteBlocks, summary } = akte;
+
+    // Kurzer Wochentag aus Datum
+    const weekday = (d) => {
+      try { return new Date(d).toLocaleDateString('de-DE', { weekday: 'short' }); } catch { return ''; }
+    };
+
+    return (
+      <div>
+        {/* Zurück-Link */}
+        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedKindId(null)} style={{marginBottom:'1rem'}}>
+          ← Zurück zur Übersicht
+        </button>
+
+        {/* ── PROFIL-KARTE ── */}
+        <div className="akte-profile">
+          <div className="akte-profile-actions">
+            <button className="btn btn-sm" onClick={() => startEdit(kind)}>✎ Bearbeiten</button>
+          </div>
+          <div className="akte-profile-top">
+            <Avatar vorname={kind.vorname} nachname={kind.nachname} size="lg" />
+            <div>
+              <div className="akte-profile-name">{kind.vorname} {kind.nachname}</div>
+              {kind.klasse && <span className="akte-profile-klasse">Klasse {kind.klasse}</span>}
+              {aliases && aliases.length > 0 && (
+                <div className="akte-profile-aliases">Auch bekannt als: {aliases.join(', ')}</div>
+              )}
+            </div>
+          </div>
+          <div className="akte-stats-row">
+            <div className="akte-stat">
+              <div className="val">{summary.total_blocks}</div>
+              <div className="lbl">Ferienblöcke</div>
+            </div>
+            <div className="akte-stat">
+              <div className="val">{summary.total_anmeldungen}</div>
+              <div className="lbl">Tage angemeldet</div>
+            </div>
+            <div className="akte-stat">
+              <div className="val">{summary.total_buchungen}</div>
+              <div className="lbl">Tage gebucht</div>
+            </div>
+            <div className="akte-stat">
+              <div className="val">{summary.total_kosten.toFixed(0)} €</div>
+              <div className="lbl">Gesamtkosten</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── NOTIZEN ── */}
+        {kind.notizen && (
+          <div className="akte-notes">
+            <span className="akte-notes-icon">📝</span>
+            <div className="akte-notes-text">{kind.notizen}</div>
+          </div>
+        )}
+
+        {/* ── FERIENBLÖCKE TIMELINE ── */}
+        {akteBlocks.length === 0 ? (
+          <div className="card">
+            <div className="empty-state">
+              <div className="icon">📭</div>
+              <p>Keine Einträge in den Listen gefunden.</p>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <h3 style={{fontSize:'1rem',fontWeight:700,marginBottom:'1rem',color:'var(--text2)'}}>
+              Verlauf ({akteBlocks.length} {akteBlocks.length === 1 ? 'Block' : 'Blöcke'})
+            </h3>
+            <div className="akte-timeline">
+              {akteBlocks.map(b => {
+                const aDates = new Set(b.anmeldungen.map(a => String(a.datum).split('T')[0]));
+                const bDates = new Set(b.buchungen.map(x => String(x.datum).split('T')[0]));
+                const allDates = [...new Set([...aDates, ...bDates])].sort();
+                const matchedDays = allDates.filter(d => aDates.has(d) && bDates.has(d)).length;
+                const missingDays = [...aDates].filter(d => !bDates.has(d)).length;
+                const extraDays = [...bDates].filter(d => !aDates.has(d)).length;
+
+                // Block-Status für Timeline-Punkt
+                const statusClass = missingDays > 0 ? 'status-miss' : extraDays > 0 ? 'status-warn' : 'status-ok';
+
+                return (
+                  <div className={`akte-block ${statusClass}`} key={b.ferienblock_id}>
+                    <div className="akte-block-card">
+                      <div className="akte-block-head">
+                        <div>
+                          <h3>{b.block_name}</h3>
+                          <div className="meta">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</div>
+                        </div>
+                        <div className="akte-block-badges">
+                          {b.klasse && <span className="badge badge-blue">Klasse {b.klasse}</span>}
+                          {b.match_status && (
+                            <span className={`badge ${
+                              b.match_status === 'exact' || b.match_status === 'fuzzy_accepted' ? 'badge-green'
+                              : b.match_status === 'nur_in_a' ? 'badge-red' : 'badge-orange'
+                            }`}>
+                              {b.match_status === 'exact' ? '✓ Exakt' : b.match_status === 'fuzzy_accepted' ? '≈ Fuzzy' : b.match_status === 'nur_in_a' ? '✗ Fehlt in B' : b.match_status === 'nur_in_b' ? '⚠ Nur in B' : b.match_status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Anmeldungen (A) */}
+                      <div className="days-section">
+                        <div className="days-section-title">
+                          Anmeldungen (A) <span className="count">{b.anmeldungen.length} Tage</span>
+                        </div>
+                        <div className="days-grid">
+                          {[...aDates].sort().map(d => {
+                            const inB = bDates.has(d);
+                            return (
+                              <div key={'a'+d} className={`day-chip ${inB ? 'matched' : 'missing'}`}>
+                                <span className="day-icon">{inB ? '✓' : '✗'}</span>
+                                <span>{weekday(d)} {fmtDate(d)}</span>
+                              </div>
+                            );
+                          })}
+                          {b.anmeldungen.length === 0 && <span style={{fontSize:'0.82rem',color:'var(--text2)'}}>Keine Anmeldungen</span>}
+                        </div>
+                      </div>
+
+                      {/* Buchungen (B) */}
+                      <div className="days-section">
+                        <div className="days-section-title">
+                          Buchungen (B) <span className="count">{b.buchungen.length} Tage</span>
+                        </div>
+                        <div className="days-grid">
+                          {[...bDates].sort().map(d => {
+                            const inA = aDates.has(d);
+                            const buchung = b.buchungen.find(x => String(x.datum).split('T')[0] === d);
+                            return (
+                              <div key={'b'+d} className={`day-chip ${inA ? 'matched' : 'extra'}`} title={buchung?.menu || ''}>
+                                <span className="day-icon">{inA ? '✓' : '⚠'}</span>
+                                <span>{weekday(d)} {fmtDate(d)}</span>
+                                {buchung?.menu && <span style={{opacity:0.7,fontSize:'0.7rem'}}>({buchung.menu})</span>}
+                              </div>
+                            );
+                          })}
+                          {b.buchungen.length === 0 && <span style={{fontSize:'0.82rem',color:'var(--text2)'}}>Keine Buchungen</span>}
+                        </div>
+                      </div>
+
+                      {/* Block-Zusammenfassung */}
+                      <div className="block-summary-row">
+                        <span>✓ <strong>{matchedDays}</strong> übereinstimmend</span>
+                        {missingDays > 0 && <span style={{color:'var(--danger)'}}>✗ <strong>{missingDays}</strong> ohne Buchung</span>}
+                        {extraDays > 0 && <span style={{color:'var(--warning)'}}>⚠ <strong>{extraDays}</strong> ohne Anmeldung</span>}
+                        <span style={{marginLeft:'auto'}}><strong>{b.kosten.toFixed(2)} €</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {editKind && (
+          <div className="modal-overlay" onClick={() => setEditKind(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <h3>Kind bearbeiten</h3>
+              <div className="form-group">
+                <label>Nachname</label>
+                <input className="form-input" value={editForm.nachname} onChange={e => setEditForm({...editForm, nachname: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>Vorname</label>
+                <input className="form-input" value={editForm.vorname} onChange={e => setEditForm({...editForm, vorname: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>Klasse</label>
+                <input className="form-input" value={editForm.klasse} onChange={e => setEditForm({...editForm, klasse: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>Notizen</label>
+                <textarea className="textarea" style={{minHeight:'80px'}} value={editForm.notizen} onChange={e => setEditForm({...editForm, notizen: e.target.value})} />
+              </div>
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => setEditKind(null)}>Abbrechen</button>
+                <button className="btn btn-primary" style={{width:'auto'}} onClick={saveEdit}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // LISTENANSICHT (Design-Upgrade)
+  // ═══════════════════════════════════════
+  const mitBuchung = kinder.filter(k => parseInt(k.buchungen_count) > 0).length;
+  const ohneBuchung = kinder.filter(k => parseInt(k.anmeldungen_count) > 0 && parseInt(k.buchungen_count) === 0).length;
+
+  // Sortier-Buttons für Mobile + Desktop
+  const sortOptions = [
+    { key: 'nachname', label: 'Nachname' },
+    { key: 'vorname', label: 'Vorname' },
+    { key: 'klasse', label: 'Klasse' },
+    { key: 'anmeldungen', label: 'Anmeldungen' },
+    { key: 'buchungen', label: 'Buchungen' },
+  ];
+
+  return (
+    <div>
+      <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+        <div>
+          <h1>Kinder-Verzeichnis</h1>
+          <p>Alle registrierten Kinder mit ihren Akten</p>
+        </div>
+      </div>
+
+      <div className="stat-grid">
+        <div className="stat-card accent-blue">
+          <div className="stat-label">Kinder gesamt</div>
+          <div className="stat-value">{loading ? '…' : kinder.length}</div>
+        </div>
+        <div className="stat-card accent-green">
+          <div className="stat-label">Mit Buchungen</div>
+          <div className="stat-value">{loading ? '…' : mitBuchung}</div>
+        </div>
+        <div className={`stat-card ${ohneBuchung > 0 ? 'accent-red' : 'accent-green'}`}>
+          <div className="stat-label">Ohne Buchung</div>
+          <div className="stat-value">{loading ? '…' : ohneBuchung}</div>
+          <div className="stat-sub">{ohneBuchung > 0 ? 'Angemeldet aber keine Buchung' : ''}</div>
+        </div>
+      </div>
+
+      <div className="toolbar">
+        <button className="btn btn-primary btn-sm" style={{width:'auto'}} onClick={() => setShowImport(!showImport)}>
+          {showImport ? '✗ Import schließen' : '📥 Excel importieren'}
+        </button>
+        <button className="btn btn-ghost btn-sm" disabled={syncing} onClick={syncFromLists}>
+          {syncing ? '⏳ Synchronisiere...' : '🔄 Aus Listen synchronisieren'}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={loadKinder}>↻ Aktualisieren</button>
+      </div>
+
+      {/* Import-Bereich */}
+      {showImport && (
+        <div className="card" style={{marginBottom:'1.5rem'}}>
+          <div className="card-title">Kinder-Stammliste importieren</div>
+          <p style={{fontSize:'0.85rem',color:'var(--text2)',marginBottom:'1rem'}}>
+            Excel-Datei hochladen und Spalten zuordnen. Duplikate werden automatisch übersprungen.
+          </p>
+          <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} style={{marginBottom:'1rem'}} />
+
+          {importHeaders.length > 0 && (
+            <div>
+              <p style={{fontWeight:600,marginBottom:'0.75rem'}}>{importData.length} Zeilen erkannt — Spalten zuordnen:</p>
+
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',marginBottom:'1rem',maxWidth:'600px'}}>
+                <div>
+                  <label style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text2)',display:'block',marginBottom:'0.3rem'}}>
+                    Name (kombiniert) <span style={{fontSize:'0.7rem',fontWeight:400}}>— ODER Nachname+Vorname getrennt</span>
+                  </label>
+                  <select className="form-input" value={importCols.name}
+                    onChange={e => setImportCols({...importCols, name: e.target.value, nachname: e.target.value ? '' : importCols.nachname, vorname: e.target.value ? '' : importCols.vorname})}>
+                    <option value="">– nicht verwenden –</option>
+                    {importHeaders.map((h,i) => <option key={i} value={i}>{h}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text2)',display:'block',marginBottom:'0.3rem'}}>Klasse (optional)</label>
+                  <select className="form-input" value={importCols.klasse}
+                    onChange={e => setImportCols({...importCols, klasse: e.target.value})}>
+                    <option value="">– nicht verwenden –</option>
+                    {importHeaders.map((h,i) => <option key={i} value={i}>{h}</option>)}
+                  </select>
+                </div>
+                {importCols.name === '' && (
+                  <>
+                    <div>
+                      <label style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text2)',display:'block',marginBottom:'0.3rem'}}>Nachname *</label>
+                      <select className="form-input" value={importCols.nachname}
+                        onChange={e => setImportCols({...importCols, nachname: e.target.value})}>
+                        <option value="">– wählen –</option>
+                        {importHeaders.map((h,i) => <option key={i} value={i}>{h}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text2)',display:'block',marginBottom:'0.3rem'}}>Vorname *</label>
+                      <select className="form-input" value={importCols.vorname}
+                        onChange={e => setImportCols({...importCols, vorname: e.target.value})}>
+                        <option value="">– wählen –</option>
+                        {importHeaders.map((h,i) => <option key={i} value={i}>{h}</option>)}
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {importCols.name !== '' && (
+                <div className="info-box" style={{marginBottom:'1rem'}}>
+                  Kombiniertes Namensfeld erkannt — wird automatisch in Vor-/Nachname getrennt.<br/>
+                  <span style={{fontSize:'0.8rem'}}>Format: "Vorname Nachname" oder "Nachname, Vorname"</span>
+                </div>
+              )}
+
+              {/* Vorschau */}
+              {(importCols.name !== '' || (importCols.nachname !== '' && importCols.vorname !== '')) && (() => {
+                const preview = getImportPreviewEntries();
+                return (
+                  <div style={{marginBottom:'1rem'}}>
+                    <p style={{fontWeight:600,marginBottom:'0.5rem',fontSize:'0.85rem'}}>Vorschau (erste {preview.length}):</p>
+                    <div className="table-wrap">
+                      <table>
+                        <thead><tr><th>Vorname</th><th>Nachname</th><th>Klasse</th></tr></thead>
+                        <tbody>
+                          {preview.map((e, i) => (
+                            <tr key={i} style={!e.nachname || !e.vorname ? {background:'rgba(220,53,69,0.08)'} : {}}>
+                              <td>{e.vorname || <span style={{color:'var(--danger)'}}>–fehlt–</span>}</td>
+                              <td>{e.nachname || <span style={{color:'var(--danger)'}}>–fehlt–</span>}</td>
+                              <td>{e.klasse || '–'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <button className="btn btn-primary btn-sm" style={{width:'auto'}} disabled={importing} onClick={executeImport}>
+                {importing ? 'Importiere...' : `${importData.length} Kinder importieren`}
+              </button>
+            </div>
+          )}
+
+          {importResult && (
+            <div className="info-box" style={{marginTop:'1rem'}}>
+              ✓ {importResult.message}
+              {importResult.skipped_names?.length > 0 && (
+                <div style={{marginTop:'0.5rem',fontSize:'0.8rem'}}>Übersprungen: {importResult.skipped_names.join(', ')}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Suche + Sortierung */}
+      <div style={{display:'flex',gap:'0.75rem',marginBottom:'1.25rem',alignItems:'center',flexWrap:'wrap'}}>
+        <div className="search-wrap" style={{flex:'1',minWidth:'200px',marginBottom:0}}>
+          <span className="search-icon">🔍</span>
+          <input
+            className="form-input"
+            placeholder="Kind suchen (Name, Klasse)..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{paddingLeft:'2.5rem'}}
+          />
+        </div>
+        <div style={{display:'flex',gap:'0.3rem',alignItems:'center'}}>
+          <span style={{fontSize:'0.78rem',color:'var(--text2)',whiteSpace:'nowrap'}}>Sortieren:</span>
+          <select className="form-input" style={{padding:'0.4rem 0.6rem',fontSize:'0.82rem'}} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            {sortOptions.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
+          <button className="btn btn-ghost btn-sm" style={{width:'auto',padding:'0.4rem 0.5rem',fontSize:'0.85rem'}} onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>
+            {sortDir === 'asc' ? '↑' : '↓'}
+          </button>
+        </div>
+      </div>
+
+      {/* Kinder-Ergebnis Zähler */}
+      {!loading && filtered.length > 0 && (
+        <div style={{fontSize:'0.8rem',color:'var(--text2)',marginBottom:'0.75rem'}}>
+          {filtered.length} {filtered.length === 1 ? 'Kind' : 'Kinder'}{search ? ` für "${search}"` : ''}
+        </div>
+      )}
+
+      {/* Kinder-Liste */}
+      <div className="card" style={{padding:0,overflow:'hidden'}}>
+        {loading ? (
+          <div style={{padding:'3rem',textAlign:'center'}}><Spinner /></div>
+        ) : filtered.length === 0 ? (
+          <div className="empty-state">
+            <div className="icon">👦</div>
+            <p>{kinder.length === 0
+              ? 'Noch keine Kinder registriert. Importiere eine Excel-Liste oder synchronisiere aus den bestehenden Listen.'
+              : 'Keine Kinder gefunden für "' + search + '"'
+            }</p>
+          </div>
+        ) : (
+          filtered.map(k => {
+            const aCount = parseInt(k.anmeldungen_count) || 0;
+            const bCount = parseInt(k.buchungen_count) || 0;
+            const fehlend = aCount > 0 && bCount === 0;
+            return (
+              <div key={k.id} className="kind-row" onClick={() => setSelectedKindId(k.id)}>
+                <Avatar vorname={k.vorname} nachname={k.nachname} size="md" />
+                <div className="kind-row-info">
+                  <div className="kind-row-name">{k.vorname} {k.nachname}</div>
+                  <div className="kind-row-meta">
+                    {k.klasse ? `Klasse ${k.klasse}` : 'Keine Klasse'}
+                    {' · '}
+                    {parseInt(k.block_count_a) || 0} {(parseInt(k.block_count_a) || 0) === 1 ? 'Block' : 'Blöcke'}
+                  </div>
+                </div>
+                <div className="kind-row-stats">
+                  <div className="kind-mini-stat">
+                    <div className="val" style={{color:'var(--primary)'}}>{aCount}</div>
+                    <div className="lbl">Anmeld.</div>
+                  </div>
+                  <div className="kind-mini-stat">
+                    <div className="val" style={{color: fehlend ? 'var(--danger)' : bCount > 0 ? 'var(--success)' : 'var(--text2)'}}>{bCount}</div>
+                    <div className="lbl">Buchung.</div>
+                  </div>
+                </div>
+                <div className="kind-row-actions" onClick={e => e.stopPropagation()}>
+                  <button className="btn btn-ghost btn-sm" style={{width:'auto'}} onClick={() => startEdit(k)} title="Bearbeiten">✎</button>
+                  <button className="btn btn-ghost btn-sm" style={{width:'auto',color:'var(--danger)'}} onClick={() => deleteKind(k.id)} title="Löschen">✗</button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      {editKind && (
+        <div className="modal-overlay" onClick={() => setEditKind(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Kind bearbeiten</h3>
+            <div className="form-group">
+              <label>Nachname</label>
+              <input className="form-input" value={editForm.nachname} onChange={e => setEditForm({...editForm, nachname: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label>Vorname</label>
+              <input className="form-input" value={editForm.vorname} onChange={e => setEditForm({...editForm, vorname: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label>Klasse</label>
+              <input className="form-input" value={editForm.klasse} onChange={e => setEditForm({...editForm, klasse: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label>Notizen</label>
+              <textarea className="textarea" style={{minHeight:'80px'}} value={editForm.notizen} onChange={e => setEditForm({...editForm, notizen: e.target.value})} />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setEditKind(null)}>Abbrechen</button>
+              <button className="btn btn-primary" style={{width:'auto'}} onClick={saveEdit}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── HAUPT-APP ────────────────────────────────────────
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);
+  const [page, setPage] = useState('dashboard');
+  const [navParam, setNavParam] = useState(null);
+  const [blocks, setBlocks] = useState([]);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    document.documentElement.className = theme === 'dark' ? 'dark' : '';
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Token prüfen beim Start
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) { setChecking(false); return; }
+    API.post('auth', { action: 'check', token }).then(res => {
+      if (res.valid) { setUser(res.user); loadBlocks(); }
+      else localStorage.removeItem('token');
+      setChecking(false);
+    }).catch(() => setChecking(false));
+  }, []);
+
+  const loadBlocks = async () => {
+    const res = await API.get('ferienblock');
+    setBlocks(Array.isArray(res) ? res : []);
+  };
+
+  const handleLogin = (u) => { setUser(u); loadBlocks(); };
+
+  const handleLogout = async () => {
+    await API.post('auth', { action: 'logout', token: API.token() });
+    localStorage.removeItem('token');
+    setUser(null);
+    setPage('dashboard');
+  };
+
+  const navigate = (p, param = null) => { setPage(p); setNavParam(param); };
+
+  if (checking) return <div style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'100vh'}}><Spinner /></div>;
+  if (!user) return <LoginPage onLogin={handleLogin} />;
+
+  const navItems = [
+    { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
+    { id: 'kinder', icon: '👦', label: 'Kinder' },
+    { id: 'abgleich', icon: '🔍', label: 'Abgleich' },
+    { id: 'finanzen', icon: '💶', label: 'Finanzen' },
+    { id: 'verlauf', icon: '📋', label: 'Verlauf' },
+    { id: 'ferienblock', icon: '📅', label: 'Ferienblöcke' },
+    { id: 'einstellungen', icon: '⚙️', label: 'Einstellungen' },
+  ];
+
+  return (
+    <div className="app-layout">
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <h2>Prüfer</h2>
+          <p>Ferienversorgung</p>
+        </div>
+        <nav className="sidebar-nav">
+          {navItems.map(n => (
+            <button key={n.id} className={`nav-item ${page===n.id?'active':''}`} onClick={() => navigate(n.id)}>
+              <span className="nav-icon">{n.icon}</span>
+              {n.label}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="user-info">{user.username}</div>
+          <button className="theme-toggle" onClick={() => setTheme(t => t==='light'?'dark':'light')}>
+            {theme === 'dark' ? '☀️ Hell' : '🌙 Dunkel'}
+          </button>
+        </div>
+      </div>
+
+      <main className="main-content">
+        {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
+        {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
+        {page === 'abgleich' && <AbgleichTool blocks={blocks} initialBlockId={navParam} onReload={loadBlocks} />}
+        {page === 'finanzen' && <FinanzenPage blocks={blocks} />}
+        {page === 'verlauf' && <VerlaufPage blocks={blocks} />}
+        {page === 'ferienblock' && <FerienblockPage blocks={blocks} onReload={loadBlocks} />}
+        {page === 'einstellungen' && <EinstellungenPage user={user} onLogout={handleLogout} />}
+      </main>
+    </div>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<><App /><ToastContainer /><ConfirmDialog /></>);
+</script>
+</body>
+</html>

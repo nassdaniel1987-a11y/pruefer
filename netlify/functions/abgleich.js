@@ -1,0 +1,192 @@
+// Abgleich speichern und laden
+// GET  ?ferienblock_id=X          -> Abgleiche des Blocks laden
+// GET  ?abgleich_id=X             -> Einzelnen Abgleich mit Matches laden
+// POST -> Abgleich-Ergebnis speichern
+// GET  ?ferienblock_id=X&action=dashboard -> Dashboard-Statistiken
+
+const { Client } = require('pg');
+
+const getClient = () => new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+const respond = (statusCode, body) => ({
+  statusCode,
+  headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' },
+  body: JSON.stringify(body)
+});
+
+const validateToken = async (client, event) => {
+  const auth = event.headers.authorization || event.headers.Authorization || '';
+  const token = auth.replace('Bearer ', '').trim();
+  if (!token) return null;
+  const result = await client.query(
+    'SELECT user_id FROM sessions WHERE id = $1 AND expires_at > NOW()',
+    [token]
+  );
+  return result.rows.length > 0 ? result.rows[0].user_id : null;
+};
+
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' }, body: '' };
+  }
+
+  const client = getClient();
+  try {
+    await client.connect();
+    const userId = await validateToken(client, event);
+    if (!userId) return respond(401, { error: 'Nicht autorisiert' });
+
+    const params = event.queryStringParameters || {};
+
+    if (event.httpMethod === 'GET') {
+
+      // Dashboard-Statistiken
+      if (params.action === 'dashboard') {
+        const blocks = await client.query(`
+          SELECT
+            f.id, f.name, f.startdatum, f.enddatum, f.preis_pro_tag,
+            (SELECT COUNT(*) FROM liste_a WHERE ferienblock_id = f.id) as a_eintraege,
+            (SELECT COUNT(*) FROM liste_b WHERE ferienblock_id = f.id) as b_eintraege,
+            (SELECT COUNT(*) FROM abgleich WHERE ferienblock_id = f.id AND status = 'abgeschlossen') as abgleiche,
+            (
+              SELECT COUNT(*) FROM abgleich_matches am
+              JOIN abgleich a ON am.abgleich_id = a.id
+              WHERE a.ferienblock_id = f.id AND am.match_typ = 'nur_in_a'
+              AND a.id = (SELECT id FROM abgleich WHERE ferienblock_id = f.id ORDER BY erstellt_am DESC LIMIT 1)
+            ) as fehlend_in_b
+          FROM ferienblock f
+          ORDER BY f.startdatum DESC
+          LIMIT 5
+        `);
+
+        const gesamtFehlend = await client.query(`
+          SELECT COUNT(*) as count
+          FROM abgleich_matches am
+          JOIN abgleich a ON am.abgleich_id = a.id
+          WHERE am.match_typ = 'nur_in_a'
+          AND a.id IN (
+            SELECT DISTINCT ON (ferienblock_id) id
+            FROM abgleich
+            ORDER BY ferienblock_id, erstellt_am DESC
+          )
+        `);
+
+        return respond(200, {
+          blocks: blocks.rows,
+          gesamt_fehlend: parseInt(gesamtFehlend.rows[0].count)
+        });
+      }
+
+      // Einzelnen Abgleich mit allen Matches laden
+      if (params.abgleich_id) {
+        const aId = parseInt(params.abgleich_id, 10);
+        if (isNaN(aId)) return respond(400, { error: 'Ungültige abgleich_id' });
+        const abgleich = await client.query(
+          'SELECT * FROM abgleich WHERE id = $1',
+          [aId]
+        );
+        if (abgleich.rows.length === 0) return respond(404, { error: 'Nicht gefunden' });
+
+        const matches = await client.query(`
+          SELECT
+            am.*,
+            la.nachname as a_nachname, la.vorname as a_vorname, la.datum as a_datum, la.klasse as a_klasse,
+            lb.nachname as b_nachname, lb.vorname as b_vorname, lb.datum as b_datum, lb.klasse as b_klasse, lb.menu as b_menu, lb.kontostand as b_kontostand
+          FROM abgleich_matches am
+          LEFT JOIN liste_a la ON am.liste_a_id = la.id
+          LEFT JOIN liste_b lb ON am.liste_b_id = lb.id
+          WHERE am.abgleich_id = $1
+          ORDER BY am.match_typ, am.score DESC
+        `, [aId]);
+
+        return respond(200, { abgleich: abgleich.rows[0], matches: matches.rows });
+      }
+
+      // Alle Abgleiche eines Ferienblocks
+      if (params.ferienblock_id) {
+        const fbId = parseInt(params.ferienblock_id, 10);
+        if (isNaN(fbId)) return respond(400, { error: 'Ungültige ferienblock_id' });
+        const result = await client.query(`
+          SELECT
+            a.*,
+            (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ IN ('exact','fuzzy_accepted')) as matches_count,
+            (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ = 'nur_in_a') as nur_in_a_count,
+            (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ = 'nur_in_b') as nur_in_b_count,
+            (SELECT COUNT(DISTINCT COALESCE(la.nachname || la.vorname, ''))
+             FROM abgleich_matches am2
+             LEFT JOIN liste_a la ON am2.liste_a_id = la.id
+             WHERE am2.abgleich_id = a.id AND am2.match_typ IN ('exact','fuzzy_accepted')
+            ) as matches_kinder,
+            (SELECT COUNT(DISTINCT COALESCE(la.nachname || la.vorname, ''))
+             FROM abgleich_matches am2
+             LEFT JOIN liste_a la ON am2.liste_a_id = la.id
+             WHERE am2.abgleich_id = a.id AND am2.match_typ = 'nur_in_a'
+            ) as nur_in_a_kinder,
+            (SELECT COUNT(DISTINCT COALESCE(lb.nachname || lb.vorname, ''))
+             FROM abgleich_matches am2
+             LEFT JOIN liste_b lb ON am2.liste_b_id = lb.id
+             WHERE am2.abgleich_id = a.id AND am2.match_typ = 'nur_in_b'
+            ) as nur_in_b_kinder
+          FROM abgleich a
+          WHERE a.ferienblock_id = $1
+          ORDER BY a.erstellt_am DESC
+        `, [fbId]);
+        return respond(200, result.rows);
+      }
+
+      return respond(400, { error: 'Parameter fehlen' });
+    }
+
+    // POST - Abgleich-Ergebnis speichern
+    if (event.httpMethod === 'POST') {
+      const { ferienblock_id, matches } = JSON.parse(event.body);
+      // matches = Array von { liste_a_id, liste_b_id, match_typ, score, grund }
+
+      if (!ferienblock_id || !Array.isArray(matches)) {
+        return respond(400, { error: 'ferienblock_id und matches erforderlich' });
+      }
+      const fbIdPost = parseInt(ferienblock_id, 10);
+      if (isNaN(fbIdPost)) return respond(400, { error: 'Ungültige ferienblock_id' });
+
+      // Neuen Abgleich anlegen
+      const abgleichResult = await client.query(
+        "INSERT INTO abgleich (ferienblock_id, status, abgeschlossen_am) VALUES ($1, 'abgeschlossen', NOW()) RETURNING id",
+        [fbIdPost]
+      );
+      const abgleich_id = abgleichResult.rows[0].id;
+
+      // Alle Matches per Batch speichern (schnell)
+      if (matches.length > 0) {
+        const BATCH = 150;
+        for (let i = 0; i < matches.length; i += BATCH) {
+          const batch = matches.slice(i, i + BATCH);
+          const values = [];
+          const params = [];
+          let idx = 1;
+          for (const m of batch) {
+            values.push(`($${idx},$${idx+1},$${idx+2},$${idx+3},$${idx+4},$${idx+5})`);
+            params.push(abgleich_id, m.liste_a_id || null, m.liste_b_id || null, m.match_typ, m.score || null, m.grund || null);
+            idx += 6;
+          }
+          await client.query(
+            `INSERT INTO abgleich_matches (abgleich_id, liste_a_id, liste_b_id, match_typ, score, grund) VALUES ${values.join(',')}`,
+            params
+          );
+        }
+      }
+
+      return respond(201, { success: true, abgleich_id });
+    }
+
+    return respond(405, { error: 'Method Not Allowed' });
+
+  } catch (err) {
+    console.error('Abgleich Fehler:', err);
+    return respond(500, { error: err.message });
+  } finally {
+    await client.end();
+  }
+};
