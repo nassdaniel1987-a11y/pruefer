@@ -115,17 +115,17 @@ exports.handler = async (event) => {
             (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ IN ('exact','fuzzy_accepted')) as matches_count,
             (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ = 'nur_in_a') as nur_in_a_count,
             (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ = 'nur_in_b') as nur_in_b_count,
-            (SELECT COUNT(DISTINCT COALESCE(la.nachname || la.vorname, ''))
+            (SELECT COUNT(DISTINCT LOWER(COALESCE(la.nachname, '') || '|' || COALESCE(la.vorname, '')))
              FROM abgleich_matches am2
              LEFT JOIN liste_a la ON am2.liste_a_id = la.id
              WHERE am2.abgleich_id = a.id AND am2.match_typ IN ('exact','fuzzy_accepted')
             ) as matches_kinder,
-            (SELECT COUNT(DISTINCT COALESCE(la.nachname || la.vorname, ''))
+            (SELECT COUNT(DISTINCT LOWER(COALESCE(la.nachname, '') || '|' || COALESCE(la.vorname, '')))
              FROM abgleich_matches am2
              LEFT JOIN liste_a la ON am2.liste_a_id = la.id
              WHERE am2.abgleich_id = a.id AND am2.match_typ = 'nur_in_a'
             ) as nur_in_a_kinder,
-            (SELECT COUNT(DISTINCT COALESCE(lb.nachname || lb.vorname, ''))
+            (SELECT COUNT(DISTINCT LOWER(COALESCE(lb.nachname, '') || '|' || COALESCE(lb.vorname, '')))
              FROM abgleich_matches am2
              LEFT JOIN liste_b lb ON am2.liste_b_id = lb.id
              WHERE am2.abgleich_id = a.id AND am2.match_typ = 'nur_in_b'
@@ -140,9 +140,33 @@ exports.handler = async (event) => {
       return respond(400, { error: 'Parameter fehlen' });
     }
 
-    // POST - Abgleich-Ergebnis speichern
+    // POST - Abgleich-Ergebnis speichern oder löschen
     if (event.httpMethod === 'POST') {
-      const { ferienblock_id, matches } = JSON.parse(event.body);
+      const body = JSON.parse(event.body);
+
+      // ── Delete: Einzelnen Abgleich löschen ──
+      if (body.action === 'delete') {
+        const delId = parseInt(body.id, 10);
+        if (isNaN(delId)) return respond(400, { error: 'Ungültige ID' });
+        await client.query('DELETE FROM abgleich_matches WHERE abgleich_id = $1', [delId]);
+        await client.query('DELETE FROM abgleich WHERE id = $1', [delId]);
+        return respond(200, { success: true });
+      }
+
+      // ── Delete All: Alle Abgleiche eines Blocks löschen ──
+      if (body.action === 'delete_all') {
+        const fbId = parseInt(body.ferienblock_id, 10);
+        if (isNaN(fbId)) return respond(400, { error: 'Ungültige ferienblock_id' });
+        const abgleiche = await client.query('SELECT id FROM abgleich WHERE ferienblock_id = $1', [fbId]);
+        const ids = abgleiche.rows.map(r => r.id);
+        if (ids.length > 0) {
+          await client.query('DELETE FROM abgleich_matches WHERE abgleich_id = ANY($1)', [ids]);
+          await client.query('DELETE FROM abgleich WHERE ferienblock_id = $1', [fbId]);
+        }
+        return respond(200, { success: true, deleted: ids.length });
+      }
+
+      const { ferienblock_id, matches } = body;
       // matches = Array von { liste_a_id, liste_b_id, match_typ, score, grund }
 
       if (!ferienblock_id || !Array.isArray(matches)) {

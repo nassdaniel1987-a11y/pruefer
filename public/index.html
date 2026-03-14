@@ -537,11 +537,25 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
   const [expandedBlock, setExpandedBlock] = useState(null);
   const [abgleichDetail, setAbgleichDetail] = useState({});
   const [loadingAbgleich, setLoadingAbgleich] = useState({});
+  const [detailSort, setDetailSort] = useState({ col: 'nachname', dir: 'asc' });
 
-  // Für jeden Block: eindeutige Kinder zählen + letzten Abgleich laden
+  const toggleDetailSort = (col) => {
+    setDetailSort(prev => prev.col === col ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' });
+  };
+  const sortDetailList = (list) => {
+    const { col, dir } = detailSort;
+    return [...list].sort((a, b) => {
+      let va, vb;
+      if (col === 'tage') { va = a.dates.length; vb = b.dates.length; }
+      else { va = (a[col] || '').toLowerCase(); vb = (b[col] || '').toLowerCase(); }
+      const cmp = typeof va === 'number' ? va - vb : va.localeCompare(vb, 'de');
+      return dir === 'asc' ? cmp : -cmp;
+    });
+  };
+  const sortIcon = (col) => detailSort.col === col ? (detailSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+
   useEffect(() => {
     if (!blocks.length) return;
-    // Cache leeren bei Neuladen
     setAbgleichDetail({});
     setExpandedBlock(null);
     blocks.forEach(b => {
@@ -550,45 +564,26 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
         API.get('listen', { ferienblock_id: b.id, liste: 'A' }),
         API.get('listen', { ferienblock_id: b.id, liste: 'B' }),
         API.get('abgleich', { ferienblock_id: b.id })
-      ]).then(async ([aRows, bRows, abglList]) => {
+      ]).then(([aRows, bRows, abglList]) => {
         const aArr = Array.isArray(aRows) ? aRows : [];
         const bArr = Array.isArray(bRows) ? bRows : [];
         const abglArr = Array.isArray(abglList) ? abglList : [];
-
-        // Eindeutige Kinder in A (nach Nachname+Vorname)
         const kinderA = new Set(aArr.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
-        // Rohe eindeutige Kinder in B (vor Abgleich)
         const kinderBroh = new Set(bArr.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
-
-        // Letzter Abgleich — dort stehen die echten Ergebnisse
         const letzter = abglArr.length > 0 ? abglArr[0] : null;
-
-        // Eindeutige Kinder aus Abgleich (nicht Zeilen!)
         let matches = letzter ? parseInt(letzter.matches_kinder || letzter.matches_count || 0) : null;
         let nur_in_a = letzter ? parseInt(letzter.nur_in_a_kinder || letzter.nur_in_a_count || 0) : null;
         let nur_in_b = letzter ? parseInt(letzter.nur_in_b_kinder || letzter.nur_in_b_count || 0) : null;
-        // Zeilen-Counts für Tooltip
         let matches_zeilen = letzter ? parseInt(letzter.matches_count || 0) : null;
         let nur_in_a_zeilen = letzter ? parseInt(letzter.nur_in_a_count || 0) : null;
         let nur_in_b_zeilen = letzter ? parseInt(letzter.nur_in_b_count || 0) : null;
         let kinderBkorrigiert = kinderBroh.size;
-
-        // Wenn Abgleich existiert: echte Kinder-Zahl berechnen
-        // Matches (exact+fuzzy_accepted) = eindeutige Kinder die in A+B vorkommen
-        // Nur in B = extra Kinder die nur in B sind
-        // → Tatsächliche Kinder in B = matches + nur_in_b
-        if (letzter && matches !== null) {
-          kinderBkorrigiert = matches + (nur_in_b || 0);
-        }
+        if (letzter && matches !== null) kinderBkorrigiert = matches + (nur_in_b || 0);
 
         setBlockDetail(prev => ({...prev, [b.id]: {
-          kinder_a: kinderA.size,
-          kinder_b: kinderBkorrigiert,
-          kinder_b_roh: kinderBroh.size,
-          eintraege_a: aArr.length,
-          eintraege_b: bArr.length,
-          abgleich_count: abglArr.length,
-          letzter_abgleich: letzter,
+          kinder_a: kinderA.size, kinder_b: kinderBkorrigiert, kinder_b_roh: kinderBroh.size,
+          eintraege_a: aArr.length, eintraege_b: bArr.length,
+          abgleich_count: abglArr.length, letzter_abgleich: letzter,
           matches, nur_in_a, nur_in_b,
           matches_zeilen, nur_in_a_zeilen, nur_in_b_zeilen
         }}));
@@ -597,13 +592,30 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
     });
   }, [blocks]);
 
-  // Gesamt-Statistiken über alle Blöcke
   const vals = Object.values(blockDetail);
   const gesamtKinderA   = vals.reduce((s,d) => s + (d?.kinder_a || 0), 0);
   const gesamtKinderB   = vals.reduce((s,d) => s + (d?.kinder_b || 0), 0);
   const gesamtMatches   = vals.reduce((s,d) => s + (d?.matches ?? 0), 0);
   const gesamtFehltInB  = vals.reduce((s,d) => s + (d?.nur_in_a ?? 0), 0);
   const hatAbgleich     = vals.some(d => d?.letzter_abgleich);
+
+  // Excel-Export: Fehlende Kinder
+  const exportFehlende = () => {
+    const allFehlende = [];
+    for (const bId of Object.keys(abgleichDetail)) {
+      const am = abgleichDetail[bId]?.matches;
+      if (!am) continue;
+      const block = blocks.find(b => String(b.id) === String(bId));
+      am.filter(m => m.match_typ === 'nur_in_a').forEach(m => {
+        allFehlende.push({ Block: block?.name || '', Nachname: m.a_nachname, Vorname: m.a_vorname, Klasse: m.a_klasse || '', Datum: fmtDate(m.a_datum) });
+      });
+    }
+    if (!allFehlende.length) { toast.info('Lade erst Details, dann exportieren'); return; }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allFehlende), 'Fehlende Buchungen');
+    XLSX.writeFile(wb, 'Fehlende_Buchungen.xlsx');
+    toast.success(`${allFehlende.length} Einträge exportiert`);
+  };
 
   return (
     <div>
@@ -624,12 +636,12 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
         <div className="stat-card accent-blue">
           <div className="stat-label">Kinder in A</div>
           <div className="stat-value">{gesamtKinderA}</div>
-          <div className="stat-sub">eindeutige Anmeldungen</div>
+          <div className="stat-sub">verschiedene Kinder angemeldet</div>
         </div>
         <div className="stat-card accent-green">
           <div className="stat-label">Kinder in B</div>
           <div className="stat-value">{gesamtKinderB}</div>
-          <div className="stat-sub">eindeutige Buchungen</div>
+          <div className="stat-sub">verschiedene Kinder gebucht</div>
         </div>
         {hatAbgleich ? (
           <div className={`stat-card ${gesamtFehltInB > 0 ? 'accent-red' : 'accent-green'}`}>
@@ -661,7 +673,10 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
         <div className="card">
           <div className="card-title">
             Alle Ferienblöcke
-            <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('ferienblock')}>+ Neu / Verwalten</button>
+            <div style={{display:'flex',gap:'0.5rem'}}>
+              {hatAbgleich && gesamtFehltInB > 0 && <button className="btn btn-ghost btn-sm" onClick={exportFehlende}>📥 Fehlende exportieren</button>}
+              <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('ferienblock')}>+ Neu / Verwalten</button>
+            </div>
           </div>
           <div className="table-wrap">
             <table>
@@ -670,8 +685,8 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                   <th>Name</th>
                   <th>Zeitraum</th>
                   <th>€/Tag</th>
-                  <th>Kinder (A)</th>
-                  <th>Kinder (B)</th>
+                  <th>Angemeldet (A)</th>
+                  <th>Gebucht (B)</th>
                   <th>Übereinstimmung</th>
                   <th>Fehlt in B</th>
                   <th>Nur in B</th>
@@ -691,42 +706,35 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                       <td style={{whiteSpace:'nowrap'}}>{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</td>
                       <td>{parseFloat(b.preis_pro_tag).toFixed(2)} €</td>
                       <td>
-                        {loading ? '…' : <span className="badge badge-blue">{d?.kinder_a ?? 0}</span>}
-                        {!loading && d && <span style={{fontSize:'0.7rem',color:'var(--text2)',marginLeft:4}}>({d.eintraege_a} Zeilen)</span>}
+                        {loading ? '…' : <><span className="badge badge-blue">{d?.kinder_a ?? 0}</span>
+                        <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:4}}>({d?.eintraege_a ?? 0} Tage)</span></>}
                       </td>
                       <td>
-                        {loading ? '…' : <span className="badge badge-blue">{d?.kinder_b ?? 0}</span>}
-                        {!loading && d && hatErgebnis && d.kinder_b !== d.kinder_b_roh && (
-                          <span style={{fontSize:'0.7rem',color:'var(--text2)',marginLeft:4}} title="Korrigiert durch Abgleich (Fuzzy-Matches zusammengeführt)">(roh: {d.kinder_b_roh})</span>
-                        )}
-                        {!loading && d && !hatErgebnis && <span style={{fontSize:'0.7rem',color:'var(--text2)',marginLeft:4}}>({d.eintraege_b} Zeilen)</span>}
+                        {loading ? '…' : <><span className="badge badge-blue">{d?.kinder_b ?? 0}</span>
+                        <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:4}}>({d?.eintraege_b ?? 0} Tage)</span></>}
                       </td>
-                      <td title={hatErgebnis && d.matches_zeilen != null ? `${d.matches_zeilen} Einträge (Tage)` : ''}>
+                      <td>
                         {loading ? '…' : hatErgebnis
                           ? <><span className="badge badge-green">{d.matches}</span>
-                            {d.matches !== d.matches_zeilen && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.matches_zeilen} Eintr.)</span>}</>
-                          : <span style={{color:'var(--text2)'}}>–</span>
-                        }
+                            <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.matches_zeilen} Tage)</span></>
+                          : <span style={{color:'var(--text2)'}}>–</span>}
                       </td>
-                      <td title={hatErgebnis && d.nur_in_a_zeilen != null ? `${d.nur_in_a_zeilen} Einträge (Tage)` : ''}>
+                      <td>
                         {loading ? '…' : hatErgebnis
                           ? <><span className={`badge ${d.nur_in_a > 0 ? 'badge-red' : 'badge-green'}`}>{d.nur_in_a}</span>
-                            {d.nur_in_a !== d.nur_in_a_zeilen && d.nur_in_a > 0 && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.nur_in_a_zeilen} Eintr.)</span>}</>
-                          : <span style={{color:'var(--text2)'}}>–</span>
-                        }
+                            {d.nur_in_a > 0 && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.nur_in_a_zeilen} Tage)</span>}</>
+                          : <span style={{color:'var(--text2)'}}>–</span>}
                       </td>
-                      <td title={hatErgebnis && d.nur_in_b_zeilen != null ? `${d.nur_in_b_zeilen} Einträge (Tage)` : ''}>
+                      <td>
                         {loading ? '…' : hatErgebnis
                           ? <><span className="badge badge-orange">{d.nur_in_b}</span>
-                            {d.nur_in_b !== d.nur_in_b_zeilen && d.nur_in_b > 0 && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.nur_in_b_zeilen} Eintr.)</span>}</>
-                          : <span style={{color:'var(--text2)'}}>–</span>
-                        }
+                            {d.nur_in_b > 0 && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.nur_in_b_zeilen} Tage)</span>}</>
+                          : <span style={{color:'var(--text2)'}}>–</span>}
                       </td>
                       <td>{loading ? '…' : <span className="badge badge-blue">{d?.abgleich_count ?? 0}</span>}</td>
                       <td style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
                         {hatErgebnis && d.nur_in_a > 0 && (
                           <button className="btn btn-danger btn-sm" style={{width:'auto'}} onClick={() => {
-                            // Aufklappen: letzten Abgleich laden um fehlende Kinder zu sehen
                             if (expandedBlock === b.id) { setExpandedBlock(null); return; }
                             setExpandedBlock(b.id);
                             if (!abgleichDetail[b.id] && d.letzter_abgleich) {
@@ -748,96 +756,76 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                     {expandedBlock === b.id && (
                       <tr key={b.id + '-detail'}>
                         <td colSpan="10" style={{padding:'1rem',background:'var(--surface2)'}}>
-                          {loadingAbgleich[b.id] ? (
-                            <p style={{color:'var(--text2)'}}>Lade Abgleich-Details…</p>
-                          ) : abgleichDetail[b.id]?.matches ? (() => {
+                          {loadingAbgleich[b.id] ? <Spinner /> : abgleichDetail[b.id]?.matches ? (() => {
                             const am = abgleichDetail[b.id].matches;
                             const fehlende = am.filter(m => m.match_typ === 'nur_in_a');
                             const nurInB   = am.filter(m => m.match_typ === 'nur_in_b');
                             const matched  = am.filter(m => m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted');
+
+                            // Nach Kind gruppieren
+                            const groupEntries = (entries, prefix) => {
+                              const map = {};
+                              entries.forEach(m => {
+                                const key = ((m[prefix+'_nachname']||'') + '|' + (m[prefix+'_vorname']||'')).toLowerCase();
+                                if (!map[key]) map[key] = { nachname: m[prefix+'_nachname'], vorname: m[prefix+'_vorname'], klasse: m[prefix+'_klasse'] || '', dates: [] };
+                                map[key].dates.push(m[prefix+'_datum']);
+                              });
+                              return Object.values(map).sort((a, b) => (a.nachname||'').localeCompare(b.nachname||'', 'de'));
+                            };
+                            const fehlendeGrp = groupEntries(fehlende, 'a');
+                            const nurInBGrp = groupEntries(nurInB, 'b');
+
                             return (
                               <div>
-                                {fehlende.length > 0 && (
-                                  <div style={{marginBottom:'1rem'}}>
-                                    <h4 style={{color:'var(--danger)',marginBottom:'0.5rem'}}>
-                                      ⚠ {fehlende.length} Kinder OHNE Buchung (in A, fehlt in B)
-                                    </h4>
-                                    <div className="table-wrap">
-                                      <table>
-                                        <thead>
-                                          <tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th></tr>
-                                        </thead>
-                                        <tbody>
-                                          {fehlende.map((m, i) => (
-                                            <tr key={i} style={{background:'rgba(220,53,69,0.06)'}}>
-                                              <td>{i+1}</td>
-                                              <td><strong>{m.a_nachname}</strong></td>
-                                              <td>{m.a_vorname}</td>
-                                              <td>{m.a_klasse || '–'}</td>
-                                              <td>{fmtDate(m.a_datum)}</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </div>
-                                )}
-                                {nurInB.length > 0 && (
-                                  <div style={{marginBottom:'1rem'}}>
-                                    <h4 style={{color:'var(--warning)',marginBottom:'0.5rem'}}>
-                                      ℹ {nurInB.length} Einträge NUR in Liste B (keine Anmeldung)
-                                    </h4>
-                                    <div className="table-wrap">
-                                      <table>
-                                        <thead>
-                                          <tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th><th>Menü</th></tr>
-                                        </thead>
-                                        <tbody>
-                                          {nurInB.map((m, i) => (
-                                            <tr key={i} style={{background:'rgba(230,168,23,0.06)'}}>
-                                              <td>{i+1}</td>
-                                              <td><strong>{m.b_nachname}</strong></td>
-                                              <td>{m.b_vorname}</td>
-                                              <td>{m.b_klasse || '–'}</td>
-                                              <td>{fmtDate(m.b_datum)}</td>
-                                              <td>{m.b_menu || '–'}</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </div>
-                                )}
+                                {fehlendeGrp.length > 0 && (() => {
+                                  const sorted = sortDetailList(fehlendeGrp);
+                                  const thStyle = {cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'};
+                                  return <div style={{marginBottom:'1rem'}}>
+                                    <h4 style={{color:'var(--danger)',marginBottom:'0.5rem'}}>⚠ {fehlendeGrp.length} Kinder OHNE Buchung ({fehlende.length} Tage)</h4>
+                                    <div className="table-wrap"><table><thead><tr>
+                                      <th>#</th>
+                                      <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
+                                      <th style={thStyle} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
+                                      <th style={thStyle} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
+                                      <th style={thStyle} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
+                                      <th>Daten</th>
+                                    </tr></thead>
+                                    <tbody>{sorted.map((k, i) => (<tr key={i} style={{background:'rgba(220,53,69,0.06)'}}>
+                                      <td>{i+1}</td><td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse||'–'}</td>
+                                      <td><span className="badge badge-red">{k.dates.length}</span></td>
+                                      <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                                    </tr>))}</tbody></table></div>
+                                  </div>;
+                                })()}
+                                {nurInBGrp.length > 0 && (() => {
+                                  const sorted = sortDetailList(nurInBGrp);
+                                  const thStyle = {cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'};
+                                  return <div style={{marginBottom:'1rem'}}>
+                                    <h4 style={{color:'var(--warning)',marginBottom:'0.5rem'}}>ℹ {nurInBGrp.length} Kinder NUR in Liste B ({nurInB.length} Tage)</h4>
+                                    <div className="table-wrap"><table><thead><tr>
+                                      <th>#</th>
+                                      <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
+                                      <th style={thStyle} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
+                                      <th style={thStyle} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
+                                      <th style={thStyle} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
+                                      <th>Daten</th>
+                                    </tr></thead>
+                                    <tbody>{sorted.map((k, i) => (<tr key={i} style={{background:'rgba(230,168,23,0.06)'}}>
+                                      <td>{i+1}</td><td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse||'–'}</td>
+                                      <td><span className="badge badge-orange">{k.dates.length}</span></td>
+                                      <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                                    </tr>))}</tbody></table></div>
+                                  </div>;
+                                })()}
                                 {matched.length > 0 && (
                                   <div>
-                                    <h4 style={{color:'var(--success)',marginBottom:'0.5rem'}}>
-                                      ✓ {matched.length} Übereinstimmungen
-                                    </h4>
-                                    <div className="table-wrap">
-                                      <table>
-                                        <thead>
-                                          <tr><th>#</th><th>Kind (A)</th><th>Buchung (B)</th><th>Typ</th><th>Score</th></tr>
-                                        </thead>
-                                        <tbody>
-                                          {matched.map((m, i) => (
-                                            <tr key={i}>
-                                              <td>{i+1}</td>
-                                              <td>{m.a_nachname} {m.a_vorname}</td>
-                                              <td>{m.b_nachname} {m.b_vorname}</td>
-                                              <td><span className={`badge ${m.match_typ==='exact' ? 'badge-green' : 'badge-orange'}`}>{m.match_typ === 'exact' ? 'Exakt' : 'Fuzzy'}</span></td>
-                                              <td>{m.score ? m.score + '%' : '–'}</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
+                                    <h4 style={{color:'var(--success)',marginBottom:'0.5rem'}}>✓ {new Set(matched.map(m => (m.a_nachname+'|'+m.a_vorname).toLowerCase())).size} Kinder übereinstimmend ({matched.length} Tage)</h4>
+                                    <p style={{fontSize:'0.82rem',color:'var(--text2)'}}>Alle Kinder mit Anmeldung und Buchung stimmen überein.</p>
                                   </div>
                                 )}
                               </div>
                             );
-                          })() : (
-                            <p style={{color:'var(--text2)'}}>Keine Abgleich-Daten verfügbar</p>
-                          )}
+                          })() : <p style={{color:'var(--text2)'}}>Keine Abgleich-Daten verfügbar</p>}
                         </td>
                       </tr>
                     )}
@@ -1109,8 +1097,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const [listB, setListB] = useState([]);
   const [rawA, setRawA] = useState(null);
   const [rawB, setRawB] = useState(null);
-  const [colMapA, setColMapA] = useState({ nachname: '', vorname: '', date: '' });
-  const [colMapB, setColMapB] = useState({ nachname: '', vorname: '', date: '' });
+  const [colMapA, setColMapA] = useState({ nachname: '', vorname: '', date: '', klasse: '' });
+  const [colMapB, setColMapB] = useState({ nachname: '', vorname: '', date: '', klasse: '' });
   const [potentialMatches, setPotentialMatches] = useState([]);
   const [reviewed, setReviewed] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -1160,8 +1148,10 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       }
 
       const raw = { headers, data: dataRows, hasTextHeader };
-      if (which === 'A') { setRawA(raw); setColMapA({ nachname: '', vorname: '', date: '' }); }
-      else { setRawB(raw); setColMapB({ nachname: '', vorname: '', date: '' }); }
+      // Auto-Erkennung der Klasse-Spalte
+      const autoKlasse = hasTextHeader ? headers.find(h => /klasse/i.test(h)) || '' : '';
+      if (which === 'A') { setRawA(raw); setColMapA({ nachname: '', vorname: '', date: '', klasse: autoKlasse }); }
+      else { setRawB(raw); setColMapB({ nachname: '', vorname: '', date: '', klasse: autoKlasse }); }
       setIsLoading(false);
     };
     reader.readAsArrayBuffer(file);
@@ -1187,10 +1177,14 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       return entry;
     };
 
-    // Liste A verarbeiten
+    // Liste A verarbeiten (mit optionaler Klasse)
     let newA = [];
     if (rawA && colMapA.nachname) {
-      newA = rawA.data.map(row => buildEntry(row, rawA.headers, colMapA)).filter(Boolean);
+      const hA = rawA.headers;
+      const extraColsA = {
+        klasse: colMapA.klasse ? hA.indexOf(colMapA.klasse) : hA.findIndex(x => /klasse/i.test(x)),
+      };
+      newA = rawA.data.map(row => buildEntry(row, hA, colMapA, extraColsA)).filter(Boolean);
       await API.post('listen', { ferienblock_id: blockId, liste: 'A', eintraege: newA });
     }
 
@@ -1199,7 +1193,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     if (rawB && colMapB.nachname) {
       const h = rawB.headers;
       const extraCols = {
-        klasse:     h.findIndex(x => /klasse/i.test(x)),
+        klasse:     colMapB.klasse ? h.indexOf(colMapB.klasse) : h.findIndex(x => /klasse/i.test(x)),
         menu:       h.findIndex(x => /men[uü]/i.test(x)),
         kontostand: h.findIndex(x => /konto/i.test(x)),
       };
@@ -1223,6 +1217,15 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     const mA = (Array.isArray(freshA) ? freshA : []).map((e,i) => ({ id: `a${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
     const mB = (Array.isArray(freshB) ? freshB : []).map((e,i) => ({ id: `b${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
     setListA(mA); setListB(mB);
+
+    // Automatisch neue Kinder aus Liste A ins Kinder-Verzeichnis synchronisieren
+    try {
+      const syncRes = await API.post('kinder', { action: 'sync' });
+      if (syncRes.inserted > 0) {
+        toast.success(`${syncRes.inserted} neue Kinder ins Verzeichnis übernommen`);
+      }
+    } catch (e) { /* Sync-Fehler ignorieren — Listen-Import war erfolgreich */ }
+
     setIsLoading(false);
     setStep(3);
     runComparison(mA, mB);
@@ -1390,7 +1393,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
         )}
 
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'0.75rem',marginBottom:'1rem'}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:'0.75rem',marginBottom:'1rem'}}>
           <div>
             <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
               Nachname-Spalte *
@@ -1421,6 +1424,16 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
+          <div>
+            <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
+              Klasse
+            </label>
+            <select className="select-input" style={{width:'100%'}} value={colMap.klasse}
+              onChange={e => onChange({...colMap, klasse: e.target.value})}>
+              <option value="">– optional –</option>
+              {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+          </div>
         </div>
 
         <p style={{fontSize:'0.8rem',color:'var(--text2)',marginBottom:'0.5rem'}}>Vorschau (erste 3 Zeilen):</p>
@@ -1429,12 +1442,13 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
             <thead>
               <tr>{raw.headers.map(h => (
                 <th key={h} style={{
-                  color: (h===colMap.nachname||h===colMap.vorname) ? 'var(--success)' : h===colMap.date ? 'var(--primary)' : undefined
+                  color: (h===colMap.nachname||h===colMap.vorname) ? 'var(--success)' : h===colMap.date ? 'var(--primary)' : h===colMap.klasse ? 'var(--warning)' : undefined
                 }}>
                   {h}
                   {h===colMap.nachname && ' 👤'}
                   {h===colMap.vorname  && ' 👤'}
                   {h===colMap.date     && ' 📅'}
+                  {h===colMap.klasse   && ' 🏫'}
                 </th>
               ))}</tr>
             </thead>
@@ -1442,8 +1456,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
               {raw.data.slice(0,3).map((row,i) => (
                 <tr key={i}>{raw.headers.map((h,j) => (
                   <td key={j} style={{
-                    fontWeight: (h===colMap.nachname||h===colMap.vorname||h===colMap.date) ? 700 : undefined,
-                    color: (h===colMap.nachname||h===colMap.vorname) ? 'var(--success)' : h===colMap.date ? 'var(--primary)' : undefined
+                    fontWeight: (h===colMap.nachname||h===colMap.vorname||h===colMap.date||h===colMap.klasse) ? 700 : undefined,
+                    color: (h===colMap.nachname||h===colMap.vorname) ? 'var(--success)' : h===colMap.date ? 'var(--primary)' : h===colMap.klasse ? 'var(--warning)' : undefined
                   }}>
                     {previewCell(row[j], h)}
                   </td>
@@ -1488,14 +1502,38 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           {/* SCHRITT 1: Daten laden */}
           {!isLoading && step === 1 && (
             <div>
-              {(listADb.length > 0 || listBDb.length > 0) && (
-                <div className="info-box" style={{marginBottom:'1rem'}}>
-                  In der Datenbank vorhanden: <strong>{listADb.length} Einträge Liste A</strong>, <strong>{listBDb.length} Einträge Liste B</strong>
+              {(listADb.length > 0 || listBDb.length > 0) && (() => {
+                const uniqueA = new Set(listADb.map(e => (e.nachname + '|' + e.vorname).toLowerCase())).size;
+                const uniqueB = new Set(listBDb.map(e => (e.nachname + '|' + e.vorname).toLowerCase())).size;
+                return <div className="info-box" style={{marginBottom:'1rem'}}>
+                  In der Datenbank vorhanden:
+                  {listADb.length > 0 && <> <strong>{uniqueA} Kinder</strong> <span style={{opacity:0.7}}>· {listADb.length} Tage</span> (Liste A)</>}
+                  {listADb.length > 0 && listBDb.length > 0 && ', '}
+                  {listBDb.length > 0 && <> <strong>{uniqueB} Kinder</strong> <span style={{opacity:0.7}}>· {listBDb.length} Tage</span> (Liste B)</>}
                   {listADb.length > 0 && listBDb.length > 0 && (
                     <> – <button className="btn btn-primary btn-sm" style={{marginLeft:'0.75rem'}} onClick={startComparisonFromDb}>Direkt vergleichen</button></>
                   )}
-                </div>
-              )}
+                  <button className="btn btn-ghost btn-sm" style={{marginLeft:'0.5rem',color:'var(--danger)'}} onClick={async () => {
+                    const ok = await confirmDialog(
+                      'Alle Daten löschen',
+                      `Alle Listen (${listADb.length} A + ${listBDb.length} B) und gespeicherte Abgleiche für diesen Block löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
+                      'Alles löschen'
+                    );
+                    if (!ok) return;
+                    await Promise.all([
+                      API.post('listen', { action: 'delete', ferienblock_id: blockId, liste: 'A' }),
+                      API.post('listen', { action: 'delete', ferienblock_id: blockId, liste: 'B' }),
+                      API.post('abgleich', { action: 'delete_all', ferienblock_id: blockId })
+                    ]);
+                    toast.success('Listen und Abgleiche gelöscht');
+                    setListADb([]); setListBDb([]);
+                    setListA([]); setListB([]);
+                    setRawA(null); setRawB(null);
+                    setPotentialMatches([]); setReviewed({});
+                    setStep(1);
+                  }}>🗑 Listen löschen</button>
+                </div>;
+              })()}
               <div className="two-col">
                 <div className="card">
                   <div className="card-title">Liste A – Anmeldungen</div>
@@ -1607,49 +1645,103 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           )}
 
           {/* SCHRITT 4: Ergebnis */}
-          {!isLoading && step === 4 && (
+          {!isLoading && step === 4 && (() => {
+            // Einträge nach Kind gruppieren
+            const groupByKind = (entries) => {
+              const map = {};
+              entries.forEach(e => {
+                if (!map[e.name]) map[e.name] = { name: e.name, dates: [] };
+                map[e.name].dates.push(e.date);
+              });
+              return Object.values(map).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+            };
+            const matchedKinder = groupByKind(finalResults.matches);
+            const fehlendeKinder = groupByKind(finalResults.onlyInA);
+            const nurInBKinder = groupByKind(finalResults.onlyInB);
+
+            return (
             <div>
               <div className="stat-grid" style={{marginBottom:'1.5rem'}}>
                 <div className="stat-card accent-green">
-                  <div className="stat-label">Übereinstimmungen</div>
-                  <div className="stat-value">{finalResults.matches.length}</div>
+                  <div className="stat-label">Übereinstimmung</div>
+                  <div className="stat-value">{matchedKinder.length}</div>
+                  <div className="stat-sub">{matchedKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.matches.length} Tage</div>
                 </div>
                 <div className="stat-card accent-red">
-                  <div className="stat-label">Fehlt in Liste B</div>
-                  <div className="stat-value">{finalResults.onlyInA.length}</div>
-                  <div className="stat-sub">angemeldet, nicht gebucht</div>
+                  <div className="stat-label">Fehlt in B</div>
+                  <div className="stat-value">{fehlendeKinder.length}</div>
+                  <div className="stat-sub">{fehlendeKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInA.length} Tage ohne Buchung</div>
                 </div>
                 <div className="stat-card accent-orange">
-                  <div className="stat-label">Nur in Liste B</div>
-                  <div className="stat-value">{finalResults.onlyInB.length}</div>
-                  <div className="stat-sub">gebucht, nicht angemeldet</div>
+                  <div className="stat-label">Nur in B</div>
+                  <div className="stat-value">{nurInBKinder.length}</div>
+                  <div className="stat-sub">{nurInBKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInB.length} Tage ohne Anmeldung</div>
                 </div>
               </div>
 
-              {finalResults.onlyInA.length > 0 && (
-                <div className="result-section">
-                  <h4>Fehlt in Liste B <span className="count-badge red">{finalResults.onlyInA.length}</span></h4>
-                  <ul className="result-list">
-                    {finalResults.onlyInA.map(i => <li key={i.id}>{i.name} – {fmtDate(i.date)}</li>)}
-                  </ul>
+              {fehlendeKinder.length > 0 && (
+                <div className="card" style={{marginBottom:'1rem'}}>
+                  <div className="card-title" style={{color:'var(--danger)'}}>
+                    Fehlt in Liste B <span className="badge badge-red" style={{marginLeft:'0.5rem'}}>{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
+                  </div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
+                      <tbody>
+                        {fehlendeKinder.map(k => (
+                          <tr key={k.name}>
+                            <td><strong>{k.name}</strong></td>
+                            <td><span className="badge badge-red">{k.dates.length}</span></td>
+                            <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
-              {finalResults.matches.length > 0 && (
-                <div className="result-section">
-                  <h4>Übereinstimmungen <span className="count-badge green">{finalResults.matches.length}</span></h4>
-                  <ul className="result-list">
-                    {finalResults.matches.map(i => <li key={i.id}>{i.name} – {fmtDate(i.date)}</li>)}
-                  </ul>
+              {matchedKinder.length > 0 && (
+                <div className="card" style={{marginBottom:'1rem'}}>
+                  <div className="card-title" style={{color:'var(--success)'}}>
+                    Übereinstimmungen <span className="badge badge-green" style={{marginLeft:'0.5rem'}}>{matchedKinder.length} Kinder · {finalResults.matches.length} Tage</span>
+                  </div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
+                      <tbody>
+                        {matchedKinder.map(k => (
+                          <tr key={k.name}>
+                            <td><strong>{k.name}</strong></td>
+                            <td><span className="badge badge-green">{k.dates.length}</span></td>
+                            <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
-              {finalResults.onlyInB.length > 0 && (
-                <div className="result-section">
-                  <h4>Nur in Liste B <span className="count-badge">{finalResults.onlyInB.length}</span></h4>
-                  <ul className="result-list">
-                    {finalResults.onlyInB.map(i => <li key={i.id}>{i.name} – {fmtDate(i.date)}</li>)}
-                  </ul>
+              {nurInBKinder.length > 0 && (
+                <div className="card" style={{marginBottom:'1rem'}}>
+                  <div className="card-title" style={{color:'var(--warning)'}}>
+                    Nur in Liste B <span className="badge badge-orange" style={{marginLeft:'0.5rem'}}>{nurInBKinder.length} Kinder · {finalResults.onlyInB.length} Tage</span>
+                  </div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
+                      <tbody>
+                        {nurInBKinder.map(k => (
+                          <tr key={k.name}>
+                            <td><strong>{k.name}</strong></td>
+                            <td><span className="badge badge-orange">{k.dates.length}</span></td>
+                            <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
@@ -1663,7 +1755,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
         </>
       )}
     </div>
@@ -1702,8 +1795,33 @@ const FinanzenPage = ({ blocks }) => {
 
       {loading && <Spinner />}
 
-      {!loading && data && data.statistik && (
-        <>
+      {!loading && data && data.statistik && (() => {
+        // Excel-Export Funktion für Finanzen
+        const exportFinanzen = () => {
+          const wb = XLSX.utils.book_new();
+          // Buchungen pro Kind
+          if (data.buchungen?.length) {
+            const rows = data.buchungen.map(k => ({
+              Nachname: k.nachname, Vorname: k.vorname, Klasse: k.klasse || '',
+              'Tage gebucht': parseInt(k.tage_gebucht), 'Gesamtbetrag (€)': parseFloat(k.gesamtbetrag).toFixed(2),
+              Kontostand: k.kontostand ? parseFloat(k.kontostand).toFixed(2) : ''
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Buchungen');
+          }
+          // Fehlende
+          if (data.fehlende_buchungen?.length) {
+            const rows = data.fehlende_buchungen.map(k => ({
+              Nachname: k.nachname, Vorname: k.vorname, Klasse: k.klasse || '', 'Tage angemeldet': parseInt(k.tage_angemeldet)
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Ohne Buchung');
+          }
+          if (wb.SheetNames.length) {
+            XLSX.writeFile(wb, `Finanzen_${data.block.name.replace(/\s+/g,'_')}.xlsx`);
+            toast.success('Finanzen exportiert');
+          }
+        };
+
+        return <>
           <div className="stat-grid">
             <div className="stat-card accent-blue">
               <div className="stat-label">Kinder mit Buchung</div>
@@ -1722,6 +1840,10 @@ const FinanzenPage = ({ blocks }) => {
               <div className="stat-value">{data.statistik.kinder_ohne_buchung}</div>
               <div className="stat-sub">in A, nicht in B</div>
             </div>
+          </div>
+
+          <div className="toolbar">
+            <button className="btn btn-ghost btn-sm" onClick={exportFinanzen}>📥 Als Excel exportieren</button>
           </div>
 
           {data.fehlende_buchungen?.length > 0 && (
@@ -1770,8 +1892,8 @@ const FinanzenPage = ({ blocks }) => {
               </table>
             </div>
           </div>
-        </>
-      )}
+        </>;
+      })()}
     </div>
   );
 };
@@ -1830,6 +1952,19 @@ const VerlaufPage = ({ blocks }) => {
             {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
           </select>
           {blockId && <button className="btn btn-ghost btn-sm" onClick={() => loadVerlauf(blockId)}>↻ Neu laden</button>}
+          {blockId && verlauf.length > 0 && (
+            <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)'}} onClick={async () => {
+              const ok = await confirmDialog(
+                'Alle Abgleiche löschen',
+                `Alle ${verlauf.length} gespeicherten Abgleiche für diesen Block löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
+                'Alle löschen'
+              );
+              if (!ok) return;
+              const res = await API.post('abgleich', { action: 'delete_all', ferienblock_id: blockId });
+              toast.success(`${res.deleted} Abgleiche gelöscht`);
+              setVerlauf([]); setDetail({}); setOpenId(null);
+            }}>🗑 Alle Abgleiche löschen</button>
+          )}
         </div>
       </div>
 
@@ -1862,9 +1997,19 @@ const VerlaufPage = ({ blocks }) => {
                   {parseInt(v.nur_in_b_count) > 0 && <span className="badge badge-blue">📋 {v.nur_in_b_count} nur in B</span>}
                 </div>
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => toggleDetail(v.id)}>
-                {isOpen ? '▲ Zuklappen' : '▼ Details anzeigen'}
-              </button>
+              <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
+                <button className="btn btn-ghost btn-sm" onClick={() => toggleDetail(v.id)}>
+                  {isOpen ? '▲ Zuklappen' : '▼ Details anzeigen'}
+                </button>
+                <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)',width:'auto'}} title="Diesen Abgleich löschen" onClick={async (e) => {
+                  e.stopPropagation();
+                  const ok = await confirmDialog('Abgleich löschen', `Abgleich vom ${fmtDate(v.erstellt_am)} löschen?`, 'Löschen');
+                  if (!ok) return;
+                  await API.post('abgleich', { action: 'delete', id: v.id });
+                  toast.success('Abgleich gelöscht');
+                  loadVerlauf(blockId);
+                }}>✗</button>
+              </div>
             </div>
 
             {/* Detail-Bereich */}
@@ -1914,6 +2059,318 @@ const VerlaufPage = ({ blocks }) => {
           </div>
         );
       })}
+    </div>
+  );
+};
+
+// ─── TAGESANSICHT ─────────────────────────────────────
+const TagesansichtPage = ({ blocks }) => {
+  const [blockId, setBlockId] = useState(blocks[0]?.id || '');
+  const [listA, setListA] = useState([]);
+  const [listB, setListB] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [sortCol, setSortCol] = useState('nachname');
+  const [sortDir, setSortDir] = useState('asc');
+
+  const load = async (id) => {
+    if (!id) return;
+    setLoading(true);
+    const [a, b] = await Promise.all([
+      API.get('listen', { ferienblock_id: id, liste: 'A' }),
+      API.get('listen', { ferienblock_id: id, liste: 'B' })
+    ]);
+    setListA(Array.isArray(a) ? a : []);
+    setListB(Array.isArray(b) ? b : []);
+    setSelectedDate(null);
+    setLoading(false);
+  };
+
+  useEffect(() => { if (blockId) load(blockId); }, [blockId]);
+
+  // Alle Tage sammeln
+  const allDates = useMemo(() => {
+    const dates = new Set();
+    listA.forEach(e => dates.add(String(e.datum).split('T')[0]));
+    listB.forEach(e => dates.add(String(e.datum).split('T')[0]));
+    return [...dates].sort();
+  }, [listA, listB]);
+
+  // Tagesübersicht berechnen
+  const dayStats = useMemo(() => {
+    return allDates.map(d => {
+      const aKids = new Set(listA.filter(e => String(e.datum).split('T')[0] === d).map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+      const bKids = new Set(listB.filter(e => String(e.datum).split('T')[0] === d).map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+      const matched = [...aKids].filter(k => bKids.has(k)).length;
+      const missingInB = [...aKids].filter(k => !bKids.has(k)).length;
+      const onlyInB = [...bKids].filter(k => !aKids.has(k)).length;
+      return { date: d, angemeldet: aKids.size, gebucht: bKids.size, matched, missingInB, onlyInB };
+    });
+  }, [allDates, listA, listB]);
+
+  // Detail für gewählten Tag
+  const dayDetail = useMemo(() => {
+    if (!selectedDate) return null;
+    const d = selectedDate;
+    const aEntries = listA.filter(e => String(e.datum).split('T')[0] === d);
+    const bEntries = listB.filter(e => String(e.datum).split('T')[0] === d);
+    const bSet = new Set(bEntries.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+    const aSet = new Set(aEntries.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+
+    const kinder = {};
+    aEntries.forEach(e => {
+      const key = (e.nachname + '|' + e.vorname).toLowerCase();
+      kinder[key] = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: true, inB: bSet.has(key) };
+    });
+    bEntries.forEach(e => {
+      const key = (e.nachname + '|' + e.vorname).toLowerCase();
+      if (!kinder[key]) kinder[key] = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: false, inB: true };
+    });
+    return Object.values(kinder);
+  }, [selectedDate, listA, listB]);
+
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  };
+
+  const sortedDetail = useMemo(() => {
+    if (!dayDetail) return [];
+    return [...dayDetail].sort((a, b) => {
+      let va, vb;
+      if (sortCol === 'status') { va = a.inA && a.inB ? 2 : a.inA ? 1 : 0; vb = b.inA && b.inB ? 2 : b.inA ? 1 : 0; }
+      else { va = (a[sortCol] || '').toLowerCase(); vb = (b[sortCol] || '').toLowerCase(); }
+      const cmp = typeof va === 'number' ? va - vb : va.localeCompare(vb, 'de');
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [dayDetail, sortCol, sortDir]);
+
+  const sIcon = (col) => sortCol === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+  const block = blocks.find(b => String(b.id) === String(blockId));
+  const weekday = (d) => { try { return new Date(d).toLocaleDateString('de-DE', { weekday: 'short' }); } catch { return ''; } };
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Tagesansicht</h1>
+        <p>Welche Kinder sind pro Tag angemeldet und gebucht?</p>
+      </div>
+
+      <div className="card" style={{marginBottom:'1.5rem'}}>
+        <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
+          <option value="">– Block wählen –</option>
+          {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
+        </select>
+      </div>
+
+      {loading && <Spinner />}
+
+      {!loading && blockId && dayStats.length === 0 && (
+        <div className="card"><div className="empty-state"><div className="icon">📅</div><p>Keine Daten für diesen Block vorhanden.</p></div></div>
+      )}
+
+      {!loading && dayStats.length > 0 && (
+        <div className="card" style={{marginBottom:'1.5rem'}}>
+          <div className="card-title">Tage im Überblick</div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Tag</th><th>Datum</th><th>Angemeldet (A)</th><th>Gebucht (B)</th><th>✓ OK</th><th>✗ Fehlt in B</th><th>⚠ Nur in B</th><th></th></tr></thead>
+              <tbody>
+                {dayStats.map(d => (
+                  <tr key={d.date} style={{background: selectedDate === d.date ? 'rgba(0,90,156,0.08)' : undefined, cursor:'pointer'}} onClick={() => setSelectedDate(selectedDate === d.date ? null : d.date)}>
+                    <td><strong>{weekday(d.date)}</strong></td>
+                    <td>{fmtDate(d.date)}</td>
+                    <td><span className="badge badge-blue">{d.angemeldet}</span></td>
+                    <td><span className="badge badge-green">{d.gebucht}</span></td>
+                    <td><span className="badge badge-green">{d.matched}</span></td>
+                    <td>{d.missingInB > 0 ? <span className="badge badge-red">{d.missingInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                    <td>{d.onlyInB > 0 ? <span className="badge badge-orange">{d.onlyInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                    <td style={{fontSize:'0.8rem',color:'var(--primary)'}}>{selectedDate === d.date ? '▲' : '▼'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {selectedDate && dayDetail && (
+        <div className="card">
+          <div className="card-title">
+            {weekday(selectedDate)} {fmtDate(selectedDate)} — {dayDetail.length} Kinder
+          </div>
+          <div className="stat-grid" style={{marginBottom:'1rem'}}>
+            <div className="stat-card accent-green" style={{padding:'0.75rem 1rem'}}>
+              <div className="stat-label" style={{fontSize:'0.7rem'}}>Angemeldet + Gebucht</div>
+              <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => k.inA && k.inB).length}</div>
+            </div>
+            <div className={`stat-card ${dayDetail.filter(k => k.inA && !k.inB).length > 0 ? 'accent-red' : 'accent-green'}`} style={{padding:'0.75rem 1rem'}}>
+              <div className="stat-label" style={{fontSize:'0.7rem'}}>Angemeldet, nicht gebucht</div>
+              <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => k.inA && !k.inB).length}</div>
+            </div>
+            <div className="stat-card accent-orange" style={{padding:'0.75rem 1rem'}}>
+              <div className="stat-label" style={{fontSize:'0.7rem'}}>Nur gebucht (nicht angemeldet)</div>
+              <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => !k.inA && k.inB).length}</div>
+            </div>
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th>
+                <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
+                <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
+                <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
+                <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>
+              </tr></thead>
+              <tbody>
+                {sortedDetail.map((k, i) => (
+                  <tr key={i} style={{background: k.inA && !k.inB ? 'rgba(220,53,69,0.06)' : !k.inA && k.inB ? 'rgba(230,168,23,0.06)' : undefined}}>
+                    <td>{i+1}</td>
+                    <td><strong>{k.nachname}</strong></td>
+                    <td>{k.vorname}</td>
+                    <td>{k.klasse || '–'}</td>
+                    <td>
+                      {k.inA && k.inB && <span className="badge badge-green">✓ OK</span>}
+                      {k.inA && !k.inB && <span className="badge badge-red">✗ Fehlt in B</span>}
+                      {!k.inA && k.inB && <span className="badge badge-orange">⚠ Nur in B</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── KLASSEN-ZUSAMMENFASSUNG ──────────────────────────
+const KlassenPage = ({ blocks }) => {
+  const [blockId, setBlockId] = useState(blocks[0]?.id || '');
+  const [listA, setListA] = useState([]);
+  const [listB, setListB] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = async (id) => {
+    if (!id) return;
+    setLoading(true);
+    const [a, b] = await Promise.all([
+      API.get('listen', { ferienblock_id: id, liste: 'A' }),
+      API.get('listen', { ferienblock_id: id, liste: 'B' })
+    ]);
+    setListA(Array.isArray(a) ? a : []);
+    setListB(Array.isArray(b) ? b : []);
+    setLoading(false);
+  };
+
+  useEffect(() => { if (blockId) load(blockId); }, [blockId]);
+
+  const klassenData = useMemo(() => {
+    const map = {};
+    // Kinder aus A sammeln
+    listA.forEach(e => {
+      const key = (e.nachname + '|' + e.vorname).toLowerCase();
+      const klasse = (e.klasse || 'Ohne Klasse').trim() || 'Ohne Klasse';
+      if (!map[klasse]) map[klasse] = { klasse, kinderA: new Set(), kinderB: new Set(), tageA: 0, tageB: 0 };
+      map[klasse].kinderA.add(key);
+      map[klasse].tageA++;
+    });
+    // Kinder aus B zuordnen
+    listB.forEach(e => {
+      const key = (e.nachname + '|' + e.vorname).toLowerCase();
+      const klasse = (e.klasse || 'Ohne Klasse').trim() || 'Ohne Klasse';
+      if (!map[klasse]) map[klasse] = { klasse, kinderA: new Set(), kinderB: new Set(), tageA: 0, tageB: 0 };
+      map[klasse].kinderB.add(key);
+      map[klasse].tageB++;
+    });
+    return Object.values(map).map(k => ({
+      klasse: k.klasse,
+      kinderA: k.kinderA.size,
+      kinderB: k.kinderB.size,
+      tageA: k.tageA,
+      tageB: k.tageB,
+      ohneB: [...k.kinderA].filter(x => !k.kinderB.has(x)).length,
+      nurInB: [...k.kinderB].filter(x => !k.kinderA.has(x)).length,
+    })).sort((a, b) => a.klasse.localeCompare(b.klasse, 'de'));
+  }, [listA, listB]);
+
+  const block = blocks.find(b => String(b.id) === String(blockId));
+  const preis = block ? parseFloat(block.preis_pro_tag) : 3.5;
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1>Klassen-Übersicht</h1>
+        <p>Statistiken gruppiert nach Schulklasse</p>
+      </div>
+
+      <div className="card" style={{marginBottom:'1.5rem'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+          <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
+            <option value="">– Block wählen –</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
+          </select>
+          {klassenData.length > 0 && (
+            <button className="btn btn-ghost btn-sm" onClick={() => {
+              const wb = XLSX.utils.book_new();
+              const rows = klassenData.map(k => ({
+                Klasse: k.klasse, 'Kinder (A)': k.kinderA, 'Kinder (B)': k.kinderB,
+                'Tage (A)': k.tageA, 'Tage (B)': k.tageB,
+                'Ohne Buchung': k.ohneB, 'Nur in B': k.nurInB,
+                'Kosten (€)': (k.tageB * preis).toFixed(2)
+              }));
+              XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Klassen');
+              XLSX.writeFile(wb, `Klassen_${block?.name || 'Export'}.xlsx`);
+              toast.success('Klassen-Übersicht exportiert');
+            }}>📊 Excel exportieren</button>
+          )}
+        </div>
+      </div>
+
+      {loading && <Spinner />}
+
+      {!loading && blockId && klassenData.length === 0 && (
+        <div className="card"><div className="empty-state"><div className="icon">🏫</div><p>Keine Daten für diesen Block vorhanden.</p></div></div>
+      )}
+
+      {!loading && klassenData.length > 0 && (
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Klasse</th><th>Kinder (A)</th><th>Kinder (B)</th>
+                <th>Tage (A)</th><th>Tage (B)</th>
+                <th>Ohne Buchung</th><th>Nur in B</th><th>Kosten</th>
+              </tr></thead>
+              <tbody>
+                {klassenData.map(k => (
+                  <tr key={k.klasse}>
+                    <td><strong>{k.klasse}</strong></td>
+                    <td><span className="badge badge-blue">{k.kinderA}</span></td>
+                    <td><span className="badge badge-green">{k.kinderB}</span></td>
+                    <td style={{color:'var(--text2)'}}>{k.tageA}</td>
+                    <td style={{color:'var(--text2)'}}>{k.tageB}</td>
+                    <td>{k.ohneB > 0 ? <span className="badge badge-red">{k.ohneB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                    <td>{k.nurInB > 0 ? <span className="badge badge-orange">{k.nurInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                    <td><strong>{(k.tageB * preis).toFixed(2)} €</strong></td>
+                  </tr>
+                ))}
+                <tr style={{fontWeight:700,borderTop:'2px solid var(--border)'}}>
+                  <td>Gesamt</td>
+                  <td>{klassenData.reduce((s,k) => s + k.kinderA, 0)}</td>
+                  <td>{klassenData.reduce((s,k) => s + k.kinderB, 0)}</td>
+                  <td>{klassenData.reduce((s,k) => s + k.tageA, 0)}</td>
+                  <td>{klassenData.reduce((s,k) => s + k.tageB, 0)}</td>
+                  <td style={{color:'var(--danger)'}}>{klassenData.reduce((s,k) => s + k.ohneB, 0)}</td>
+                  <td style={{color:'var(--warning)'}}>{klassenData.reduce((s,k) => s + k.nurInB, 0)}</td>
+                  <td>{(klassenData.reduce((s,k) => s + k.tageB, 0) * preis).toFixed(2)} €</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1981,6 +2438,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [filterBlock, setFilterBlock] = useState('');
 
   // Akte-Detail
   const [selectedKindId, setSelectedKindId] = useState(initialKindId || null);
@@ -2006,14 +2464,16 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   };
   const sortIndicator = (col) => sortBy === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
 
-  const loadKinder = async () => {
+  const loadKinder = async (fbId) => {
     setLoading(true);
-    const data = await API.get('kinder');
+    const params = {};
+    if (fbId) params.ferienblock_id = fbId;
+    const data = await API.get('kinder', params);
     setKinder(Array.isArray(data) ? data : []);
     setLoading(false);
   };
 
-  useEffect(() => { loadKinder(); }, []);
+  useEffect(() => { loadKinder(filterBlock); }, [filterBlock]);
 
   // Akte laden wenn Kind ausgewählt
   useEffect(() => {
@@ -2031,7 +2491,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     const res = await API.post('kinder', { action: 'sync' });
     setSyncing(false);
     toast.success(res.message || 'Synchronisiert');
-    loadKinder();
+    loadKinder(filterBlock);
   };
 
   // Excel importieren
@@ -2148,7 +2608,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     const res = await API.post('kinder', { action: 'import', eintraege });
     setImportResult(res);
     setImporting(false);
-    loadKinder();
+    loadKinder(filterBlock);
   };
 
   // Kind bearbeiten
@@ -2159,7 +2619,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   const saveEdit = async () => {
     await API.post('kinder', { action: 'edit', id: editKind.id, ...editForm });
     setEditKind(null);
-    loadKinder();
+    loadKinder(filterBlock);
     if (selectedKindId === editKind.id) setSelectedKindId(editKind.id); // refresh akte
   };
 
@@ -2169,7 +2629,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     if (!ok) return;
     await API.post('kinder', { action: 'delete', id });
     toast.success('Kind gelöscht');
-    loadKinder();
+    loadKinder(filterBlock);
     if (selectedKindId === id) setSelectedKindId(null);
   };
 
@@ -2413,13 +2873,29 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
         </div>
       </div>
 
+      {/* Ferienblock-Filter */}
+      {blocks.length > 0 && (
+        <div style={{display:'flex',alignItems:'center',gap:'0.75rem',marginBottom:'1rem'}}>
+          <span style={{fontSize:'0.85rem',fontWeight:600,color:'var(--text2)',whiteSpace:'nowrap'}}>Statistik für:</span>
+          <select
+            className="form-input"
+            style={{maxWidth:'300px',padding:'0.45rem 0.75rem',fontSize:'0.85rem'}}
+            value={filterBlock}
+            onChange={e => setFilterBlock(e.target.value)}
+          >
+            <option value="">Alle Ferienblöcke</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </div>
+      )}
+
       <div className="stat-grid">
         <div className="stat-card accent-blue">
-          <div className="stat-label">Kinder gesamt</div>
-          <div className="stat-value">{loading ? '…' : kinder.length}</div>
+          <div className="stat-label">{filterBlock ? 'Angemeldet (A)' : 'Kinder gesamt'}</div>
+          <div className="stat-value">{loading ? '…' : filterBlock ? kinder.filter(k => parseInt(k.anmeldungen_count) > 0).length : kinder.length}</div>
         </div>
         <div className="stat-card accent-green">
-          <div className="stat-label">Mit Buchungen</div>
+          <div className="stat-label">{filterBlock ? 'Gebucht (B)' : 'Mit Buchungen'}</div>
           <div className="stat-value">{loading ? '…' : mitBuchung}</div>
         </div>
         <div className={`stat-card ${ohneBuchung > 0 ? 'accent-red' : 'accent-green'}`}>
@@ -2436,7 +2912,37 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
         <button className="btn btn-ghost btn-sm" disabled={syncing} onClick={syncFromLists}>
           {syncing ? '⏳ Synchronisiere...' : '🔄 Aus Listen synchronisieren'}
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={loadKinder}>↻ Aktualisieren</button>
+        {kinder.length > 0 && (
+          <button className="btn btn-ghost btn-sm" onClick={() => {
+            const wb = XLSX.utils.book_new();
+            const rows = filtered.map(k => ({
+              Nachname: k.nachname,
+              Vorname: k.vorname,
+              Klasse: k.klasse || '',
+              'Anmeldungen (A)': parseInt(k.anmeldungen_count) || 0,
+              'Buchungen (B)': parseInt(k.buchungen_count) || 0,
+              'Blöcke': parseInt(k.block_count_a) || 0,
+              Notizen: k.notizen || ''
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Kinder');
+            XLSX.writeFile(wb, `Kinder-Verzeichnis${search ? '_' + search : ''}.xlsx`);
+            toast.success(`${rows.length} Kinder exportiert`);
+          }}>📊 Excel exportieren</button>
+        )}
+        {kinder.length > 0 && (
+          <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)'}} onClick={async () => {
+            const ok = await confirmDialog(
+              'Alle Kinder löschen',
+              `Wirklich alle ${kinder.length} Kinder aus dem Verzeichnis löschen? Die Listen-Einträge (A/B) bleiben erhalten.`,
+              'Alle löschen'
+            );
+            if (!ok) return;
+            const res = await API.post('kinder', { action: 'delete_all' });
+            toast.success(`${res.deleted} Kinder gelöscht`);
+            loadKinder(filterBlock);
+          }}>🗑 Alle löschen</button>
+        )}
+        <button className="btn btn-ghost btn-sm" onClick={() => loadKinder(filterBlock)}>↻ Aktualisieren</button>
       </div>
 
       {/* Import-Bereich */}
@@ -2699,6 +3205,8 @@ const App = () => {
     { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
     { id: 'kinder', icon: '👦', label: 'Kinder' },
     { id: 'abgleich', icon: '🔍', label: 'Abgleich' },
+    { id: 'tagesansicht', icon: '🗓️', label: 'Tagesansicht' },
+    { id: 'klassen', icon: '🏫', label: 'Klassen' },
     { id: 'finanzen', icon: '💶', label: 'Finanzen' },
     { id: 'verlauf', icon: '📋', label: 'Verlauf' },
     { id: 'ferienblock', icon: '📅', label: 'Ferienblöcke' },
@@ -2722,9 +3230,14 @@ const App = () => {
         </nav>
         <div className="sidebar-footer">
           <div className="user-info">{user.username}</div>
-          <button className="theme-toggle" onClick={() => setTheme(t => t==='light'?'dark':'light')}>
-            {theme === 'dark' ? '☀️ Hell' : '🌙 Dunkel'}
-          </button>
+          <div style={{display:'flex',gap:'0.5rem'}}>
+            <button className="theme-toggle" onClick={() => setTheme(t => t==='light'?'dark':'light')}>
+              {theme === 'dark' ? '☀️ Hell' : '🌙 Dunkel'}
+            </button>
+            <button className="theme-toggle" onClick={handleLogout} title="Abmelden">
+              🚪 Logout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2732,6 +3245,8 @@ const App = () => {
         {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
         {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
         {page === 'abgleich' && <AbgleichTool blocks={blocks} initialBlockId={navParam} onReload={loadBlocks} />}
+        {page === 'tagesansicht' && <TagesansichtPage blocks={blocks} />}
+        {page === 'klassen' && <KlassenPage blocks={blocks} />}
         {page === 'finanzen' && <FinanzenPage blocks={blocks} />}
         {page === 'verlauf' && <VerlaufPage blocks={blocks} />}
         {page === 'ferienblock' && <FerienblockPage blocks={blocks} onReload={loadBlocks} />}

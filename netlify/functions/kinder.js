@@ -148,6 +148,28 @@ exports.handler = async (event) => {
           if (aResult.rows.length === 0 && bResult.rows.length === 0) continue;
 
           // Match-Status ermitteln (aus letztem Abgleich)
+          // Parameter-Nummern korrekt aufbauen: $1=block.id, dann whereParams für liste_a, dann whereParams für liste_b
+          const abglParams = [block.id];
+          let abglIdx = 2;
+
+          // whereClause für liste_a mit korrekten Parameter-Nummern
+          const wherePartsA = [];
+          for (const v of nameVariants) {
+            wherePartsA.push(`(LOWER(nachname) = $${abglIdx} AND LOWER(vorname) = $${abglIdx + 1})`);
+            abglParams.push(v.n, v.v);
+            abglIdx += 2;
+          }
+          const whereClauseA = wherePartsA.join(' OR ');
+
+          // whereClause für liste_b mit korrekten Parameter-Nummern
+          const wherePartsB = [];
+          for (const v of nameVariants) {
+            wherePartsB.push(`(LOWER(nachname) = $${abglIdx} AND LOWER(vorname) = $${abglIdx + 1})`);
+            abglParams.push(v.n, v.v);
+            abglIdx += 2;
+          }
+          const whereClauseB = wherePartsB.join(' OR ');
+
           const abglResult = await client.query(`
             SELECT am.match_typ, am.score
             FROM abgleich_matches am
@@ -155,11 +177,11 @@ exports.handler = async (event) => {
             WHERE a.ferienblock_id = $1
               AND a.id = (SELECT id FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 1)
               AND (
-                am.liste_a_id IN (SELECT id FROM liste_a WHERE ferienblock_id = $1 AND (${whereClause}))
-                OR am.liste_b_id IN (SELECT id FROM liste_b WHERE ferienblock_id = $1 AND (${whereClause}))
+                am.liste_a_id IN (SELECT id FROM liste_a WHERE ferienblock_id = $1 AND (${whereClauseA}))
+                OR am.liste_b_id IN (SELECT id FROM liste_b WHERE ferienblock_id = $1 AND (${whereClauseB}))
               )
             LIMIT 1
-          `, [block.id, ...whereParams, ...whereParams]);
+          `, abglParams);
 
           const preis = parseFloat(block.preis_pro_tag);
           const blockKosten = bResult.rows.length * preis;
@@ -205,23 +227,32 @@ exports.handler = async (event) => {
       }
 
       // ── Alle Kinder mit Statistiken ──
+      // Optional: ferienblock_id Filter
+      const fbParsed = params.ferienblock_id ? parseInt(params.ferienblock_id, 10) : null;
+      const fbFilter = fbParsed && !isNaN(fbParsed) ? fbParsed : null;
+      const fbCondA = fbFilter ? 'AND la.ferienblock_id = ' + fbFilter : '';
+      const fbCondB = fbFilter ? 'AND lb.ferienblock_id = ' + fbFilter : '';
+
       const kinderResult = await client.query(`
         SELECT
           k.*,
           (SELECT COUNT(DISTINCT la.ferienblock_id)
            FROM liste_a la
-           WHERE (LOWER(la.nachname) = LOWER(k.nachname) AND LOWER(la.vorname) = LOWER(k.vorname))
-              OR (LOWER(la.nachname) = LOWER(k.vorname) AND LOWER(la.vorname) = LOWER(k.nachname))
+           WHERE ((LOWER(la.nachname) = LOWER(k.nachname) AND LOWER(la.vorname) = LOWER(k.vorname))
+              OR (LOWER(la.nachname) = LOWER(k.vorname) AND LOWER(la.vorname) = LOWER(k.nachname)))
+              ${fbCondA}
           ) as block_count_a,
           (SELECT COUNT(*)
            FROM liste_a la
-           WHERE (LOWER(la.nachname) = LOWER(k.nachname) AND LOWER(la.vorname) = LOWER(k.vorname))
-              OR (LOWER(la.nachname) = LOWER(k.vorname) AND LOWER(la.vorname) = LOWER(k.nachname))
+           WHERE ((LOWER(la.nachname) = LOWER(k.nachname) AND LOWER(la.vorname) = LOWER(k.vorname))
+              OR (LOWER(la.nachname) = LOWER(k.vorname) AND LOWER(la.vorname) = LOWER(k.nachname)))
+              ${fbCondA}
           ) as anmeldungen_count,
           (SELECT COUNT(*)
            FROM liste_b lb
-           WHERE (LOWER(lb.nachname) = LOWER(k.nachname) AND LOWER(lb.vorname) = LOWER(k.vorname))
-              OR (LOWER(lb.nachname) = LOWER(k.vorname) AND LOWER(lb.vorname) = LOWER(k.nachname))
+           WHERE ((LOWER(lb.nachname) = LOWER(k.nachname) AND LOWER(lb.vorname) = LOWER(k.vorname))
+              OR (LOWER(lb.nachname) = LOWER(k.vorname) AND LOWER(lb.vorname) = LOWER(k.nachname)))
+              ${fbCondB}
           ) as buchungen_count
         FROM kinder k
         ORDER BY k.nachname, k.vorname
@@ -413,6 +444,12 @@ exports.handler = async (event) => {
         if (isNaN(delId)) return respond(400, { error: 'Ungültige ID' });
         await client.query('DELETE FROM kinder WHERE id = $1', [delId]);
         return respond(200, { success: true });
+      }
+
+      // ── Delete All: Alle Kinder aus Stamm entfernen ──
+      if (body.action === 'delete_all') {
+        const result = await client.query('DELETE FROM kinder');
+        return respond(200, { success: true, deleted: result.rowCount });
       }
 
       return respond(400, { error: 'Unbekannte action' });

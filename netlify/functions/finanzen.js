@@ -61,17 +61,21 @@ exports.handler = async (event) => {
         vorname,
         klasse,
         COUNT(*) as tage_gebucht,
-        COUNT(*) * $1 as gesamtbetrag,
         MIN(datum) as erster_tag,
         MAX(datum) as letzter_tag,
         ARRAY_AGG(datum ORDER BY datum) as tage,
         ARRAY_AGG(menu ORDER BY datum) as menus,
         MAX(kontostand) as kontostand
       FROM liste_b
-      WHERE ferienblock_id = $2
+      WHERE ferienblock_id = $1
       GROUP BY nachname, vorname, klasse
       ORDER BY nachname, vorname
-    `, [preis, fbId]);
+    `, [fbId]);
+
+    // Gesamtbetrag in JS berechnen (vermeidet Typ-Probleme in SQL)
+    for (const row of buchungenResult.rows) {
+      row.gesamtbetrag = (parseInt(row.tage_gebucht) * preis).toFixed(2);
+    }
 
     // Gesamtstatistik
     const gesamtKinder = buchungenResult.rows.length;
