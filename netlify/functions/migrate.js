@@ -62,6 +62,48 @@ exports.handler = async (event) => {
       results.push('⚠ Kinder-Tabelle: ' + e.message);
     }
 
+    // ── Migration 3: Namen direkt in abgleich_matches speichern ──
+    // Damit Vergleiche auch nach Neuimport der Listen funktionieren
+    // (ON DELETE SET NULL setzt liste_a_id/liste_b_id auf NULL)
+    try {
+      await client.query(`
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS a_nachname VARCHAR(200);
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS a_vorname VARCHAR(200);
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS a_datum DATE;
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS a_klasse VARCHAR(20);
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS b_nachname VARCHAR(200);
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS b_vorname VARCHAR(200);
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS b_datum DATE;
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS b_klasse VARCHAR(20);
+        ALTER TABLE abgleich_matches ADD COLUMN IF NOT EXISTS b_menu VARCHAR(200);
+      `);
+
+      // Bestehende Matches mit Namen füllen (einmalig, für alte Daten)
+      await client.query(`
+        UPDATE abgleich_matches am SET
+          a_nachname = la.nachname,
+          a_vorname  = la.vorname,
+          a_datum    = la.datum,
+          a_klasse   = la.klasse
+        FROM liste_a la
+        WHERE am.liste_a_id = la.id AND am.a_nachname IS NULL;
+      `);
+      await client.query(`
+        UPDATE abgleich_matches am SET
+          b_nachname = lb.nachname,
+          b_vorname  = lb.vorname,
+          b_datum    = lb.datum,
+          b_klasse   = lb.klasse,
+          b_menu     = lb.menu
+        FROM liste_b lb
+        WHERE am.liste_b_id = lb.id AND am.b_nachname IS NULL;
+      `);
+
+      results.push('✓ Namen-Spalten in abgleich_matches hinzugefügt + befüllt');
+    } catch (e) {
+      results.push('⚠ Namen-Spalten: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

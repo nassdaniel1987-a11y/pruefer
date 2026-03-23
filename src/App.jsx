@@ -1,280 +1,5 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Prüfer - Ferienversorgung</title>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --primary: #005A9C; --primary-light: #e6f0f8; --primary-dark: #004070;
-      --success: #28a745; --danger: #dc3545; --warning: #e6a817; --info: #17a2b8;
-      --bg: #f0f4f8; --surface: #ffffff; --surface2: #f8fafc;
-      --border: #dce4ee; --text: #1a2332; --text2: #556070;
-      --sidebar-w: 240px; --radius: 10px; --shadow: 0 2px 12px rgba(0,0,0,0.08);
-    }
-    html.dark {
-      --primary: #4dabf7; --primary-light: #1e3a5f; --primary-dark: #74c0fc;
-      --bg: #0f1923; --surface: #1a2535; --surface2: #212e40;
-      --border: #2d3f55; --text: #e2eaf4; --text2: #8aa0b8;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-    /* ── LOGIN ── */
-    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #004070 0%, #005A9C 60%, #0078cc 100%); }
-    .login-card { background: var(--surface); border-radius: 16px; padding: 2.5rem; width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
-    .login-logo { text-align: center; margin-bottom: 2rem; }
-    .login-logo h1 { font-size: 1.8rem; color: var(--primary); font-weight: 800; letter-spacing: -0.5px; }
-    .login-logo p { color: var(--text2); font-size: 0.9rem; margin-top: 0.25rem; }
-    .form-group { margin-bottom: 1.25rem; }
-    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text2); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
-    .form-input { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: var(--radius); font-size: 1rem; background: var(--surface); color: var(--text); transition: border-color 0.2s; }
-    .form-input:focus { outline: none; border-color: var(--primary); }
-    .btn { padding: 0.75rem 1.5rem; border-radius: var(--radius); font-weight: 600; cursor: pointer; border: none; font-size: 0.95rem; transition: all 0.2s; }
-    .btn-primary { background: var(--primary); color: white; width: 100%; }
-    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
-    .btn-primary:disabled { background: #aaa; cursor: not-allowed; transform: none; }
-    .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: var(--surface2); }
-    .btn-danger { background: var(--danger); color: white; }
-    .btn-success { background: var(--success); color: white; }
-    .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.85rem; }
-    .error-msg { background: #fee; border: 1px solid #fcc; color: #c00; padding: 0.75rem 1rem; border-radius: var(--radius); font-size: 0.9rem; margin-bottom: 1rem; }
-
-    /* ── LAYOUT ── */
-    .app-layout { display: flex; min-height: 100vh; }
-    .sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
-    .sidebar-header { padding: 1.5rem 1.25rem; border-bottom: 1px solid var(--border); }
-    .sidebar-header h2 { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
-    .sidebar-header p { font-size: 0.75rem; color: var(--text2); margin-top: 0.2rem; }
-    .sidebar-nav { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; }
-    .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 1rem; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 0.9rem; font-weight: 500; transition: all 0.15s; border: none; background: none; width: 100%; text-align: left; }
-    .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 700; }
-    .nav-icon { font-size: 1.1rem; width: 20px; text-align: center; }
-    .sidebar-footer { padding: 1rem 0.75rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem; }
-    .user-info { font-size: 0.8rem; color: var(--text2); padding: 0 0.25rem; }
-    .main-content { margin-left: var(--sidebar-w); flex: 1; padding: 2rem; min-height: 100vh; }
-    .page-header { margin-bottom: 2rem; }
-    .page-header h1 { font-size: 1.6rem; font-weight: 800; }
-    .page-header p { color: var(--text2); margin-top: 0.25rem; font-size: 0.95rem; }
-
-    /* ── CARDS & STATS ── */
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
-    .stat-card { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border); }
-    .stat-card .stat-label { font-size: 0.8rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-card .stat-value { font-size: 2rem; font-weight: 800; color: var(--text); margin: 0.25rem 0; line-height: 1; }
-    .stat-card .stat-sub { font-size: 0.8rem; color: var(--text2); }
-    .stat-card.accent-green .stat-value { color: var(--success); }
-    .stat-card.accent-red .stat-value { color: var(--danger); }
-    .stat-card.accent-blue .stat-value { color: var(--primary); }
-    .stat-card.accent-orange .stat-value { color: var(--warning); }
-    .card { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 1.5rem; }
-    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-
-    /* ── TABLE ── */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th { background: var(--surface2); color: var(--text2); font-weight: 600; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid var(--border); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.3px; }
-    td { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border); }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--surface2); }
-    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
-    .badge-green { background: rgba(40,167,69,0.12); color: var(--success); }
-    .badge-red { background: rgba(220,53,69,0.12); color: var(--danger); }
-    .badge-orange { background: rgba(230,168,23,0.12); color: var(--warning); }
-    .badge-blue { background: rgba(0,90,156,0.12); color: var(--primary); }
-
-    /* ── ABGLEICH-TOOL ── */
-    .wizard-bar { display: flex; gap: 0; margin-bottom: 2rem; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
-    .wiz-step { flex: 1; padding: 0.85rem; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--text2); position: relative; border-right: 1px solid var(--border); }
-    .wiz-step:last-child { border-right: none; }
-    .wiz-step.active { background: var(--primary-light); color: var(--primary); }
-    .wiz-step.done { background: rgba(40,167,69,0.08); color: var(--success); }
-    .wiz-num { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: currentColor; color: white; font-size: 0.75rem; line-height: 22px; text-align: center; margin-right: 0.4rem; opacity: 0.8; }
-    .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 2rem; text-align: center; color: var(--text2); cursor: pointer; transition: all 0.2s; }
-    .upload-zone:hover, .upload-zone.drag { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
-    .upload-zone.has-data { border-color: var(--success); background: rgba(40,167,69,0.05); color: var(--success); }
-    .upload-zone .icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    .match-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
-    .match-card.high { border-left: 4px solid var(--success); }
-    .match-card.medium { border-left: 4px solid var(--warning); }
-    .match-card.low { border-left: 4px solid var(--danger); }
-    .match-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-    .score-pill { padding: 0.3rem 0.8rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; }
-    .score-pill.high { background: rgba(40,167,69,0.15); color: var(--success); }
-    .score-pill.medium { background: rgba(230,168,23,0.15); color: var(--warning); }
-    .score-pill.low { background: rgba(220,53,69,0.15); color: var(--danger); }
-    .name-tokens { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
-    .token { padding: 0.2rem 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }
-    .token.matched { background: rgba(40,167,69,0.2); color: var(--success); font-weight: 700; }
-    .token.unmatched { background: rgba(220,53,69,0.1); color: var(--text2); text-decoration: line-through; }
-    .match-actions { display: flex; gap: 0.5rem; }
-    .action-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 1rem; }
-    .select-input { padding: 0.5rem 0.75rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 0.9rem; }
-    .result-section { background: var(--surface2); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; border: 1px solid var(--border); }
-    .result-section h4 { margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; }
-    .count-badge { background: var(--primary); color: white; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.78rem; font-weight: 700; }
-    .count-badge.red { background: var(--danger); }
-    .count-badge.green { background: var(--success); }
-    .result-list { list-style: none; max-height: 250px; overflow-y: auto; }
-    .result-list li { padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
-    .result-list li:last-child { border-bottom: none; }
-    .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 2rem auto; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .theme-toggle { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; cursor: pointer; color: var(--text2); font-size: 0.9rem; }
-    .textarea { width: 100%; min-height: 160px; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: 0.9rem; background: var(--surface); color: var(--text); resize: vertical; }
-    .info-box { background: var(--primary-light); border: 1px solid var(--primary); border-radius: var(--radius); padding: 0.9rem 1.1rem; font-size: 0.88rem; color: var(--primary); margin-bottom: 1rem; }
-    .empty-state { text-align: center; padding: 3rem; color: var(--text2); }
-    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-    .modal { background: var(--surface); border-radius: 14px; padding: 2rem; width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    .modal h3 { margin-bottom: 1.25rem; font-size: 1.1rem; }
-    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
-    .ferienblock-select { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 0.6rem 1rem; font-size: 0.95rem; color: var(--text); cursor: pointer; font-weight: 600; }
-    .ferienblock-select:focus { outline: none; border-color: var(--primary); }
-    hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
-
-    /* ── KINDER-VERZEICHNIS ── */
-    .search-wrap { position: relative; margin-bottom: 1.25rem; }
-    .search-wrap input { width: 100%; padding: 0.7rem 1rem 0.7rem 2.5rem; }
-    .search-wrap .search-icon { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text2); pointer-events: none; }
-    tr.clickable { cursor: pointer; }
-    tr.clickable:hover td { background: var(--primary-light); }
-    th.sortable:hover { color: var(--primary) !important; }
-    .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
-
-    /* ── KINDER AVATAR ── */
-    .avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; color: white; flex-shrink: 0; text-transform: uppercase; }
-    .avatar-sm { width: 32px; height: 32px; font-size: 0.72rem; }
-    .avatar-md { width: 44px; height: 44px; font-size: 0.88rem; }
-    .avatar-lg { width: 72px; height: 72px; font-size: 1.4rem; letter-spacing: 1px; }
-
-    /* ── KIND ROW (Listview) ── */
-    .kind-row { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
-    .kind-row:last-child { border-bottom: none; }
-    .kind-row:hover { background: var(--primary-light); }
-    .kind-row-info { flex: 1; min-width: 0; }
-    .kind-row-name { font-weight: 700; font-size: 0.95rem; }
-    .kind-row-meta { font-size: 0.8rem; color: var(--text2); margin-top: 0.1rem; }
-    .kind-row-stats { display: flex; gap: 0.75rem; align-items: center; flex-shrink: 0; }
-    .kind-mini-stat { text-align: center; min-width: 52px; }
-    .kind-mini-stat .val { font-weight: 700; font-size: 0.95rem; }
-    .kind-mini-stat .lbl { font-size: 0.65rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.3px; }
-    .kind-row-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
-
-    /* ── AKTE PROFIL-KARTE ── */
-    .akte-profile { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border-radius: var(--radius); padding: 2rem; color: white; margin-bottom: 1.5rem; position: relative; overflow: hidden; }
-    .akte-profile::before { content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.06); pointer-events: none; }
-    .akte-profile-top { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.25rem; }
-    .akte-profile .avatar-lg { border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-    .akte-profile-name { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
-    .akte-profile-klasse { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; margin-top: 0.3rem; }
-    .akte-profile-aliases { font-size: 0.8rem; opacity: 0.8; margin-top: 0.4rem; }
-    .akte-profile-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; }
-    .akte-profile-actions .btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(4px); }
-    .akte-profile-actions .btn:hover { background: rgba(255,255,255,0.25); }
-    .akte-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-    .akte-stat { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 0.75rem; text-align: center; backdrop-filter: blur(4px); }
-    .akte-stat .val { font-size: 1.5rem; font-weight: 800; }
-    .akte-stat .lbl { font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.15rem; }
-
-    /* ── AKTE NOTIZEN ── */
-    .akte-notes { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start; }
-    .akte-notes-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
-    .akte-notes-text { font-size: 0.88rem; color: var(--text2); line-height: 1.5; }
-
-    /* ── AKTE TIMELINE / BLOCKS ── */
-    .akte-timeline { position: relative; padding-left: 1.5rem; }
-    .akte-timeline::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 2px; background: var(--border); }
-    .akte-block { position: relative; margin-bottom: 1.5rem; }
-    .akte-block::before { content: ''; position: absolute; left: -1.5rem; top: 0.6rem; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); border: 2px solid var(--surface); z-index: 1; }
-    .akte-block.status-ok::before { background: var(--success); }
-    .akte-block.status-warn::before { background: var(--warning); }
-    .akte-block.status-miss::before { background: var(--danger); }
-    .akte-block-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
-    .akte-block-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
-    .akte-block-head h3 { font-size: 1rem; font-weight: 700; }
-    .akte-block-head .meta { font-size: 0.8rem; color: var(--text2); }
-    .akte-block-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-
-    /* ── TAGE-GRID (Mini-Kalender) ── */
-    .days-grid { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
-    .day-chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.78rem; font-weight: 500; }
-    .day-chip.matched { background: rgba(40,167,69,0.12); color: var(--success); }
-    .day-chip.missing { background: rgba(220,53,69,0.12); color: var(--danger); }
-    .day-chip.extra { background: rgba(230,168,23,0.12); color: var(--warning); }
-    .day-chip .day-icon { font-size: 0.7rem; }
-    .days-section { margin-bottom: 0.75rem; }
-    .days-section-title { font-size: 0.75rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.5rem; }
-    .days-section-title .count { background: var(--surface2); padding: 0.1rem 0.45rem; border-radius: 10px; font-size: 0.7rem; }
-    .block-summary-row { display: flex; gap: 1.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--text2); }
-    .block-summary-row strong { color: var(--text); }
-
-    /* ── TOAST ── */
-    .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; max-width: 400px; }
-    .toast { padding: 0.75rem 1.1rem; border-radius: var(--radius); font-size: 0.88rem; font-weight: 500; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: toastIn 0.3s ease; display: flex; align-items: center; gap: 0.5rem; }
-    .toast-error { background: var(--danger); color: white; }
-    .toast-success { background: var(--success); color: white; }
-    .toast-info { background: var(--primary); color: white; }
-    @keyframes toastIn { from { opacity:0; transform:translateX(50px); } to { opacity:1; transform:translateX(0); } }
-
-    /* ── CONFIRM MODAL ── */
-    .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-    .confirm-box { background: var(--surface); border-radius: 14px; padding: 2rem; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    .confirm-box h3 { margin-bottom: 0.75rem; }
-    .confirm-box p { color: var(--text2); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5; }
-    .confirm-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
-
-    /* ── MOBILE ── */
-    @media (max-width: 768px) {
-      .sidebar { width: 100%; position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
-      .sidebar-nav { flex-direction: row; overflow-x: auto; padding: 0.5rem; gap: 0.15rem; }
-      .nav-item { padding: 0.5rem 0.7rem; font-size: 0.8rem; white-space: nowrap; }
-      .nav-icon { display: none; }
-      .sidebar-header { padding: 0.75rem 1rem; }
-      .sidebar-header h2 { font-size: 1rem; }
-      .sidebar-header p { display: none; }
-      .sidebar-footer { flex-direction: row; justify-content: space-between; padding: 0.5rem 0.75rem; }
-      .main-content { margin-left: 0 !important; padding: 1rem; }
-      .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-      .stat-card .stat-value { font-size: 1.4rem; }
-      .two-col { grid-template-columns: 1fr; }
-      .page-header h1 { font-size: 1.2rem; }
-      table { font-size: 0.78rem; }
-      th, td { padding: 0.4rem 0.5rem; }
-      .modal { padding: 1.25rem; max-width: 95vw; }
-      .toolbar { gap: 0.4rem; }
-      .btn-sm { padding: 0.35rem 0.6rem; font-size: 0.78rem; }
-      .login-card { width: 95vw; padding: 1.5rem; }
-      .akte-profile { padding: 1.25rem; }
-      .akte-profile-name { font-size: 1.2rem; }
-      .akte-stats-row { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
-      .akte-stat .val { font-size: 1.1rem; }
-      .akte-profile-actions { position: static; margin-top: 0.75rem; }
-      .kind-row { flex-wrap: wrap; gap: 0.5rem; }
-      .kind-row-stats { width: 100%; justify-content: space-around; }
-      .kind-row-actions { width: 100%; justify-content: flex-end; }
-      .days-grid { gap: 0.25rem; }
-      .day-chip { padding: 0.2rem 0.45rem; font-size: 0.72rem; }
-    }
-    @media (max-width: 480px) {
-      .stat-grid { grid-template-columns: 1fr; }
-      .sidebar-nav { flex-wrap: nowrap; }
-      .akte-stats-row { grid-template-columns: 1fr 1fr; }
-    }
-  </style>
-</head>
-<body>
-<div id="root"></div>
-
-<script type="text/babel">
-const { useState, useEffect, useCallback, useMemo } = React;
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 
 // ─── TOAST SYSTEM ─────────────────────────────────────
 let _toastListeners = [];
@@ -290,6 +15,7 @@ const toast = {
   error(msg) { this.show(msg, 'error', 6000); },
   success(msg) { this.show(msg, 'success', 3000); },
   info(msg) { this.show(msg, 'info', 4000); },
+  warn(msg) { this.show(msg, 'warning', 5000); },
 };
 
 const ToastContainer = () => {
@@ -377,6 +103,47 @@ const API = {
   }
 };
 
+// ─── DRUCKANSICHT ─────────────────────────────────────
+const printFehlendeKinder = (title, kinder, blockName) => {
+  // kinder = Array von { nachname, vorname, klasse, dates: ['2025-07-01',...] }
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const totalTage = kinder.reduce((s, k) => s + (k.dates ? k.dates.length : 0), 0);
+
+  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 10pt; margin: 1.5cm; color: #222; }
+  h1 { font-size: 14pt; margin-bottom: 4px; }
+  .meta { font-size: 9pt; color: #666; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th { background: #f0f0f0; font-weight: bold; text-align: left; padding: 5px 6px; border: 1px solid #ccc; font-size: 9pt; }
+  td { padding: 4px 6px; border: 1px solid #ddd; font-size: 9pt; }
+  tr:nth-child(even) { background: #fafafa; }
+  .badge-red { background: #fee; color: #c00; padding: 1px 6px; border-radius: 3px; font-weight: bold; }
+  .summary { margin-top: 12px; font-size: 9pt; color: #666; border-top: 1px solid #ddd; padding-top: 6px; }
+  @media print { @page { margin: 1.5cm; } }
+</style></head><body>
+<h1>${title}</h1>
+<div class="meta">${blockName ? 'Ferienblock: ' + blockName + ' · ' : ''}Erstellt: ${dateStr} ${timeStr} · ${kinder.length} Kinder · ${totalTage} Tage</div>
+<table><thead><tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Tage</th><th>Daten</th></tr></thead><tbody>`;
+
+  kinder.forEach((k, i) => {
+    html += `<tr><td>${i+1}</td><td><b>${k.nachname || ''}</b></td><td>${k.vorname || ''}</td><td>${k.klasse || '–'}</td>`;
+    html += `<td><span class="badge-red">${k.dates ? k.dates.length : 0}</span></td>`;
+    html += `<td>${k.dates ? k.dates.sort().map(d => fmtDate(d)).join(', ') : ''}</td></tr>`;
+  });
+
+  html += `</tbody></table>
+<div class="summary">Gesamtzahl fehlender Kinder: ${kinder.length} · Gesamtzahl fehlender Tage: ${totalTage}</div>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+};
+
 // ─── MATCHING-ALGORITHMEN (aus Originalversion) ────────
 const nicknames = { 'alex':'alexander','sandra':'alexandra','max':'maximilian','hans':'johannes','chris':'christoph','sepp':'josef','joe':'josef','jörg':'georg','joerg':'georg' };
 const tokenizeName = (name) => {
@@ -434,7 +201,11 @@ const calcScore = (nameA, nameB) => {
   }
   if (!matches.length) return { score: 0, reason: 'Keine Übereinstimmung' };
   const avg = matches.reduce((a,b)=>a+b,0)/matches.length;
-  const penalty = (Math.abs(tA.length-matches.length)+avail.length)*15;
+  const minTokens = Math.min(tA.length, tB.length);
+  const maxTokens = Math.max(tA.length, tB.length);
+  const missingInShorter = minTokens - matches.length;
+  const extraInLonger = maxTokens - matches.length - missingInShorter;
+  const penalty = (missingInShorter * 30) + (extraInLonger * 5);
   const score = Math.max(0, Math.round(avg-penalty));
   const reason = avail.length > 0 ? `${avail.length} Teil(e) ohne Partner` : 'Alle Teile zugeordnet';
   return { score, reason };
@@ -478,7 +249,95 @@ const normalizeDate = (d) => {
   return `${yr}-${mon.padStart(2,'0')}-${day.padStart(2,'0')}`;
 };
 const fmtDate = (d) => { if (!d) return ''; const p = String(d).split('T')[0].split('-'); return `${p[2]}.${p[1]}.${p[0]}`; };
+const fmtDateTime = (d) => {
+  if (!d) return '';
+  try {
+    const dt = new Date(d);
+    const dd = String(dt.getDate()).padStart(2,'0');
+    const mm = String(dt.getMonth()+1).padStart(2,'0');
+    const yy = dt.getFullYear();
+    const hh = String(dt.getHours()).padStart(2,'0');
+    const mi = String(dt.getMinutes()).padStart(2,'0');
+    return `${dd}.${mm}.${yy} ${hh}:${mi}`;
+  } catch { return fmtDate(d); }
+};
 const scoreClass = (s) => s >= 90 ? 'high' : s >= 75 ? 'medium' : 'low';
+
+// ─── ABGLEICH-DIFF ────────────────────────────────────
+const computeDiff = (matchesOld, matchesNew) => {
+  if (!matchesOld || !matchesNew) return null;
+
+  // Normalisierung: Kommas, Punkte, Extra-Leerzeichen entfernen
+  // damit "Elif, Acar" und "Elif Acar" denselben Key ergeben
+  const norm = (s) => (s||'').replace(/[,.\-;:]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  const makeKeyA = (m) => (norm(m.a_vorname) + '|' + norm(m.a_nachname) + '|' + String(m.a_datum||'').split('T')[0]);
+  const hasName = (m) => !!(m.a_nachname || m.a_vorname || m.b_nachname || m.b_vorname);
+
+  // Ein Durchlauf pro Array: Maps + Zähler gleichzeitig
+  const oldMapA = new Map();
+  const oldCounts = { matched: 0, nur_in_a: 0, nur_in_b: 0 };
+  let oldOhneNamen = 0;
+  for (const m of matchesOld) {
+    const typ = m.match_typ;
+    if (typ === 'exact' || typ === 'fuzzy_accepted') oldCounts.matched++;
+    else if (typ === 'nur_in_a') oldCounts.nur_in_a++;
+    else if (typ === 'nur_in_b') oldCounts.nur_in_b++;
+    if (typ !== 'nur_in_b' && hasName(m)) oldMapA.set(makeKeyA(m), m);
+    if (typ !== 'nur_in_b' && !hasName(m)) oldOhneNamen++;
+  }
+
+  const newMapA = new Map();
+  const newCounts = { matched: 0, nur_in_a: 0, nur_in_b: 0 };
+  let newOhneNamen = 0;
+  for (const m of matchesNew) {
+    const typ = m.match_typ;
+    if (typ === 'exact' || typ === 'fuzzy_accepted') newCounts.matched++;
+    else if (typ === 'nur_in_a') newCounts.nur_in_a++;
+    else if (typ === 'nur_in_b') newCounts.nur_in_b++;
+    if (typ !== 'nur_in_b' && hasName(m)) newMapA.set(makeKeyA(m), m);
+    if (typ !== 'nur_in_b' && !hasName(m)) newOhneNamen++;
+  }
+
+  const isMatched = (m) => m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted';
+  const isMissing = (m) => m.match_typ === 'nur_in_a';
+
+  const neuGeloest = [], neuFehlend = [], unveraendertFehlend = [], unveraendertOk = [];
+  const neueEintraege = [], entfallen = [];
+
+  // Vorwärts: neue Einträge prüfen gegen alte
+  for (const [key, nw] of newMapA) {
+    const old = oldMapA.get(key);
+    if (!old) {
+      neueEintraege.push({ match: nw, status: isMatched(nw) ? 'matched' : isMissing(nw) ? 'missing' : 'other' });
+    } else if (isMissing(old) && isMatched(nw)) {
+      neuGeloest.push({ old, neu: nw });
+    } else if (isMatched(old) && isMissing(nw)) {
+      neuFehlend.push({ old, neu: nw });
+    } else if (isMissing(old) && isMissing(nw)) {
+      unveraendertFehlend.push({ old, neu: nw });
+    } else if (isMatched(old) && isMatched(nw)) {
+      unveraendertOk.push({ old, neu: nw });
+    }
+  }
+
+  // Rückwärts: alte Einträge die im neuen fehlen
+  for (const [key, old] of oldMapA) {
+    if (!newMapA.has(key)) {
+      entfallen.push({ match: old, status: isMatched(old) ? 'matched' : isMissing(old) ? 'missing' : 'other' });
+    }
+  }
+
+  const delta = {
+    matched: newCounts.matched - oldCounts.matched,
+    nur_in_a: newCounts.nur_in_a - oldCounts.nur_in_a,
+    nur_in_b: newCounts.nur_in_b - oldCounts.nur_in_b,
+  };
+
+  return {
+    neuGeloest, neuFehlend, unveraendertFehlend, unveraendertOk, neueEintraege, entfallen,
+    oldCounts, newCounts, delta, oldOhneNamen, newOhneNamen,
+  };
+};
 
 // ─── KOMPONENTEN ──────────────────────────────────────
 
@@ -617,6 +476,24 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
     toast.success(`${allFehlende.length} Einträge exportiert`);
   };
 
+  // Druckansicht: Alle fehlenden Kinder
+  const printAllFehlende = () => {
+    const grouped = {};
+    for (const bId of Object.keys(abgleichDetail)) {
+      const am = abgleichDetail[bId]?.matches;
+      if (!am) continue;
+      am.filter(m => m.match_typ === 'nur_in_a').forEach(m => {
+        const key = ((m.a_nachname||'') + '|' + (m.a_vorname||'')).toLowerCase();
+        if (!grouped[key]) grouped[key] = { nachname: m.a_nachname, vorname: m.a_vorname, klasse: m.a_klasse || '', dateSet: new Set() };
+        grouped[key].dateSet.add(m.a_datum);
+      });
+    }
+    Object.values(grouped).forEach(g => { g.dates = [...g.dateSet]; delete g.dateSet; });
+    const printData = Object.values(grouped).sort((a, b) => (a.nachname||'').localeCompare(b.nachname||'', 'de'));
+    if (!printData.length) { toast.info('Lade erst Details, dann drucken'); return; }
+    printFehlendeKinder('Alle fehlenden Kinder — OHNE Buchung', printData, 'Alle Blöcke');
+  };
+
   return (
     <div>
       <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
@@ -643,13 +520,18 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
           <div className="stat-value">{gesamtKinderB}</div>
           <div className="stat-sub">verschiedene Kinder gebucht</div>
         </div>
-        {hatAbgleich ? (
+        {hatAbgleich ? (<>
+          <div className="stat-card accent-green">
+            <div className="stat-label">✓ Übereinstimmung</div>
+            <div className="stat-value">{gesamtMatches}</div>
+            <div className="stat-sub">Kinder mit Buchung</div>
+          </div>
           <div className={`stat-card ${gesamtFehltInB > 0 ? 'accent-red' : 'accent-green'}`}>
-            <div className="stat-label">Fehlt in B</div>
+            <div className="stat-label">✗ Fehlt in B</div>
             <div className="stat-value">{gesamtFehltInB}</div>
             <div className="stat-sub">{gesamtFehltInB > 0 ? 'Kinder ohne Buchung' : 'alle gebucht ✓'}</div>
           </div>
-        ) : (
+        </>) : (
           <div className="stat-card">
             <div className="stat-label">Abgleich</div>
             <div className="stat-value">–</div>
@@ -674,7 +556,10 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
           <div className="card-title">
             Alle Ferienblöcke
             <div style={{display:'flex',gap:'0.5rem'}}>
-              {hatAbgleich && gesamtFehltInB > 0 && <button className="btn btn-ghost btn-sm" onClick={exportFehlende}>📥 Fehlende exportieren</button>}
+              {hatAbgleich && gesamtFehltInB > 0 && <>
+                <button className="btn btn-ghost btn-sm" onClick={printAllFehlende}>🖨️ Drucken</button>
+                <button className="btn btn-ghost btn-sm" onClick={exportFehlende}>📥 Excel</button>
+              </>}
               <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('ferienblock')}>+ Neu / Verwalten</button>
             </div>
           </div>
@@ -687,9 +572,9 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                   <th>€/Tag</th>
                   <th>Angemeldet (A)</th>
                   <th>Gebucht (B)</th>
-                  <th>Übereinstimmung</th>
-                  <th>Fehlt in B</th>
-                  <th>Nur in B</th>
+                  <th>✓ OK</th>
+                  <th>✗ Fehlt in B</th>
+                  <th>⚠ Nur in B</th>
                   <th>Abgleiche</th>
                   <th></th>
                 </tr>
@@ -767,10 +652,10 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                               const map = {};
                               entries.forEach(m => {
                                 const key = ((m[prefix+'_nachname']||'') + '|' + (m[prefix+'_vorname']||'')).toLowerCase();
-                                if (!map[key]) map[key] = { nachname: m[prefix+'_nachname'], vorname: m[prefix+'_vorname'], klasse: m[prefix+'_klasse'] || '', dates: [] };
-                                map[key].dates.push(m[prefix+'_datum']);
+                                if (!map[key]) map[key] = { nachname: m[prefix+'_nachname'], vorname: m[prefix+'_vorname'], klasse: m[prefix+'_klasse'] || '', dateSet: new Set() };
+                                map[key].dateSet.add(m[prefix+'_datum']);
                               });
-                              return Object.values(map).sort((a, b) => (a.nachname||'').localeCompare(b.nachname||'', 'de'));
+                              return Object.values(map).map(k => ({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse, dates: [...k.dateSet] })).sort((a, b) => (a.nachname||'').localeCompare(b.nachname||'', 'de'));
                             };
                             const fehlendeGrp = groupEntries(fehlende, 'a');
                             const nurInBGrp = groupEntries(nurInB, 'b');
@@ -781,7 +666,13 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                                   const sorted = sortDetailList(fehlendeGrp);
                                   const thStyle = {cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'};
                                   return <div style={{marginBottom:'1rem'}}>
-                                    <h4 style={{color:'var(--danger)',marginBottom:'0.5rem'}}>⚠ {fehlendeGrp.length} Kinder OHNE Buchung ({fehlende.length} Tage)</h4>
+                                    <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem',flexWrap:'wrap'}}>
+                                      <h4 style={{color:'var(--danger)',margin:0}}>⚠ {fehlendeGrp.length} Kinder OHNE Buchung ({fehlende.length} Tage)</h4>
+                                      <button className="btn btn-ghost btn-sm" style={{width:'auto',fontSize:'0.75rem'}}
+                                        onClick={() => printFehlendeKinder('Fehlende Kinder — OHNE Buchung', sorted, b.name)}>
+                                        🖨️ Drucken
+                                      </button>
+                                    </div>
                                     <div className="table-wrap"><table><thead><tr>
                                       <th>#</th>
                                       <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
@@ -1105,12 +996,16 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const [saving, setSaving] = useState(false);
   const [listADb, setListADb] = useState([]);
   const [listBDb, setListBDb] = useState([]);
+  const [comparisonSummary, setComparisonSummary] = useState(null); // { exact, fuzzy, onlyA, onlyB }
+  const [usedDbForA, setUsedDbForA] = useState(false);
+  const [usedDbForB, setUsedDbForB] = useState(false);
 
   // Listen aus DB laden wenn Block gewählt
   useEffect(() => {
     if (!blockId) return;
     setListA([]); setListB([]); setRawA(null); setRawB(null);
     setStep(1); setPotentialMatches([]); setReviewed({});
+    setComparisonSummary(null); setUsedDbForA(false); setUsedDbForB(false);
     API.get('listen', { ferienblock_id: blockId, liste: 'A' }).then(d => {
       setListADb(Array.isArray(d) ? d : []);
     });
@@ -1159,6 +1054,13 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
   const processAndUpload = async () => {
     setIsLoading(true);
+    // Immer frisch starten — keine alten Entscheidungen behalten
+    setPotentialMatches([]);
+    setReviewed({});
+    setComparisonSummary(null);
+    // Merken welche Listen neu hochgeladen und welche aus DB kommen
+    setUsedDbForA(!rawA || !colMapA.nachname);
+    setUsedDbForB(!rawB || !colMapB.nachname);
 
     // Hilfsfunktion: Zeile -> { nachname, vorname, datum, ... }
     const buildEntry = (row, headers, cm, extraCols = {}) => {
@@ -1177,6 +1079,25 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       return entry;
     };
 
+    // Block-Zeitraum für Validierung
+    const block = blocks.find(b => String(b.id) === String(blockId));
+    const blockStart = block ? String(block.startdatum).split('T')[0] : null;
+    const blockEnd = block ? String(block.enddatum).split('T')[0] : null;
+    const warnings = [];
+
+    // Validierung: Einträge prüfen
+    const validateEntries = (entries, label) => {
+      let emptyNames = 0, outsideDates = 0, invalidDates = 0;
+      entries.forEach(e => {
+        if (!e.nachname || !e.vorname) emptyNames++;
+        if (!e.datum || e.datum === 'Invalid Date' || e.datum === 'NaN-NaN-NaN') invalidDates++;
+        else if (blockStart && blockEnd && (e.datum < blockStart || e.datum > blockEnd)) outsideDates++;
+      });
+      if (emptyNames > 0) warnings.push(`${label}: ${emptyNames} Zeilen ohne Name übersprungen`);
+      if (invalidDates > 0) warnings.push(`${label}: ${invalidDates} Zeilen mit ungültigem Datum übersprungen`);
+      if (outsideDates > 0) warnings.push(`${label}: ${outsideDates} Einträge liegen außerhalb des Block-Zeitraums (${fmtDate(blockStart)} – ${fmtDate(blockEnd)})`);
+    };
+
     // Liste A verarbeiten (mit optionaler Klasse)
     let newA = [];
     if (rawA && colMapA.nachname) {
@@ -1185,6 +1106,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
         klasse: colMapA.klasse ? hA.indexOf(colMapA.klasse) : hA.findIndex(x => /klasse/i.test(x)),
       };
       newA = rawA.data.map(row => buildEntry(row, hA, colMapA, extraColsA)).filter(Boolean);
+      validateEntries(newA, 'Liste A');
       await API.post('listen', { ferienblock_id: blockId, liste: 'A', eintraege: newA });
     }
 
@@ -1198,7 +1120,13 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
         kontostand: h.findIndex(x => /konto/i.test(x)),
       };
       newB = rawB.data.map(row => buildEntry(row, h, colMapB, extraCols)).filter(Boolean);
+      validateEntries(newB, 'Liste B');
       await API.post('listen', { ferienblock_id: blockId, liste: 'B', eintraege: newB });
+    }
+
+    // Warnungen anzeigen
+    if (warnings.length > 0) {
+      warnings.forEach(w => toast.warn(w));
     }
 
     // Interne Listen für Abgleich aufbauen
@@ -1233,8 +1161,9 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
   const runComparison = (lA, lB) => {
     setIsLoading(true);
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       const mapB = new Map((lB).map(i => [`${i.name}|${i.date}`, i]));
+      const exactA = (lA).filter(e => mapB.has(`${e.name}|${e.date}`));
       const nonA = (lA).filter(e => !mapB.has(`${e.name}|${e.date}`));
       const mapA = new Map((lA).map(i => [`${i.name}|${i.date}`, i]));
       const nonB = (lB).filter(e => !mapA.has(`${e.name}|${e.date}`));
@@ -1250,16 +1179,33 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           }
         }
       }
-      setPotentialMatches(Object.values(groups).sort((a,b) => b.score-a.score));
+      const fuzzyGroups = Object.values(groups).sort((a,b) => b.score-a.score);
+      setPotentialMatches(fuzzyGroups);
+
+      // Zusammenfassung für Transparenz
+      const fuzzyEntries = fuzzyGroups.reduce((sum, g) => sum + g.entries.length, 0);
+      const onlyACount = nonA.length - fuzzyEntries;
+      setComparisonSummary({
+        totalA: lA.length,
+        totalB: lB.length,
+        exact: exactA.length,
+        exactKinder: new Set(exactA.map(e => e.name.toLowerCase())).size,
+        fuzzyGroups: fuzzyGroups.length,
+        fuzzyEntries,
+        onlyA: Math.max(0, onlyACount),
+        onlyB: Math.max(0, nonB.length - fuzzyEntries),
+      });
+
       setIsLoading(false);
-    }, 50);
+    });
   };
 
   const startComparisonFromDb = () => {
     const mA = listADb.map(e => ({ id: `a${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
     const mB = listBDb.map(e => ({ id: `b${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
     setListA(mA); setListB(mB);
-    setPotentialMatches([]); setReviewed({});
+    setPotentialMatches([]); setReviewed({}); setComparisonSummary(null);
+    setUsedDbForA(true); setUsedDbForB(true);
     runComparison(mA, mB);
     setStep(3);
   };
@@ -1282,15 +1228,19 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const finalResults = useMemo(() => {
     if (!listA.length || !listB.length) return { matches: [], onlyInA: [], onlyInB: [] };
     const mapB = new Map(listB.map(i => [`${i.name}|${i.date}`, i.id]));
-    const exactMatches = listA.filter(i => mapB.has(`${i.name}|${i.date}`));
-    const exactBIds = new Set(exactMatches.map(i => mapB.get(`${i.name}|${i.date}`)));
+    const exactAIds = new Set();
+    const exactBIds = new Set();
+    listA.forEach(i => {
+      const bId = mapB.get(`${i.name}|${i.date}`);
+      if (bId !== undefined) { exactAIds.add(i.id); exactBIds.add(bId); }
+    });
     const accA = new Set(), accB = new Set();
     potentialMatches.forEach(g => g.entries.forEach(p => {
       if (reviewed[`${p.entryA.id}-${p.entryB.id}`] === 'accept') { accA.add(p.entryA.id); accB.add(p.entryB.id); }
     }));
     return {
-      matches: listA.filter(i => exactMatches.some(m => m.id === i.id) || accA.has(i.id)),
-      onlyInA: listA.filter(i => !exactMatches.some(m => m.id === i.id) && !accA.has(i.id)),
+      matches: listA.filter(i => exactAIds.has(i.id) || accA.has(i.id)),
+      onlyInA: listA.filter(i => !exactAIds.has(i.id) && !accA.has(i.id)),
       onlyInB: listB.filter(i => !exactBIds.has(i.id) && !accB.has(i.id))
     };
   }, [listA, listB, potentialMatches, reviewed]);
@@ -1591,6 +1541,40 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           {/* SCHRITT 3: Prüfen */}
           {!isLoading && step === 3 && (
             <div>
+              {/* Datenquelle-Warnung: DB statt Upload */}
+              {(usedDbForA || usedDbForB) && (
+                <div className="info-box" style={{marginBottom:'1rem',background:'rgba(230,168,23,0.1)',border:'1px solid var(--warning)'}}>
+                  ⚠️ <strong>Hinweis:</strong>{' '}
+                  {usedDbForA && usedDbForB
+                    ? 'Beide Listen stammen aus der Datenbank (kein neuer Upload).'
+                    : usedDbForA
+                    ? 'Liste A stammt aus der Datenbank — nur Liste B wurde neu hochgeladen.'
+                    : 'Liste B stammt aus der Datenbank — nur Liste A wurde neu hochgeladen.'}
+                  {' '}Für einen komplett frischen Vergleich beide Listen hochladen.
+                </div>
+              )}
+
+              {/* Zusammenfassung: Was wurde automatisch zugeordnet */}
+              {comparisonSummary && (
+                <div className="stat-grid" style={{marginBottom:'1rem'}}>
+                  <div className="stat-card accent-green" style={{padding:'0.75rem 1rem'}}>
+                    <div className="stat-label" style={{fontSize:'0.7rem'}}>Exakte Treffer</div>
+                    <div className="stat-value" style={{fontSize:'1.5rem'}}>{comparisonSummary.exact}</div>
+                    <div className="stat-sub">{comparisonSummary.exactKinder} Kinder · automatisch zugeordnet</div>
+                  </div>
+                  <div className="stat-card accent-orange" style={{padding:'0.75rem 1rem'}}>
+                    <div className="stat-label" style={{fontSize:'0.7rem'}}>Ähnliche Namen</div>
+                    <div className="stat-value" style={{fontSize:'1.5rem'}}>{potentialMatches.length}</div>
+                    <div className="stat-sub">{potentialMatches.length === 1 ? 'Vorschlag' : 'Vorschläge'} zur Prüfung</div>
+                  </div>
+                  <div className="stat-card accent-blue" style={{padding:'0.75rem 1rem'}}>
+                    <div className="stat-label" style={{fontSize:'0.7rem'}}>Gesamt geladen</div>
+                    <div className="stat-value" style={{fontSize:'1.5rem'}}>{comparisonSummary.totalA}</div>
+                    <div className="stat-sub">Einträge A · {comparisonSummary.totalB} Einträge B</div>
+                  </div>
+                </div>
+              )}
+
               <div className="card">
                 <div className="card-title">
                   Mögliche Übereinstimmungen
@@ -1603,7 +1587,10 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   <button className="btn btn-ghost btn-sm" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
                 </div>
 
-                {openGroups.length === 0 && (
+                {openGroups.length === 0 && potentialMatches.length === 0 && (
+                  <p style={{color:'var(--text2)'}}>Keine ähnlichen Namen gefunden — alle Einträge wurden exakt zugeordnet oder haben keine Entsprechung.</p>
+                )}
+                {openGroups.length === 0 && potentialMatches.length > 0 && (
                   <p style={{color:'var(--text2)'}}>Alle Vorschläge überprüft.</p>
                 )}
 
@@ -1650,10 +1637,10 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
             const groupByKind = (entries) => {
               const map = {};
               entries.forEach(e => {
-                if (!map[e.name]) map[e.name] = { name: e.name, dates: [] };
-                map[e.name].dates.push(e.date);
+                if (!map[e.name]) map[e.name] = { name: e.name, dateSet: new Set() };
+                map[e.name].dateSet.add(e.date);
               });
-              return Object.values(map).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+              return Object.values(map).map(k => ({ name: k.name, dates: [...k.dateSet] })).sort((a, b) => a.name.localeCompare(b.name, 'de'));
             };
             const matchedKinder = groupByKind(finalResults.matches);
             const fehlendeKinder = groupByKind(finalResults.onlyInA);
@@ -1681,8 +1668,17 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
               {fehlendeKinder.length > 0 && (
                 <div className="card" style={{marginBottom:'1rem'}}>
-                  <div className="card-title" style={{color:'var(--danger)'}}>
+                  <div className="card-title" style={{color:'var(--danger)',display:'flex',alignItems:'center',gap:'0.5rem',flexWrap:'wrap'}}>
                     Fehlt in Liste B <span className="badge badge-red" style={{marginLeft:'0.5rem'}}>{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
+                    <button className="btn btn-ghost btn-sm" style={{width:'auto',fontSize:'0.75rem',marginLeft:'auto'}}
+                      onClick={() => {
+                        const bName = blocks.find(bl => String(bl.id) === String(blockId))?.name || '';
+                        const printData = fehlendeKinder.map(k => {
+                          const parts = k.name.split(' ');
+                          return { vorname: parts[0] || '', nachname: parts.slice(1).join(' ') || k.name, klasse: '', dates: k.dates };
+                        });
+                        printFehlendeKinder('Fehlende Kinder — OHNE Buchung', printData, bName);
+                      }}>🖨️ Drucken</button>
                   </div>
                   <div className="table-wrap">
                     <table>
@@ -1898,6 +1894,220 @@ const FinanzenPage = ({ blocks }) => {
   );
 };
 
+// ─── VERGLEICHSANSICHT ────────────────────────────────
+const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => {
+  const diff = useMemo(() => computeDiff(matchesOld, matchesNew), [matchesOld, matchesNew]);
+  const [groupBy, setGroupBy] = useState('kind'); // 'kind' oder 'tag'
+
+  if (!diff) return <p style={{color:'var(--text2)'}}>Keine Daten</p>;
+
+  // Nach Kind gruppieren (mit Status-Tracking)
+  const groupByKindFn = (entries, getMatch) => {
+    const map = {};
+    entries.forEach(e => {
+      const m = getMatch(e);
+      const key = ((m.a_nachname||'') + '|' + (m.a_vorname||'')).toLowerCase();
+      if (!map[key]) map[key] = { nachname: m.a_nachname || '', vorname: m.a_vorname || '', klasse: m.a_klasse || '', dateSet: new Set(), statusSet: new Set() };
+      map[key].dateSet.add(String(m.a_datum || '').split('T')[0]);
+      if (e.status) map[key].statusSet.add(e.status);
+    });
+    return Object.values(map).map(k => ({ ...k, dates: [...k.dateSet], statuses: [...k.statusSet] })).sort((a, b) => (a.nachname).localeCompare(b.nachname, 'de'));
+  };
+
+  // Nach Tag gruppieren (mit Status-Tracking)
+  const groupByTagFn = (entries, getMatch) => {
+    const map = {};
+    entries.forEach(e => {
+      const m = getMatch(e);
+      const date = String(m.a_datum || '').split('T')[0];
+      if (!map[date]) map[date] = { date, kinderSet: new Set(), statusSet: new Set() };
+      map[date].kinderSet.add(((m.a_vorname||'') + ' ' + (m.a_nachname||'')).trim());
+      if (e.status) map[date].statusSet.add(e.status);
+    });
+    return Object.values(map).map(d => ({ ...d, kinder: [...d.kinderSet], statuses: [...d.statusSet] })).sort((a, b) => a.date.localeCompare(b.date));
+  };
+
+  // Status-Badge Hilfsfunktion
+  const StatusBadge = ({ statuses }) => {
+    if (!statuses || statuses.length === 0) return null;
+    if (statuses.includes('matched') && statuses.includes('missing')) {
+      return <span style={{fontSize:'0.75rem'}}><span className="badge badge-green" style={{marginRight:'0.25rem'}}>✓ OK</span><span className="badge badge-orange">✗ Fehlt</span></span>;
+    }
+    if (statuses.includes('matched')) return <span className="badge badge-green">✓ OK</span>;
+    if (statuses.includes('missing')) return <span className="badge badge-orange">✗ Fehlt in B</span>;
+    return null;
+  };
+
+  const fmtDelta = (val) => {
+    if (val > 0) return <span className="delta-positive">+{val}</span>;
+    if (val < 0) return <span className="delta-negative">{val}</span>;
+    return <span className="delta-zero">±0</span>;
+  };
+
+  // Entfallene nach Status aufteilen
+  const entfallenOk = diff.entfallen.filter(e => e.status === 'matched');
+  const entfallenFehlend = diff.entfallen.filter(e => e.status === 'missing');
+
+  // Nur identifizierte Verluste anzeigen (keine errechneten Fantasie-Zahlen)
+
+  // Sektionen: nur echte ÄNDERUNGEN bekommen Farbe
+  const sections = [
+    { key: 'neuGeloest', title: 'Neu gelöst (jetzt gebucht)', icon: '✅', badge: 'badge-green',
+      changed: true, border: 'rgba(34,197,94,0.5)',
+      items: diff.neuGeloest, getMatch: e => e.neu, desc: 'Waren vorher ohne Buchung, sind jetzt korrekt zugeordnet.' },
+    { key: 'neuFehlend', title: 'Buchung verloren (noch angemeldet)', icon: '💔', badge: 'badge-red',
+      changed: true, border: 'rgba(220,53,69,0.5)',
+      items: diff.neuFehlend, getMatch: e => e.neu, desc: 'Waren vorher Treffer, aber die Buchung in Liste B fehlt jetzt.' },
+    { key: 'entfallenOk', title: 'Nicht mehr angemeldet (waren Treffer)', icon: '🔴', badge: 'badge-red',
+      changed: true, border: 'rgba(220,53,69,0.5)',
+      items: entfallenOk, getMatch: e => e.match, desc: 'Hatten vorher einen Treffer, sind in den neuen Daten komplett entfallen.' },
+    { key: 'neueEintraege', title: 'Neue Einträge', icon: '🆕', badge: 'badge-blue',
+      changed: true, border: 'rgba(0,90,156,0.5)', showStatus: true,
+      items: diff.neueEintraege, getMatch: e => e.match, desc: 'Im älteren Abgleich nicht vorhanden.' },
+    { key: 'unveraendertFehlend', title: 'Weiterhin fehlend', icon: '⚠', badge: 'badge-orange',
+      changed: false,
+      items: diff.unveraendertFehlend, getMatch: e => e.neu, desc: 'Fehlten vorher und fehlen weiterhin — keine Änderung.' },
+    { key: 'entfallenFehlend', title: 'Nicht mehr angemeldet (waren bereits fehlend)', icon: '🗑', badge: 'badge-grey',
+      changed: false,
+      items: entfallenFehlend, getMatch: e => e.match, desc: 'Waren schon vorher ohne Buchung und sind jetzt entfallen — keine Auswirkung.' },
+  ];
+
+  // Excel-Export
+  const exportDiffExcel = () => {
+    const wb = XLSX.utils.book_new();
+    sections.forEach(sec => {
+      if (!sec.items.length) return;
+      const grouped = groupByKindFn(sec.items, sec.getMatch);
+      const rows = grouped.map(k => ({
+        Nachname: k.nachname, Vorname: k.vorname, Klasse: k.klasse,
+        Tage: k.dates.length, Daten: k.dates.sort().map(d => fmtDate(d)).join(', ')
+      }));
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), sec.title.slice(0, 31));
+    });
+    if (wb.SheetNames.length) {
+      XLSX.writeFile(wb, 'Vergleich_Abgleiche.xlsx');
+      toast.success('Vergleich exportiert');
+    } else {
+      toast.info('Keine Veränderungen zum Exportieren');
+    }
+  };
+
+  return (
+    <div>
+      {/* Delta-Summary — 4 Karten */}
+      <div className="stat-grid" style={{marginBottom:'1rem'}}>
+        <div className="stat-card accent-green" style={{padding:'0.75rem 1rem'}}>
+          <div className="stat-label" style={{fontSize:'0.7rem'}}>✓ Treffer</div>
+          <div className="stat-value" style={{fontSize:'1.5rem'}}>{diff.newCounts.matched}</div>
+          <div className="stat-sub">{fmtDelta(diff.delta.matched)} vs. vorher ({diff.oldCounts.matched})</div>
+        </div>
+        <div className="stat-card accent-red" style={{padding:'0.75rem 1rem'}}>
+          <div className="stat-label" style={{fontSize:'0.7rem'}}>✗ Fehlend in B</div>
+          <div className="stat-value" style={{fontSize:'1.5rem'}}>{diff.newCounts.nur_in_a}</div>
+          <div className="stat-sub">{fmtDelta(diff.delta.nur_in_a)} vs. vorher ({diff.oldCounts.nur_in_a})</div>
+        </div>
+        <div className="stat-card accent-orange" style={{padding:'0.75rem 1rem'}}>
+          <div className="stat-label" style={{fontSize:'0.7rem'}}>⚠ Nur in B</div>
+          <div className="stat-value" style={{fontSize:'1.5rem'}}>{diff.newCounts.nur_in_b}</div>
+          <div className="stat-sub">{fmtDelta(diff.delta.nur_in_b)} vs. vorher ({diff.oldCounts.nur_in_b})</div>
+        </div>
+        <div className="stat-card" style={{padding:'0.75rem 1rem'}}>
+          <div className="stat-label" style={{fontSize:'0.7rem'}}>✅ Neu gelöst</div>
+          <div className="stat-value" style={{fontSize:'1.5rem',color:'var(--success)'}}>{diff.neuGeloest.length}</div>
+          <div className="stat-sub">Vorher fehlend, jetzt OK</div>
+        </div>
+      </div>
+
+      {/* Hinweis wenn Detail-Zuordnung unvollständig (fehlende Namen im alten Abgleich) */}
+      {diff.oldOhneNamen > 0 && (
+        <div style={{
+          background:'rgba(230,168,23,0.08)', borderRadius:'0.5rem', padding:'0.6rem 1rem',
+          fontSize:'0.82rem', color:'var(--text2)', marginBottom:'1rem',
+          borderLeft:'3px solid var(--warning)'
+        }}>
+          ⚠ Der ältere Abgleich hat <strong>{diff.oldOhneNamen} Einträge ohne gespeicherte Namen</strong> — die Detail-Zuordnung (wer genau gewonnen/verloren hat) ist daher unvollständig.
+          <span style={{display:'block',marginTop:'0.25rem',fontSize:'0.78rem'}}>
+            Tipp: Vergleiche nur Abgleiche die nach der letzten Migration erstellt wurden.
+          </span>
+        </div>
+      )}
+
+      {/* Steuerung */}
+      <div style={{display:'flex',gap:'0.5rem',marginBottom:'1rem',flexWrap:'wrap',alignItems:'center'}}>
+        <button className={`btn btn-sm ${groupBy==='kind'?'btn-primary':'btn-ghost'}`} style={{width:'auto'}}
+          onClick={() => setGroupBy('kind')}>Nach Kind</button>
+        <button className={`btn btn-sm ${groupBy==='tag'?'btn-primary':'btn-ghost'}`} style={{width:'auto'}}
+          onClick={() => setGroupBy('tag')}>Nach Tag</button>
+        <div style={{flex:1}} />
+        <button className="btn btn-ghost btn-sm" style={{width:'auto'}} onClick={exportDiffExcel}>📊 Excel exportieren</button>
+      </div>
+
+      {/* Detail-Sektionen */}
+      {sections.map(sec => {
+        if (!sec.items.length) return null;
+
+        const cardStyle = sec.changed
+          ? {marginBottom:'1rem', borderLeft:`4px solid ${sec.border}`}
+          : {marginBottom:'1rem', opacity: 0.75};
+
+        if (groupBy === 'kind') {
+          const grouped = groupByKindFn(sec.items, sec.getMatch);
+          return (
+            <div key={sec.key} className="card" style={cardStyle}>
+              <div className="card-title">{sec.icon} {sec.title} <span className={`badge ${sec.badge}`} style={{marginLeft:'0.5rem'}}>{grouped.length} Kinder · {sec.items.length} Tage</span></div>
+              {sec.changed && <p style={{fontSize:'0.82rem',color:'var(--text2)',marginBottom:'0.75rem'}}>{sec.desc}</p>}
+              <div className="table-wrap"><table>
+                <thead><tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th>{sec.showStatus && <th>Status</th>}<th>Tage</th><th>Daten</th></tr></thead>
+                <tbody>{grouped.map((k, i) => (
+                  <tr key={i}>
+                    <td>{i+1}</td>
+                    <td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse || '–'}</td>
+                    {sec.showStatus && <td><StatusBadge statuses={k.statuses} /></td>}
+                    <td><span className={`badge ${sec.badge}`}>{k.dates.length}</span></td>
+                    <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                  </tr>
+                ))}</tbody>
+              </table></div>
+            </div>
+          );
+        } else {
+          const grouped = groupByTagFn(sec.items, sec.getMatch);
+          return (
+            <div key={sec.key} className="card" style={cardStyle}>
+              <div className="card-title">{sec.icon} {sec.title} <span className={`badge ${sec.badge}`} style={{marginLeft:'0.5rem'}}>{grouped.length} Tage · {sec.items.length} Einträge</span></div>
+              {sec.changed && <p style={{fontSize:'0.82rem',color:'var(--text2)',marginBottom:'0.75rem'}}>{sec.desc}</p>}
+              <div className="table-wrap"><table>
+                <thead><tr><th>Tag</th><th>Datum</th>{sec.showStatus && <th>Status</th>}<th>Kinder</th><th>Namen</th></tr></thead>
+                <tbody>{grouped.map((d, i) => (
+                  <tr key={i}>
+                    <td>
+                      <strong>{(() => { try { return new Date(d.date).toLocaleDateString('de-DE', {weekday:'short'}); } catch { return ''; } })()}</strong>
+                    </td>
+                    <td>{fmtDate(d.date)}</td>
+                    {sec.showStatus && <td><StatusBadge statuses={d.statuses} /></td>}
+                    <td><span className={`badge ${sec.badge}`}>{d.kinder.length}</span></td>
+                    <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{d.kinder.sort().join(', ')}</td>
+                  </tr>
+                ))}</tbody>
+              </table></div>
+            </div>
+          );
+        }
+      })}
+
+      {/* Keine Änderungen */}
+      {diff.neuGeloest.length === 0 && diff.neuFehlend.length === 0
+        && diff.neueEintraege.length === 0 && diff.unveraendertFehlend.length === 0
+        && diff.entfallen.length === 0 && diff.delta.matched === 0
+        && diff.delta.nur_in_a === 0 && diff.delta.nur_in_b === 0 && (
+        <div className="card"><div className="empty-state">
+          <div className="icon">✅</div><p>Keine Veränderungen zwischen den beiden Abgleichen.</p>
+        </div></div>
+      )}
+    </div>
+  );
+};
+
 // VERLAUF
 const VerlaufPage = ({ blocks }) => {
   const [blockId, setBlockId] = useState(blocks[0]?.id || '');
@@ -1906,15 +2116,33 @@ const VerlaufPage = ({ blocks }) => {
   const [openId, setOpenId]   = useState(null);
   const [detail, setDetail]   = useState({});
   const [detailLoading, setDetailLoading] = useState({});
+  // Vergleichsmodus
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareA, setCompareA] = useState('');
+  const [compareB, setCompareB] = useState('');
+  const [compareData, setCompareData] = useState({ a: null, b: null });
+  const [compareLoading, setCompareLoading] = useState(false);
 
   const loadVerlauf = (id) => {
     if (!id) return;
     setLoading(true);
     setOpenId(null);
+    setCompareMode(false); setCompareA(''); setCompareB(''); setCompareData({a:null,b:null});
     API.get('abgleich', { ferienblock_id: id }).then(d => {
       setVerlauf(Array.isArray(d) ? d : []);
       setLoading(false);
     });
+  };
+
+  const loadComparison = async () => {
+    if (!compareA || !compareB || compareA === compareB) return;
+    setCompareLoading(true);
+    const [resA, resB] = await Promise.all([
+      API.get('abgleich', { abgleich_id: compareA }),
+      API.get('abgleich', { abgleich_id: compareB })
+    ]);
+    setCompareData({ a: resA, b: resB });
+    setCompareLoading(false);
   };
 
   useEffect(() => { loadVerlauf(blockId); }, [blockId]);
@@ -1978,6 +2206,66 @@ const VerlaufPage = ({ blocks }) => {
         <div className="card"><div className="empty-state"><div className="icon">📋</div><p>Noch keine Abgleiche für diesen Block gespeichert.</p></div></div>
       )}
 
+      {/* ── Vergleichsmodus ── */}
+      {!loading && blockId && verlauf.length >= 2 && (
+        <div className="card" style={{marginBottom:'1.5rem'}}>
+          <div className="card-title" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <span>↔ Abgleiche vergleichen</span>
+            <button className="btn btn-ghost btn-sm" style={{width:'auto'}}
+              onClick={() => { setCompareMode(!compareMode); setCompareData({a:null,b:null}); setCompareA(''); setCompareB(''); }}>
+              {compareMode ? '✗ Schließen' : '↔ Vergleichen'}
+            </button>
+          </div>
+          {compareMode && (
+            <div>
+              <div style={{display:'flex',gap:'0.75rem',alignItems:'flex-end',flexWrap:'wrap',marginBottom:'1rem'}}>
+                <div style={{flex:1,minWidth:'180px'}}>
+                  <label style={{fontSize:'0.75rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase',letterSpacing:'0.5px'}}>
+                    Alter Abgleich (vorher)
+                  </label>
+                  <select className="form-input" value={compareA} onChange={e => { setCompareA(e.target.value); setCompareData({a:null,b:null}); }}>
+                    <option value="">– wählen –</option>
+                    {verlauf.map(v => (
+                      <option key={v.id} value={v.id} disabled={String(v.id) === String(compareB)}>
+                        {fmtDateTime(v.erstellt_am)} — {v.matches_count || 0} Treffer, {v.nur_in_a_count || 0} fehlend
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{fontSize:'1.5rem',color:'var(--text2)',padding:'0 0.25rem 0.5rem'}}>→</div>
+                <div style={{flex:1,minWidth:'180px'}}>
+                  <label style={{fontSize:'0.75rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase',letterSpacing:'0.5px'}}>
+                    Neuer Abgleich (nachher)
+                  </label>
+                  <select className="form-input" value={compareB} onChange={e => { setCompareB(e.target.value); setCompareData({a:null,b:null}); }}>
+                    <option value="">– wählen –</option>
+                    {verlauf.map(v => (
+                      <option key={v.id} value={v.id} disabled={String(v.id) === String(compareA)}>
+                        {fmtDateTime(v.erstellt_am)} — {v.matches_count || 0} Treffer, {v.nur_in_a_count || 0} fehlend
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button className="btn btn-primary btn-sm" style={{width:'auto',marginBottom:'2px'}}
+                  disabled={!compareA || !compareB || compareA === compareB || compareLoading}
+                  onClick={loadComparison}>
+                  {compareLoading ? '⏳ Lade…' : 'Vergleichen'}
+                </button>
+              </div>
+              {compareLoading && <Spinner />}
+              {!compareLoading && compareData.a?.matches && compareData.b?.matches && (
+                <VergleichView
+                  matchesOld={compareData.a.matches}
+                  matchesNew={compareData.b.matches}
+                  abgleichOld={compareData.a.abgleich}
+                  abgleichNew={compareData.b.abgleich}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {!loading && verlauf.map(v => {
         const isOpen = openId === v.id;
         const d = detail[v.id];
@@ -1988,7 +2276,7 @@ const VerlaufPage = ({ blocks }) => {
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'1rem'}}>
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
-                  <strong>Abgleich vom {fmtDate(v.erstellt_am)}</strong>
+                  <strong>Abgleich vom {fmtDateTime(v.erstellt_am)}</strong>
                   <span className="badge badge-green">{v.status}</span>
                 </div>
                 <div style={{display:'flex',gap:'0.75rem',marginTop:'0.4rem',flexWrap:'wrap',fontSize:'0.85rem'}}>
@@ -2003,7 +2291,7 @@ const VerlaufPage = ({ blocks }) => {
                 </button>
                 <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)',width:'auto'}} title="Diesen Abgleich löschen" onClick={async (e) => {
                   e.stopPropagation();
-                  const ok = await confirmDialog('Abgleich löschen', `Abgleich vom ${fmtDate(v.erstellt_am)} löschen?`, 'Löschen');
+                  const ok = await confirmDialog('Abgleich löschen', `Abgleich vom ${fmtDateTime(v.erstellt_am)} löschen?`, 'Löschen');
                   if (!ok) return;
                   await API.post('abgleich', { action: 'delete', id: v.id });
                   toast.success('Abgleich gelöscht');
@@ -2068,6 +2356,8 @@ const TagesansichtPage = ({ blocks }) => {
   const [blockId, setBlockId] = useState(blocks[0]?.id || '');
   const [listA, setListA] = useState([]);
   const [listB, setListB] = useState([]);
+  const [abgleichMatches, setAbgleichMatches] = useState([]);
+  const [hasAbgleich, setHasAbgleich] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [sortCol, setSortCol] = useState('nachname');
@@ -2076,17 +2366,44 @@ const TagesansichtPage = ({ blocks }) => {
   const load = async (id) => {
     if (!id) return;
     setLoading(true);
-    const [a, b] = await Promise.all([
+    const [a, b, abl] = await Promise.all([
       API.get('listen', { ferienblock_id: id, liste: 'A' }),
-      API.get('listen', { ferienblock_id: id, liste: 'B' })
+      API.get('listen', { ferienblock_id: id, liste: 'B' }),
+      API.get('abgleich', { ferienblock_id: id })
     ]);
     setListA(Array.isArray(a) ? a : []);
     setListB(Array.isArray(b) ? b : []);
+    // Letzten Abgleich laden wenn vorhanden
+    const abgleiche = Array.isArray(abl) ? abl : abl?.abgleiche || [];
+    if (abgleiche.length > 0) {
+      const letzter = abgleiche[0]; // neuester (API liefert DESC sortiert)
+      const detail = await API.get('abgleich', { abgleich_id: letzter.id });
+      setAbgleichMatches(Array.isArray(detail?.matches) ? detail.matches : []);
+      setHasAbgleich(true);
+    } else {
+      setAbgleichMatches([]);
+      setHasAbgleich(false);
+    }
     setSelectedDate(null);
     setLoading(false);
   };
 
   useEffect(() => { if (blockId) load(blockId); }, [blockId]);
+
+  // Matchings aus Abgleich-Ergebnissen aufbereiten
+  const { matchedAIds, matchedBIds, bToAMap } = useMemo(() => {
+    const aIds = new Set();
+    const bIds = new Set();
+    const b2a = new Map(); // B-entry-ID → A-entry-ID
+    abgleichMatches.forEach(m => {
+      if ((m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') && m.liste_a_id && m.liste_b_id) {
+        aIds.add(m.liste_a_id);
+        bIds.add(m.liste_b_id);
+        b2a.set(m.liste_b_id, m.liste_a_id);
+      }
+    });
+    return { matchedAIds: aIds, matchedBIds: bIds, bToAMap: b2a };
+  }, [abgleichMatches]);
 
   // Alle Tage sammeln
   const allDates = useMemo(() => {
@@ -2096,38 +2413,91 @@ const TagesansichtPage = ({ blocks }) => {
     return [...dates].sort();
   }, [listA, listB]);
 
-  // Tagesübersicht berechnen
+  // Tagesübersicht berechnen — nutzt Abgleich-Ergebnisse wenn vorhanden
   const dayStats = useMemo(() => {
     return allDates.map(d => {
-      const aKids = new Set(listA.filter(e => String(e.datum).split('T')[0] === d).map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
-      const bKids = new Set(listB.filter(e => String(e.datum).split('T')[0] === d).map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
-      const matched = [...aKids].filter(k => bKids.has(k)).length;
-      const missingInB = [...aKids].filter(k => !bKids.has(k)).length;
-      const onlyInB = [...bKids].filter(k => !aKids.has(k)).length;
-      return { date: d, angemeldet: aKids.size, gebucht: bKids.size, matched, missingInB, onlyInB };
-    });
-  }, [allDates, listA, listB]);
+      const aDay = listA.filter(e => String(e.datum).split('T')[0] === d);
+      const bDay = listB.filter(e => String(e.datum).split('T')[0] === d);
+      const aKids = new Set(aDay.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+      const bKids = new Set(bDay.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
 
-  // Detail für gewählten Tag
+      if (hasAbgleich) {
+        // Nutze echte Abgleich-Ergebnisse
+        const aMatched = aDay.filter(e => matchedAIds.has(e.id));
+        const aMissing = aDay.filter(e => !matchedAIds.has(e.id));
+        const bOnly = bDay.filter(e => !matchedBIds.has(e.id));
+        // Unique Kinder zählen
+        const matchedKids = new Set(aMatched.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+        const missingKids = new Set(aMissing.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+        const onlyBKids = new Set(bOnly.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
+        return { date: d, angemeldet: aKids.size, gebucht: bKids.size, matched: matchedKids.size, missingInB: missingKids.size, onlyInB: onlyBKids.size };
+      } else {
+        // Kein Abgleich vorhanden — nur Zählen, kein Matching
+        return { date: d, angemeldet: aKids.size, gebucht: bKids.size, matched: null, missingInB: null, onlyInB: null };
+      }
+    });
+  }, [allDates, listA, listB, hasAbgleich, matchedAIds, matchedBIds]);
+
+  // Detail für gewählten Tag — nutzt Abgleich-Ergebnisse
   const dayDetail = useMemo(() => {
     if (!selectedDate) return null;
     const d = selectedDate;
     const aEntries = listA.filter(e => String(e.datum).split('T')[0] === d);
     const bEntries = listB.filter(e => String(e.datum).split('T')[0] === d);
-    const bSet = new Set(bEntries.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
-    const aSet = new Set(aEntries.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
 
-    const kinder = {};
-    aEntries.forEach(e => {
-      const key = (e.nachname + '|' + e.vorname).toLowerCase();
-      kinder[key] = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: true, inB: bSet.has(key) };
-    });
-    bEntries.forEach(e => {
-      const key = (e.nachname + '|' + e.vorname).toLowerCase();
-      if (!kinder[key]) kinder[key] = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: false, inB: true };
-    });
-    return Object.values(kinder);
-  }, [selectedDate, listA, listB]);
+    if (hasAbgleich) {
+      // Mit Abgleich: Nutze echte Match-Ergebnisse
+      // Schritt 1: Alle A-Kinder einfügen, nach DB-ID indexiert
+      const kinderById = {}; // a_entry_id → kind-Objekt
+      const kinder = {};     // name-key → kind-Objekt (für Deduplizierung gleicher A-Namen)
+      aEntries.forEach(e => {
+        const key = (e.nachname + '|' + e.vorname).toLowerCase();
+        if (!kinder[key]) {
+          const kind = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: true, inB: matchedAIds.has(e.id) };
+          kinder[key] = kind;
+          kinderById[e.id] = kind;
+        } else {
+          kinderById[e.id] = kinder[key];
+          if (matchedAIds.has(e.id)) kinder[key].inB = true;
+        }
+      });
+
+      // Schritt 2: B-Kinder verarbeiten
+      bEntries.forEach(e => {
+        if (matchedBIds.has(e.id)) {
+          // Gematcht → dem zugehörigen A-Kind zuordnen (nicht als separaten Eintrag!)
+          const aId = bToAMap.get(e.id);
+          if (aId && kinderById[aId]) {
+            kinderById[aId].inB = true;
+          }
+          // Falls Klasse in B vorhanden aber nicht in A, übernehmen
+          if (aId && kinderById[aId] && !kinderById[aId].klasse && e.klasse) {
+            kinderById[aId].klasse = e.klasse;
+          }
+        } else {
+          // Nicht gematcht → als "Nur in B" hinzufügen
+          const key = (e.nachname + '|' + e.vorname).toLowerCase();
+          if (!kinder[key]) {
+            kinder[key] = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: false, inB: true };
+          }
+        }
+      });
+      return Object.values(kinder);
+    } else {
+      // Ohne Abgleich: Zeige einfach alle Kinder mit ihrer Listenzugehörigkeit
+      const kinder = {};
+      aEntries.forEach(e => {
+        const key = (e.nachname + '|' + e.vorname).toLowerCase();
+        if (!kinder[key]) kinder[key] = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: true, inB: false };
+      });
+      bEntries.forEach(e => {
+        const key = (e.nachname + '|' + e.vorname).toLowerCase();
+        if (kinder[key]) { kinder[key].inB = true; }
+        else kinder[key] = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: false, inB: true };
+      });
+      return Object.values(kinder);
+    }
+  }, [selectedDate, listA, listB, hasAbgleich, matchedAIds, matchedBIds, bToAMap]);
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -2171,10 +2541,13 @@ const TagesansichtPage = ({ blocks }) => {
 
       {!loading && dayStats.length > 0 && (
         <div className="card" style={{marginBottom:'1.5rem'}}>
-          <div className="card-title">Tage im Überblick</div>
+          <div className="card-title" style={{display:'flex',alignItems:'center',gap:'0.5rem',flexWrap:'wrap'}}>
+            Tage im Überblick
+            {!hasAbgleich && <span style={{fontSize:'0.78rem',color:'var(--text2)',fontWeight:400}}>– Führe zuerst einen Abgleich durch für OK/Fehlt/Nur-in-B Spalten</span>}
+          </div>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Tag</th><th>Datum</th><th>Angemeldet (A)</th><th>Gebucht (B)</th><th>✓ OK</th><th>✗ Fehlt in B</th><th>⚠ Nur in B</th><th></th></tr></thead>
+              <thead><tr><th>Tag</th><th>Datum</th><th>Angemeldet (A)</th><th>Gebucht (B)</th>{hasAbgleich && <><th>✓ OK</th><th>✗ Fehlt in B</th><th>⚠ Nur in B</th></>}<th></th></tr></thead>
               <tbody>
                 {dayStats.map(d => (
                   <tr key={d.date} style={{background: selectedDate === d.date ? 'rgba(0,90,156,0.08)' : undefined, cursor:'pointer'}} onClick={() => setSelectedDate(selectedDate === d.date ? null : d.date)}>
@@ -2182,9 +2555,11 @@ const TagesansichtPage = ({ blocks }) => {
                     <td>{fmtDate(d.date)}</td>
                     <td><span className="badge badge-blue">{d.angemeldet}</span></td>
                     <td><span className="badge badge-green">{d.gebucht}</span></td>
-                    <td><span className="badge badge-green">{d.matched}</span></td>
-                    <td>{d.missingInB > 0 ? <span className="badge badge-red">{d.missingInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
-                    <td>{d.onlyInB > 0 ? <span className="badge badge-orange">{d.onlyInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                    {hasAbgleich && <>
+                      <td><span className="badge badge-green">{d.matched}</span></td>
+                      <td>{d.missingInB > 0 ? <span className="badge badge-red">{d.missingInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                      <td>{d.onlyInB > 0 ? <span className="badge badge-orange">{d.onlyInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                    </>}
                     <td style={{fontSize:'0.8rem',color:'var(--primary)'}}>{selectedDate === d.date ? '▲' : '▼'}</td>
                   </tr>
                 ))}
@@ -2199,20 +2574,22 @@ const TagesansichtPage = ({ blocks }) => {
           <div className="card-title">
             {weekday(selectedDate)} {fmtDate(selectedDate)} — {dayDetail.length} Kinder
           </div>
-          <div className="stat-grid" style={{marginBottom:'1rem'}}>
-            <div className="stat-card accent-green" style={{padding:'0.75rem 1rem'}}>
-              <div className="stat-label" style={{fontSize:'0.7rem'}}>Angemeldet + Gebucht</div>
-              <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => k.inA && k.inB).length}</div>
+          {hasAbgleich && (
+            <div className="stat-grid" style={{marginBottom:'1rem'}}>
+              <div className="stat-card accent-green" style={{padding:'0.75rem 1rem'}}>
+                <div className="stat-label" style={{fontSize:'0.7rem'}}>Angemeldet + Gebucht</div>
+                <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => k.inA && k.inB).length}</div>
+              </div>
+              <div className={`stat-card ${dayDetail.filter(k => k.inA && !k.inB).length > 0 ? 'accent-red' : 'accent-green'}`} style={{padding:'0.75rem 1rem'}}>
+                <div className="stat-label" style={{fontSize:'0.7rem'}}>Angemeldet, nicht gebucht</div>
+                <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => k.inA && !k.inB).length}</div>
+              </div>
+              <div className="stat-card accent-orange" style={{padding:'0.75rem 1rem'}}>
+                <div className="stat-label" style={{fontSize:'0.7rem'}}>Nur gebucht (nicht angemeldet)</div>
+                <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => !k.inA && k.inB).length}</div>
+              </div>
             </div>
-            <div className={`stat-card ${dayDetail.filter(k => k.inA && !k.inB).length > 0 ? 'accent-red' : 'accent-green'}`} style={{padding:'0.75rem 1rem'}}>
-              <div className="stat-label" style={{fontSize:'0.7rem'}}>Angemeldet, nicht gebucht</div>
-              <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => k.inA && !k.inB).length}</div>
-            </div>
-            <div className="stat-card accent-orange" style={{padding:'0.75rem 1rem'}}>
-              <div className="stat-label" style={{fontSize:'0.7rem'}}>Nur gebucht (nicht angemeldet)</div>
-              <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => !k.inA && k.inB).length}</div>
-            </div>
-          </div>
+          )}
           <div className="table-wrap">
             <table>
               <thead><tr>
@@ -2220,19 +2597,24 @@ const TagesansichtPage = ({ blocks }) => {
                 <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
                 <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
                 <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
-                <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>
+                {hasAbgleich && <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>}
+                <th>Liste</th>
               </tr></thead>
               <tbody>
                 {sortedDetail.map((k, i) => (
-                  <tr key={i} style={{background: k.inA && !k.inB ? 'rgba(220,53,69,0.06)' : !k.inA && k.inB ? 'rgba(230,168,23,0.06)' : undefined}}>
+                  <tr key={i} style={{background: hasAbgleich && k.inA && !k.inB ? 'rgba(220,53,69,0.06)' : hasAbgleich && !k.inA && k.inB ? 'rgba(230,168,23,0.06)' : undefined}}>
                     <td>{i+1}</td>
                     <td><strong>{k.nachname}</strong></td>
                     <td>{k.vorname}</td>
                     <td>{k.klasse || '–'}</td>
-                    <td>
+                    {hasAbgleich && <td>
                       {k.inA && k.inB && <span className="badge badge-green">✓ OK</span>}
                       {k.inA && !k.inB && <span className="badge badge-red">✗ Fehlt in B</span>}
                       {!k.inA && k.inB && <span className="badge badge-orange">⚠ Nur in B</span>}
+                    </td>}
+                    <td style={{fontSize:'0.8rem'}}>
+                      {k.inA && <span className="badge badge-blue" style={{marginRight:3}}>A</span>}
+                      {k.inB && <span className="badge badge-green">B</span>}
                     </td>
                   </tr>
                 ))}
@@ -2250,50 +2632,98 @@ const KlassenPage = ({ blocks }) => {
   const [blockId, setBlockId] = useState(blocks[0]?.id || '');
   const [listA, setListA] = useState([]);
   const [listB, setListB] = useState([]);
+  const [abgleichMatches, setAbgleichMatches] = useState([]);
+  const [hasAbgleich, setHasAbgleich] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const load = async (id) => {
     if (!id) return;
     setLoading(true);
-    const [a, b] = await Promise.all([
+    const [a, b, abl] = await Promise.all([
       API.get('listen', { ferienblock_id: id, liste: 'A' }),
-      API.get('listen', { ferienblock_id: id, liste: 'B' })
+      API.get('listen', { ferienblock_id: id, liste: 'B' }),
+      API.get('abgleich', { ferienblock_id: id })
     ]);
     setListA(Array.isArray(a) ? a : []);
     setListB(Array.isArray(b) ? b : []);
+    const abgleiche = Array.isArray(abl) ? abl : abl?.abgleiche || [];
+    if (abgleiche.length > 0) {
+      const letzter = abgleiche[0]; // neuester (API liefert DESC sortiert)
+      const detail = await API.get('abgleich', { abgleich_id: letzter.id });
+      setAbgleichMatches(Array.isArray(detail?.matches) ? detail.matches : []);
+      setHasAbgleich(true);
+    } else {
+      setAbgleichMatches([]);
+      setHasAbgleich(false);
+    }
     setLoading(false);
   };
 
   useEffect(() => { if (blockId) load(blockId); }, [blockId]);
 
+  // Gematchte IDs aus Abgleich
+  const { matchedAIds, matchedBIds } = useMemo(() => {
+    const aIds = new Set(), bIds = new Set();
+    abgleichMatches.forEach(m => {
+      if ((m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') && m.liste_a_id && m.liste_b_id) {
+        aIds.add(m.liste_a_id);
+        bIds.add(m.liste_b_id);
+      }
+    });
+    return { matchedAIds: aIds, matchedBIds: bIds };
+  }, [abgleichMatches]);
+
   const klassenData = useMemo(() => {
     const map = {};
+    const normKlasse = (k) => (k || 'Ohne Klasse').trim() || 'Ohne Klasse';
+
     // Kinder aus A sammeln
     listA.forEach(e => {
       const key = (e.nachname + '|' + e.vorname).toLowerCase();
-      const klasse = (e.klasse || 'Ohne Klasse').trim() || 'Ohne Klasse';
-      if (!map[klasse]) map[klasse] = { klasse, kinderA: new Set(), kinderB: new Set(), tageA: 0, tageB: 0 };
+      const klasse = normKlasse(e.klasse);
+      if (!map[klasse]) map[klasse] = { klasse, kinderA: new Set(), kinderB: new Set(), tageA: 0, tageB: 0, matchedA: new Set() };
       map[klasse].kinderA.add(key);
       map[klasse].tageA++;
+      if (hasAbgleich && matchedAIds.has(e.id)) map[klasse].matchedA.add(key);
     });
-    // Kinder aus B zuordnen
+    // Kinder aus B: nur Tage und unique Kinder zählen
     listB.forEach(e => {
+      const klasse = normKlasse(e.klasse);
       const key = (e.nachname + '|' + e.vorname).toLowerCase();
-      const klasse = (e.klasse || 'Ohne Klasse').trim() || 'Ohne Klasse';
-      if (!map[klasse]) map[klasse] = { klasse, kinderA: new Set(), kinderB: new Set(), tageA: 0, tageB: 0 };
+      if (!map[klasse]) map[klasse] = { klasse, kinderA: new Set(), kinderB: new Set(), tageA: 0, tageB: 0, matchedA: new Set() };
       map[klasse].kinderB.add(key);
       map[klasse].tageB++;
     });
-    return Object.values(map).map(k => ({
-      klasse: k.klasse,
-      kinderA: k.kinderA.size,
-      kinderB: k.kinderB.size,
-      tageA: k.tageA,
-      tageB: k.tageB,
-      ohneB: [...k.kinderA].filter(x => !k.kinderB.has(x)).length,
-      nurInB: [...k.kinderB].filter(x => !k.kinderA.has(x)).length,
-    })).sort((a, b) => a.klasse.localeCompare(b.klasse, 'de'));
-  }, [listA, listB]);
+
+    return Object.values(map).map(k => {
+      let ohneB, nurInB;
+      if (hasAbgleich) {
+        // Mit Abgleich: Kinder ohne Match = nicht gematcht
+        ohneB = k.kinderA.size - k.matchedA.size;
+        // Nur in B: B-Kinder die nicht gematcht sind
+        const matchedBKeys = new Set();
+        listB.forEach(e => {
+          if (matchedBIds.has(e.id) && normKlasse(e.klasse) === k.klasse) {
+            matchedBKeys.add((e.nachname + '|' + e.vorname).toLowerCase());
+          }
+        });
+        nurInB = [...k.kinderB].filter(x => !matchedBKeys.has(x)).length;
+      } else {
+        // Ohne Abgleich: einfacher Namensvergleich (Schätzung)
+        ohneB = [...k.kinderA].filter(x => !k.kinderB.has(x)).length;
+        nurInB = [...k.kinderB].filter(x => !k.kinderA.has(x)).length;
+      }
+      return {
+        klasse: k.klasse,
+        kinderA: k.kinderA.size,
+        kinderB: k.kinderB.size,
+        tageA: k.tageA,
+        tageB: k.tageB,
+        ohneB,
+        nurInB,
+      };
+    }).sort((a, b) => a.klasse.localeCompare(b.klasse, 'de'));
+  }, [listA, listB, hasAbgleich, matchedAIds, matchedBIds]);
 
   const block = blocks.find(b => String(b.id) === String(blockId));
   const preis = block ? parseFloat(block.preis_pro_tag) : 3.5;
@@ -2317,7 +2747,7 @@ const KlassenPage = ({ blocks }) => {
               const rows = klassenData.map(k => ({
                 Klasse: k.klasse, 'Kinder (A)': k.kinderA, 'Kinder (B)': k.kinderB,
                 'Tage (A)': k.tageA, 'Tage (B)': k.tageB,
-                'Ohne Buchung': k.ohneB, 'Nur in B': k.nurInB,
+                'Fehlt in B': k.ohneB, 'Nur in B': k.nurInB,
                 'Kosten (€)': (k.tageB * preis).toFixed(2)
               }));
               XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Klassen');
@@ -2336,12 +2766,15 @@ const KlassenPage = ({ blocks }) => {
 
       {!loading && klassenData.length > 0 && (
         <div className="card">
+          {!hasAbgleich && <p style={{fontSize:'0.82rem',color:'var(--text2)',marginBottom:'0.75rem',fontStyle:'italic'}}>
+            Hinweis: Ohne Abgleich basieren "Fehlt in B" und "Nur in B" auf einfachem Namensvergleich (ungenau bei unterschiedlicher Schreibweise).
+          </p>}
           <div className="table-wrap">
             <table>
               <thead><tr>
                 <th>Klasse</th><th>Kinder (A)</th><th>Kinder (B)</th>
                 <th>Tage (A)</th><th>Tage (B)</th>
-                <th>Ohne Buchung</th><th>Nur in B</th><th>Kosten</th>
+                <th title="Kinder aus A ohne Entsprechung in B">✗ Fehlt in B</th><th title="Kinder nur in B, nicht in A">⚠ Nur in B</th><th>Kosten</th>
               </tr></thead>
               <tbody>
                 {klassenData.map(k => (
@@ -2381,6 +2814,8 @@ const EinstellungenPage = ({ user, onLogout }) => {
   const [pw2, setPw2] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
 
   const changePassword = async () => {
     if (pw1 !== pw2) { setErr('Passwörter stimmen nicht überein'); return; }
@@ -2390,30 +2825,118 @@ const EinstellungenPage = ({ user, onLogout }) => {
     else setErr(res.error);
   };
 
+  // ── Backup: Export ──
+  const exportBackup = async () => {
+    setBackupLoading(true);
+    try {
+      const data = await API.get('backup');
+      if (data.error) { toast.error('Backup fehlgeschlagen: ' + data.error); return; }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const now = new Date();
+      const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+      a.href = url;
+      a.download = `backup_${ts}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Backup heruntergeladen');
+    } catch (e) {
+      toast.error('Backup-Fehler: ' + e.message);
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  // ── Backup: Import ──
+  const importBackup = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const ok = await confirmDialog(
+      'Backup wiederherstellen',
+      'ACHTUNG: Alle bestehenden Daten werden ÜBERSCHRIEBEN! Ferienblöcke, Listen, Abgleiche und Kinder werden durch die Backup-Daten ersetzt. Diese Aktion kann nicht rückgängig gemacht werden.',
+      'Wiederherstellen'
+    );
+    if (!ok) return;
+
+    setRestoreLoading(true);
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+
+      if (!backup.data) {
+        toast.error('Ungültiges Backup-Format: "data"-Feld fehlt');
+        return;
+      }
+
+      const res = await API.post('backup', { action: 'import', data: backup.data });
+      if (res.success) {
+        toast.success('Backup wiederhergestellt! Seite wird neu geladen…');
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        toast.error('Restore fehlgeschlagen: ' + (res.error || 'Unbekannter Fehler'));
+      }
+    } catch (err) {
+      toast.error('Fehler beim Lesen der Datei: ' + err.message);
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
+
   return (
     <div>
       <div className="page-header">
         <h1>Einstellungen</h1>
-        <p>Konto und Sicherheit</p>
+        <p>Konto, Sicherheit und Datensicherung</p>
       </div>
-      <div className="card" style={{maxWidth:480}}>
-        <div className="card-title">Passwort ändern</div>
-        <p style={{fontSize:'0.88rem',color:'var(--text2)',marginBottom:'1rem'}}>
-          Angemeldet als: <strong>{user?.username}</strong>
-        </p>
-        {err && <div className="error-msg">{err}</div>}
-        {msg && <div style={{background:'#efe',border:'1px solid #8c8',padding:'0.75rem',borderRadius:'8px',marginBottom:'1rem',fontSize:'0.9rem'}}>{msg}</div>}
-        <div className="form-group">
-          <label>Neues Passwort</label>
-          <input className="form-input" type="password" value={pw1} onChange={e => setPw1(e.target.value)} />
+
+      <div style={{display:'grid',gap:'1.5rem',maxWidth:560}}>
+        {/* Passwort */}
+        <div className="card">
+          <div className="card-title">Passwort ändern</div>
+          <p style={{fontSize:'0.88rem',color:'var(--text2)',marginBottom:'1rem'}}>
+            Angemeldet als: <strong>{user?.username}</strong>
+          </p>
+          {err && <div className="error-msg">{err}</div>}
+          {msg && <div style={{background:'#efe',border:'1px solid #8c8',padding:'0.75rem',borderRadius:'8px',marginBottom:'1rem',fontSize:'0.9rem'}}>{msg}</div>}
+          <div className="form-group">
+            <label>Neues Passwort</label>
+            <input className="form-input" type="password" value={pw1} onChange={e => setPw1(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label>Passwort wiederholen</label>
+            <input className="form-input" type="password" value={pw2} onChange={e => setPw2(e.target.value)} />
+          </div>
+          <button className="btn btn-primary" onClick={changePassword} disabled={!pw1||!pw2}>Passwort ändern</button>
+          <hr />
+          <button className="btn btn-danger" onClick={onLogout}>Abmelden</button>
         </div>
-        <div className="form-group">
-          <label>Passwort wiederholen</label>
-          <input className="form-input" type="password" value={pw2} onChange={e => setPw2(e.target.value)} />
+
+        {/* Backup */}
+        <div className="card">
+          <div className="card-title">💾 Datensicherung (Backup)</div>
+          <p style={{fontSize:'0.88rem',color:'var(--text2)',marginBottom:'1rem'}}>
+            Erstelle ein vollständiges Backup aller Daten (Ferienblöcke, Listen, Abgleiche, Kinder) als JSON-Datei.
+          </p>
+
+          <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1rem'}}>
+            <button className="btn btn-primary" onClick={exportBackup} disabled={backupLoading} style={{width:'auto'}}>
+              {backupLoading ? '⏳ Exportiere…' : '📥 Backup herunterladen'}
+            </button>
+
+            <label className="btn btn-ghost" style={{width:'auto',cursor: restoreLoading ? 'wait' : 'pointer',display:'inline-flex',alignItems:'center',gap:'0.4rem'}}>
+              {restoreLoading ? '⏳ Wiederherstelle…' : '📤 Backup wiederherstellen'}
+              <input type="file" accept=".json" onChange={importBackup} style={{display:'none'}} disabled={restoreLoading} />
+            </label>
+          </div>
+
+          <div style={{fontSize:'0.82rem',color:'var(--text2)',background:'var(--surface2)',padding:'0.75rem',borderRadius:'8px',lineHeight:1.5}}>
+            <strong>Hinweis:</strong> Beim Wiederherstellen werden alle bestehenden Daten überschrieben.
+            Erstelle vorher ein frisches Backup, falls du die aktuellen Daten behalten möchtest.
+          </div>
         </div>
-        <button className="btn btn-primary" onClick={changePassword} disabled={!pw1||!pw2}>Passwort ändern</button>
-        <hr />
-        <button className="btn btn-danger" onClick={onLogout}>Abmelden</button>
       </div>
     </div>
   );
@@ -2454,6 +2977,40 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   // Edit-Modal
   const [editKind, setEditKind] = useState(null);
   const [editForm, setEditForm] = useState({ nachname: '', vorname: '', klasse: '', notizen: '' });
+
+  // Duplikat-Erkennung
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const duplicates = useMemo(() => {
+    if (!showDuplicates || kinder.length < 2) return [];
+    const groups = [];
+    const checked = new Set();
+    for (let i = 0; i < kinder.length; i++) {
+      if (checked.has(i)) continue;
+      const a = kinder[i];
+      const aName = (a.nachname + ' ' + a.vorname).toLowerCase();
+      const similar = [];
+      for (let j = i + 1; j < kinder.length; j++) {
+        if (checked.has(j)) continue;
+        const b = kinder[j];
+        // Exakter Treffer (case-insensitive)
+        const exact = a.nachname.toLowerCase() === b.nachname.toLowerCase() && a.vorname.toLowerCase() === b.vorname.toLowerCase();
+        // Vertauscht
+        const swapped = a.nachname.toLowerCase() === b.vorname.toLowerCase() && a.vorname.toLowerCase() === b.nachname.toLowerCase();
+        // Ähnlich (Levenshtein-artig: einfache Prüfung)
+        const bName = (b.nachname + ' ' + b.vorname).toLowerCase();
+        const nameClose = aName.replace(/\s+/g,'') === bName.replace(/\s+/g,'') || aName.replace(/[^a-zäöüß]/g,'') === bName.replace(/[^a-zäöüß]/g,'');
+        if (exact || swapped || nameClose) {
+          similar.push({ kind: b, reason: exact ? 'Exakt gleich' : swapped ? 'Vor-/Nachname vertauscht' : 'Sehr ähnlich' });
+          checked.add(j);
+        }
+      }
+      if (similar.length > 0) {
+        checked.add(i);
+        groups.push({ kind: a, matches: similar });
+      }
+    }
+    return groups;
+  }, [kinder, showDuplicates]);
 
   // Sortierung
   const [sortBy, setSortBy] = useState('nachname');
@@ -2635,7 +3192,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 
   // Filter + Sortierung
   const filtered = kinder.filter(k =>
-    (k.nachname + ' ' + k.vorname + ' ' + k.vorname + ' ' + k.nachname + ' ' + (k.klasse || ''))
+    (k.nachname + ' ' + k.vorname + ' ' + (k.klasse || ''))
       .toLowerCase().includes(search.toLowerCase())
   ).sort((a, b) => {
     let va, vb;
@@ -2942,8 +3499,42 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
             loadKinder(filterBlock);
           }}>🗑 Alle löschen</button>
         )}
+        {kinder.length > 1 && (
+          <button className={`btn btn-ghost btn-sm ${showDuplicates ? 'btn-active' : ''}`} onClick={() => setShowDuplicates(!showDuplicates)}>
+            🔎 Duplikate {showDuplicates && duplicates.length > 0 ? `(${duplicates.length})` : 'prüfen'}
+          </button>
+        )}
         <button className="btn btn-ghost btn-sm" onClick={() => loadKinder(filterBlock)}>↻ Aktualisieren</button>
       </div>
+
+      {/* Duplikat-Warnung */}
+      {showDuplicates && duplicates.length > 0 && (
+        <div className="card" style={{marginBottom:'1.5rem',borderLeft:'4px solid var(--warning)'}}>
+          <div className="card-title" style={{color:'var(--warning)'}}>⚠ {duplicates.length} mögliche Duplikate gefunden</div>
+          {duplicates.map((g, i) => (
+            <div key={i} style={{padding:'0.75rem 0',borderBottom: i < duplicates.length - 1 ? '1px solid var(--border)' : 'none'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
+                <strong>{g.kind.vorname} {g.kind.nachname}</strong>
+                {g.kind.klasse && <span className="badge badge-blue">Klasse {g.kind.klasse}</span>}
+                <span style={{color:'var(--text2)',fontSize:'0.8rem'}}>ID {g.kind.id}</span>
+              </div>
+              {g.matches.map((m, j) => (
+                <div key={j} style={{display:'flex',alignItems:'center',gap:'0.75rem',marginTop:'0.4rem',marginLeft:'1.5rem',flexWrap:'wrap'}}>
+                  <span style={{color:'var(--warning)'}}>↳</span>
+                  <strong>{m.kind.vorname} {m.kind.nachname}</strong>
+                  {m.kind.klasse && <span className="badge badge-blue">Klasse {m.kind.klasse}</span>}
+                  <span className="badge badge-orange">{m.reason}</span>
+                  <span style={{color:'var(--text2)',fontSize:'0.8rem'}}>ID {m.kind.id}</span>
+                  <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)',width:'auto',padding:'0.2rem 0.5rem',fontSize:'0.75rem'}} onClick={() => deleteKind(m.kind.id)}>Löschen</button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {showDuplicates && duplicates.length === 0 && (
+        <div className="info-box" style={{marginBottom:'1.5rem'}}>✅ Keine Duplikate gefunden — alle {kinder.length} Kinder sind eindeutig.</div>
+      )}
 
       {/* Import-Bereich */}
       {showImport && (
@@ -3256,8 +3847,5 @@ const App = () => {
   );
 };
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<><App /><ToastContainer /><ConfirmDialog /></>);
-</script>
-</body>
-</html>
+export default App;
+export { ToastContainer, ConfirmDialog };

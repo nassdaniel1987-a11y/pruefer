@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(cmd /c \"dir C:\\\\Pr?fer\")",
+      "Bash(cmd /c:*)",
+      "Bash(py:*)",
+      "Bash(node -e:*)",
+      "Bash(npm install:*)",
+      "Bash(powershell -Command \"Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead\\(''C:\\\\Prüfer\\\\excel\\\\Essensliste.xlsx''\\); $zip.Entries | ForEach-Object { $_.FullName }; $zip.Dispose\\(\\)\")",
+      "Bash(powershell -File:*)",
+      "Bash(node:*)",
+      "Bash(cmd.exe //c \"dir C:\\\\Prüfer\\\\netlify\\\\functions\\\\\")",
+      "Bash(cmd.exe //c \"findstr /n /s \"\"Access-Control-Allow-Origin\"\" C:\\\\Prüfer\\\\netlify\\\\functions\\\\*\")",
+      "Bash(cmd.exe //c \"findstr /n \"\"Access-Control-Allow-Origin\"\" C:\\\\Prüfer\\\\netlify\\\\functions\\\\*.js\")",
+      "Bash(cmd.exe //c \"chcp 65001 >nul & findstr /n Access-Control-Allow-Origin C:\\\\Prüfer\\\\netlify\\\\functions\\\\*.js\")",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git fetch:*)",
+      "Bash(git remote:*)",
+      "Bash(gh repo list:*)",
+      "Bash(where:*)",
+      "Bash(npx netlify:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

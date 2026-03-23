@@ -276,13 +276,11 @@ exports.handler = async (event) => {
         const existingResult = await client.query('SELECT id, LOWER(nachname) as n, LOWER(vorname) as v, klasse FROM kinder');
         const existingSet = new Set();
         const existingMap = new Map();
+        const buildKey = (n, v) => (String(n||'') + ' ' + String(v||'')).toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,' ').split(/\s+/).filter(Boolean).sort().join('|');
         for (const row of existingResult.rows) {
-          const key1 = row.n + '|' + row.v;
-          const key2 = row.v + '|' + row.n;
-          existingSet.add(key1);
-          existingSet.add(key2);
-          existingMap.set(key1, row);
-          existingMap.set(key2, row);
+          const key = buildKey(row.n, row.v);
+          existingSet.add(key);
+          existingMap.set(key, row);
         }
 
         const toInsert = [];
@@ -292,7 +290,7 @@ exports.handler = async (event) => {
 
         for (const e of eintraege) {
           if (!e.nachname || !e.vorname) { skipped++; continue; }
-          const key = e.nachname.trim().toLowerCase() + '|' + e.vorname.trim().toLowerCase();
+          const key = buildKey(e.nachname, e.vorname);
           if (existingSet.has(key)) {
             skipped++;
             const ex = existingMap.get(key);
@@ -302,7 +300,6 @@ exports.handler = async (event) => {
           }
           // Als "schon gesehen" markieren damit keine Duplikate im Batch
           existingSet.add(key);
-          existingSet.add(e.vorname.trim().toLowerCase() + '|' + e.nachname.trim().toLowerCase());
           toInsert.push({ nachname: e.nachname.trim(), vorname: e.vorname.trim(), klasse: e.klasse?.trim() || null });
         }
 
@@ -360,12 +357,11 @@ exports.handler = async (event) => {
         const existingResult = await client.query('SELECT id, LOWER(nachname) as n, LOWER(vorname) as v, klasse FROM kinder');
         const existingSet = new Set();
         const existingMap = new Map();
+        const buildKey = (n, v) => (String(n||'') + ' ' + String(v||'')).toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,' ').split(/\s+/).filter(Boolean).sort().join('|');
         for (const row of existingResult.rows) {
-          const key1 = row.n + '|' + row.v;
-          const key2 = row.v + '|' + row.n;
-          existingSet.add(key1);
-          existingSet.add(key2);
-          existingMap.set(key1, row);
+          const key = buildKey(row.n, row.v);
+          existingSet.add(key);
+          existingMap.set(key, row);
         }
 
         const toInsert = [];
@@ -373,7 +369,7 @@ exports.handler = async (event) => {
         const klasseUpdates = [];
 
         for (const e of listeAKinder.rows) {
-          const key = e.nachname.trim().toLowerCase() + '|' + e.vorname.trim().toLowerCase();
+          const key = buildKey(e.nachname, e.vorname);
           if (existingSet.has(key)) {
             skipped++;
             const ex = existingMap.get(key);
@@ -381,7 +377,6 @@ exports.handler = async (event) => {
             continue;
           }
           existingSet.add(key);
-          existingSet.add(e.vorname.trim().toLowerCase() + '|' + e.nachname.trim().toLowerCase());
           toInsert.push({ nachname: e.nachname.trim(), vorname: e.vorname.trim(), klasse: e.klasse?.trim() || null });
         }
 

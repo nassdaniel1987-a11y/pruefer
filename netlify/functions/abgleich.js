@@ -92,9 +92,17 @@ exports.handler = async (event) => {
 
         const matches = await client.query(`
           SELECT
-            am.*,
-            la.nachname as a_nachname, la.vorname as a_vorname, la.datum as a_datum, la.klasse as a_klasse,
-            lb.nachname as b_nachname, lb.vorname as b_vorname, lb.datum as b_datum, lb.klasse as b_klasse, lb.menu as b_menu, lb.kontostand as b_kontostand
+            am.id, am.abgleich_id, am.liste_a_id, am.liste_b_id, am.match_typ, am.score, am.grund,
+            COALESCE(la.nachname, am.a_nachname) as a_nachname,
+            COALESCE(la.vorname,  am.a_vorname)  as a_vorname,
+            COALESCE(la.datum,    am.a_datum)     as a_datum,
+            COALESCE(la.klasse,   am.a_klasse)    as a_klasse,
+            COALESCE(lb.nachname, am.b_nachname) as b_nachname,
+            COALESCE(lb.vorname,  am.b_vorname)  as b_vorname,
+            COALESCE(lb.datum,    am.b_datum)     as b_datum,
+            COALESCE(lb.klasse,   am.b_klasse)    as b_klasse,
+            COALESCE(lb.menu,     am.b_menu)      as b_menu,
+            lb.kontostand as b_kontostand
           FROM abgleich_matches am
           LEFT JOIN liste_a la ON am.liste_a_id = la.id
           LEFT JOIN liste_b lb ON am.liste_b_id = lb.id
@@ -115,17 +123,23 @@ exports.handler = async (event) => {
             (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ IN ('exact','fuzzy_accepted')) as matches_count,
             (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ = 'nur_in_a') as nur_in_a_count,
             (SELECT COUNT(*) FROM abgleich_matches WHERE abgleich_id = a.id AND match_typ = 'nur_in_b') as nur_in_b_count,
-            (SELECT COUNT(DISTINCT LOWER(COALESCE(la.nachname, '') || '|' || COALESCE(la.vorname, '')))
+            (SELECT COUNT(DISTINCT LOWER(
+              COALESCE(la.nachname, am2.a_nachname, '') || '|' || COALESCE(la.vorname, am2.a_vorname, '')
+             ))
              FROM abgleich_matches am2
              LEFT JOIN liste_a la ON am2.liste_a_id = la.id
              WHERE am2.abgleich_id = a.id AND am2.match_typ IN ('exact','fuzzy_accepted')
             ) as matches_kinder,
-            (SELECT COUNT(DISTINCT LOWER(COALESCE(la.nachname, '') || '|' || COALESCE(la.vorname, '')))
+            (SELECT COUNT(DISTINCT LOWER(
+              COALESCE(la.nachname, am2.a_nachname, '') || '|' || COALESCE(la.vorname, am2.a_vorname, '')
+             ))
              FROM abgleich_matches am2
              LEFT JOIN liste_a la ON am2.liste_a_id = la.id
              WHERE am2.abgleich_id = a.id AND am2.match_typ = 'nur_in_a'
             ) as nur_in_a_kinder,
-            (SELECT COUNT(DISTINCT LOWER(COALESCE(lb.nachname, '') || '|' || COALESCE(lb.vorname, '')))
+            (SELECT COUNT(DISTINCT LOWER(
+              COALESCE(lb.nachname, am2.b_nachname, '') || '|' || COALESCE(lb.vorname, am2.b_vorname, '')
+             ))
              FROM abgleich_matches am2
              LEFT JOIN liste_b lb ON am2.liste_b_id = lb.id
              WHERE am2.abgleich_id = a.id AND am2.match_typ = 'nur_in_b'
@@ -200,6 +214,33 @@ exports.handler = async (event) => {
             params
           );
         }
+      }
+
+      // Namen direkt in abgleich_matches speichern (für spätere Vergleiche)
+      try {
+        await client.query(`
+          UPDATE abgleich_matches am SET
+            a_nachname = la.nachname,
+            a_vorname  = la.vorname,
+            a_datum    = la.datum,
+            a_klasse   = la.klasse
+          FROM liste_a la
+          WHERE am.abgleich_id = $1 AND am.liste_a_id = la.id
+        `, [abgleich_id]);
+
+        await client.query(`
+          UPDATE abgleich_matches am SET
+            b_nachname = lb.nachname,
+            b_vorname  = lb.vorname,
+            b_datum    = lb.datum,
+            b_klasse   = lb.klasse,
+            b_menu     = lb.menu
+          FROM liste_b lb
+          WHERE am.abgleich_id = $1 AND am.liste_b_id = lb.id
+        `, [abgleich_id]);
+      } catch (e) {
+        // Spalten existieren evtl. noch nicht (vor Migration 3) - kein Fehler
+        console.log('Namen-Spalten nicht verfügbar:', e.message);
       }
 
       return respond(201, { success: true, abgleich_id });
