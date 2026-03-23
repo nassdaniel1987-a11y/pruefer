@@ -3519,26 +3519,38 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
       {/* Duplikat-Warnung */}
       {showDuplicates && duplicates.length > 0 && (
         <div className="card" style={{marginBottom:'1.5rem',borderLeft:'4px solid var(--warning)'}}>
-          <div className="card-title" style={{color:'var(--warning)'}}>⚠ {duplicates.length} mögliche Duplikate gefunden</div>
-          {duplicates.map((g, i) => (
-            <div key={i} style={{padding:'0.75rem 0',borderBottom: i < duplicates.length - 1 ? '1px solid var(--border)' : 'none'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
-                <strong>{g.kind.vorname} {g.kind.nachname}</strong>
-                {g.kind.klasse && <span className="badge badge-blue">Klasse {g.kind.klasse}</span>}
-                <span style={{color:'var(--text2)',fontSize:'0.8rem'}}>ID {g.kind.id}</span>
+          <div className="card-title" style={{color:'var(--warning)', marginBottom:'0.5rem'}}>⚠ {duplicates.length} mögliche Duplikate gefunden</div>
+          <p style={{fontSize:'0.85rem', color:'var(--text2)', marginBottom:'1.5rem'}}>Es sieht so aus, als wären folgende Kinder mehrfach angelegt. Schau auf die Zahl der Anmeldungen (A) und Buchungen (B) und lösche den überflüssigen Eintrag.</p>
+          
+          {duplicates.map((g, i) => {
+            const allEntries = [{ kind: g.kind, reason: 'Haupt-Eintrag' }, ...g.matches.map(m => ({ kind: m.kind, reason: m.reason }))];
+            return (
+              <div key={i} style={{padding:'1rem', background:'var(--bg)', borderRadius:'8px', marginBottom:'1rem', border:'1px solid var(--border)'}}>
+                <div style={{fontSize:'0.8rem', fontWeight:700, color:'var(--text2)', textTransform:'uppercase', marginBottom:'0.5rem', letterSpacing:'0.5px'}}>Duplikat-Gruppe {i + 1}</div>
+                {allEntries.map((e, j) => (
+                  <div key={j} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.6rem 0',borderBottom: j < allEntries.length - 1 ? '1px dashed var(--border)' : 'none', flexWrap:'wrap'}}>
+                    <strong style={{fontSize:'1rem'}}>{e.kind.vorname} {e.kind.nachname}</strong>
+                    {e.kind.klasse && <span className="badge badge-blue">Kl. {e.kind.klasse}</span>}
+                    
+                    <span style={{fontSize:'0.85rem', color:'var(--text)', background:'rgba(0,0,0,0.04)', padding:'0.2rem 0.5rem', borderRadius:'4px'}}>
+                      <strong>A:</strong> {parseInt(e.kind.anmeldungen_count)||0} | <strong>B:</strong> {parseInt(e.kind.buchungen_count)||0}
+                    </span>
+                    
+                    <span className="badge badge-orange">{e.reason}</span>
+                    
+                    <span style={{marginLeft:'auto'}}/>
+                    <button 
+                      className="btn btn-sm" 
+                      style={{color:'var(--danger)', width:'auto', padding:'0.3rem 0.75rem', background:'rgba(220,53,69,0.1)', border:'none'}} 
+                      onClick={() => deleteKind(e.kind.id)}
+                    >
+                      ✗ Löschen
+                    </button>
+                  </div>
+                ))}
               </div>
-              {g.matches.map((m, j) => (
-                <div key={j} style={{display:'flex',alignItems:'center',gap:'0.75rem',marginTop:'0.4rem',marginLeft:'1.5rem',flexWrap:'wrap'}}>
-                  <span style={{color:'var(--warning)'}}>↳</span>
-                  <strong>{m.kind.vorname} {m.kind.nachname}</strong>
-                  {m.kind.klasse && <span className="badge badge-blue">Klasse {m.kind.klasse}</span>}
-                  <span className="badge badge-orange">{m.reason}</span>
-                  <span style={{color:'var(--text2)',fontSize:'0.8rem'}}>ID {m.kind.id}</span>
-                  <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)',width:'auto',padding:'0.2rem 0.5rem',fontSize:'0.75rem'}} onClick={() => deleteKind(m.kind.id)}>Löschen</button>
-                </div>
-              ))}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {showDuplicates && duplicates.length === 0 && (
