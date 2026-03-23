@@ -2998,9 +2998,18 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
         const swapped = a.nachname.toLowerCase() === b.vorname.toLowerCase() && a.vorname.toLowerCase() === b.nachname.toLowerCase();
         // Ähnlich (Levenshtein-artig: einfache Prüfung)
         const bName = (b.nachname + ' ' + b.vorname).toLowerCase();
+        const { score } = calcScore(aName, bName);
+        
         const nameClose = aName.replace(/\s+/g,'') === bName.replace(/\s+/g,'') || aName.replace(/[^a-zäöüß]/g,'') === bName.replace(/[^a-zäöüß]/g,'');
-        if (exact || swapped || nameClose) {
-          similar.push({ kind: b, reason: exact ? 'Exakt gleich' : swapped ? 'Vor-/Nachname vertauscht' : 'Sehr ähnlich' });
+        
+        let matchReason = null;
+        if (exact) matchReason = 'Exakt gleich';
+        else if (swapped) matchReason = 'Vor-/Nachname vertauscht';
+        else if (nameClose) matchReason = 'Sehr ähnlich (Lücken/Zeichen)';
+        else if (score >= 82) matchReason = `Tippfehler? (Score ${score}%)`;
+
+        if (matchReason) {
+          similar.push({ kind: b, reason: matchReason });
           checked.add(j);
         }
       }
