@@ -272,23 +272,42 @@ exports.handler = async (event) => {
         const { eintraege } = body;
         if (!Array.isArray(eintraege)) return respond(400, { error: 'eintraege Array erforderlich' });
 
+        // Wir deduplizieren die eingehenden Daten zuerst, damit wir nicht innerhalb eines
+        // einzigen Batch-Inserts 2x dieselben Namen haben. Das verhindert den  Postgres-Fehler
+        // "ON CONFLICT DO UPDATE command cannot affect row a second time".
+        const uniqueSet = new Map();
+        for (const e of eintraege) {
+          if (!e.nachname || !e.vorname) continue;
+          const n = e.nachname.trim();
+          const v = e.vorname.trim();
+          const nl = n.toLowerCase();
+          const vl = v.toLowerCase();
+          const key = nl < vl ? `${nl}|${vl}` : `${vl}|${nl}`;
+          
+          if (!uniqueSet.has(key)) {
+            uniqueSet.set(key, { nachname: n, vorname: v, klasse: e.klasse?.trim() || null });
+          } else {
+            if (e.klasse && !uniqueSet.get(key).klasse) {
+              uniqueSet.get(key).klasse = e.klasse.trim();
+            }
+          }
+        }
+
+        const toInsert = Array.from(uniqueSet.values());
         const BATCH = 200;
         let inserted = 0;
         
-        for (let i = 0; i < eintraege.length; i += BATCH) {
-          const batch = eintraege.slice(i, i + BATCH);
+        for (let i = 0; i < toInsert.length; i += BATCH) {
+          const batch = toInsert.slice(i, i + BATCH);
           const values = [];
           const params = [];
           let idx = 1;
           
           for (const e of batch) {
-            if (!e.nachname || !e.vorname) continue;
             values.push(`($${idx}, $${idx+1}, $${idx+2})`);
-            params.push(e.nachname.trim(), e.vorname.trim(), e.klasse?.trim() || null);
+            params.push(e.nachname, e.vorname, e.klasse);
             idx += 3;
           }
-
-          if (values.length === 0) continue;
 
           await client.query(`
             INSERT INTO kinder (nachname, vorname, klasse) 
@@ -302,39 +321,56 @@ exports.handler = async (event) => {
 
         return respond(200, {
           success: true,
-          message: `${inserted} Kinder importiert bzw. zusammengeführt`
+          message: `${inserted} eindeutige Kinder importiert bzw. zusammengeführt`
         });
       }
 
       // ── Sync: Aus bestehenden Listen A automatisch übernehmen (schnell) ──
       if (body.action === 'sync') {
-        const listeAKinder = await client.query(`
-          SELECT nachname, vorname, MAX(klasse) as klasse
-          FROM liste_a
-          GROUP BY LOWER(nachname), LOWER(vorname), nachname, vorname
+        const rawListeA = await client.query(`
+          SELECT nachname, vorname, klasse
+          FROM liste_a 
+          WHERE nachname IS NOT NULL AND vorname IS NOT NULL
         `);
 
-        if (listeAKinder.rows.length === 0) {
-          return respond(200, { success: true, message: 'Keine Kinder in Liste A gefunden' });
+        // Auch hier deduplizieren, um Konflikte in derselben Anfrage zu vermeiden
+        const uniqueSet = new Map();
+        for (const e of rawListeA.rows) {
+          const n = e.nachname.trim();
+          const v = e.vorname.trim();
+          const nl = n.toLowerCase();
+          const vl = v.toLowerCase();
+          const key = nl < vl ? `${nl}|${vl}` : `${vl}|${nl}`;
+          
+          if (!uniqueSet.has(key)) {
+            uniqueSet.set(key, { nachname: n, vorname: v, klasse: e.klasse?.trim() || null });
+          } else {
+            if (e.klasse && !uniqueSet.get(key).klasse) {
+              uniqueSet.get(key).klasse = e.klasse.trim();
+            }
+          }
+        }
+
+        const toInsert = Array.from(uniqueSet.values());
+
+        if (toInsert.length === 0) {
+          return respond(200, { success: true, message: 'Keine validen Kinder in Liste A gefunden' });
         }
 
         const BATCH = 200;
         let inserted = 0;
         
-        for (let i = 0; i < listeAKinder.rows.length; i += BATCH) {
-          const batch = listeAKinder.rows.slice(i, i + BATCH);
+        for (let i = 0; i < toInsert.length; i += BATCH) {
+          const batch = toInsert.slice(i, i + BATCH);
           const values = [];
           const params = [];
           let idx = 1;
           
           for (const e of batch) {
-            if (!e.nachname || !e.vorname) continue;
             values.push(`($${idx}, $${idx+1}, $${idx+2})`);
-            params.push(e.nachname.trim(), e.vorname.trim(), e.klasse?.trim() || null);
+            params.push(e.nachname, e.vorname, e.klasse);
             idx += 3;
           }
-
-          if (values.length === 0) continue;
 
           await client.query(`
             INSERT INTO kinder (nachname, vorname, klasse) 
@@ -348,7 +384,7 @@ exports.handler = async (event) => {
 
         return respond(200, {
           success: true,
-          message: `${inserted} Kinder aus Liste A synchronisiert bzw. zusammengeführt`
+          message: `${inserted} eindeutige Kinder aus Liste A synchronisiert bzw. zusammengeführt`
         });
       }
 
