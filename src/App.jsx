@@ -1014,6 +1014,29 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     });
   }, [blockId]);
 
+  const processImportArray = (json, which) => {
+    // Prüfen ob erste Zeile ein echter Header ist (Texte) oder schon Daten (Zahlen/bekannte Namen)
+    const firstRow = json[0] || [];
+    const hasTextHeader = firstRow.every(cell =>
+      typeof cell === 'string' && !/^\d+$/.test(String(cell).trim()) && isNaN(cell)
+    );
+
+    let headers, dataRows;
+    if (hasTextHeader) {
+      headers = firstRow.map(h => String(h).trim());
+      dataRows = json.slice(1);
+    } else {
+      headers = firstRow.map((_, i) => `Spalte ${String.fromCharCode(65 + i)}`);
+      dataRows = json;
+    }
+
+    const raw = { headers, data: dataRows, hasTextHeader };
+    const autoKlasse = hasTextHeader ? headers.find(h => /klasse/i.test(h)) || '' : '';
+    if (which === 'A') { setRawA(raw); setColMapA({ nachname: '', vorname: '', date: '', klasse: autoKlasse }); }
+    else { setRawB(raw); setColMapB({ nachname: '', vorname: '', date: '', klasse: autoKlasse }); }
+    setIsLoading(false);
+  };
+
   const handleExcelUpload = (file, which) => {
     if (!file) return;
     setIsLoading(true);
@@ -1024,32 +1047,22 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       const ws = wb.Sheets[wb.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
       if (!json || json.length === 0) { setIsLoading(false); return; }
-
-      // Prüfen ob erste Zeile ein echter Header ist (Texte) oder schon Daten (Zahlen/bekannte Namen)
-      const firstRow = json[0] || [];
-      const hasTextHeader = firstRow.every(cell =>
-        typeof cell === 'string' && !/^\d+$/.test(String(cell).trim()) && isNaN(cell)
-      );
-
-      let headers, dataRows;
-      if (hasTextHeader) {
-        // Normale Datei mit Headerzeile
-        headers = firstRow.map(h => String(h).trim());
-        dataRows = json.slice(1);
-      } else {
-        // Keine Headerzeile! Automatisch A, B, C... als Spaltennamen vergeben
-        headers = firstRow.map((_, i) => `Spalte ${String.fromCharCode(65 + i)}`);
-        dataRows = json;
-      }
-
-      const raw = { headers, data: dataRows, hasTextHeader };
-      // Auto-Erkennung der Klasse-Spalte
-      const autoKlasse = hasTextHeader ? headers.find(h => /klasse/i.test(h)) || '' : '';
-      if (which === 'A') { setRawA(raw); setColMapA({ nachname: '', vorname: '', date: '', klasse: autoKlasse }); }
-      else { setRawB(raw); setColMapB({ nachname: '', vorname: '', date: '', klasse: autoKlasse }); }
-      setIsLoading(false);
+      processImportArray(json, which);
     };
     reader.readAsArrayBuffer(file);
+  };
+
+  const handlePasteData = (e, which) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    if (!text) return;
+    setIsLoading(true);
+    const rawRows = text.trim().split('\n');
+    if (rawRows.length < 2) { toast.error('Mindestens 2 Zeilen (Kopfzeile + Daten) benötigt.'); setIsLoading(false); return; }
+    
+    // Tabulator-getrennte Tabelle parsen
+    const json = rawRows.map(row => row.split('\t').map(c => c.trim()));
+    processImportArray(json, which);
   };
 
   const processAndUpload = async () => {
@@ -1487,21 +1500,51 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
               <div className="two-col">
                 <div className="card">
                   <div className="card-title">Liste A – Anmeldungen</div>
-                  <label className={`upload-zone ${rawA ? 'has-data' : ''}`}>
-                    <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'A')} />
-                    <div className="icon">{rawA ? '✅' : '📂'}</div>
-                    <p>{rawA ? `${rawA.data.length} Zeilen geladen` : 'Excel-Datei hochladen'}</p>
-                    <p style={{fontSize:'0.8rem',marginTop:'0.25rem'}}>.xlsx</p>
-                  </label>
+                  {rawA ? (
+                    <div className="upload-zone has-data" style={{cursor:'default'}}>
+                      <div className="icon">✅</div>
+                      <p>{rawA.data.length} Zeilen geladen</p>
+                      <button className="btn btn-ghost btn-sm" style={{marginTop:'0.5rem'}} onClick={() => { setRawA(null); setColMapA({nachname:'',vorname:'',date:'',klasse:''}); }}>Ändern / Löschen</button>
+                    </div>
+                  ) : (
+                    <div style={{display:'flex', flexDirection:'column'}}>
+                      <label className="upload-zone" style={{borderBottomRightRadius:0, borderBottomLeftRadius:0, marginBottom:0, padding:'1rem'}}>
+                        <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'A')} />
+                        <div className="icon" style={{fontSize:'2rem', marginBottom:'0.2rem'}}>📂</div>
+                        <p style={{fontSize:'0.85rem'}}>Excel-Datei hochladen (.xlsx)</p>
+                      </label>
+                      <textarea
+                        className="textarea"
+                        style={{borderTopRightRadius:0, borderTopLeftRadius:0, borderTop:'none', border:'2px dashed var(--border)', background:'var(--bg)', minHeight:'60px', textAlign:'center', fontSize:'0.85rem', padding:'0.75rem', resize:'none', width:'100%'}}
+                        placeholder="...oder direkt Zellen (Tabelle) mit Strg+V hier einfügen"
+                        onPaste={(e) => handlePasteData(e, 'A')}
+                      ></textarea>
+                    </div>
+                  )}
                 </div>
                 <div className="card">
                   <div className="card-title">Liste B – Essensbuchungen</div>
-                  <label className={`upload-zone ${rawB ? 'has-data' : ''}`}>
-                    <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'B')} />
-                    <div className="icon">{rawB ? '✅' : '📂'}</div>
-                    <p>{rawB ? `${rawB.data.length} Zeilen geladen` : 'Excel-Datei hochladen'}</p>
-                    <p style={{fontSize:'0.8rem',marginTop:'0.25rem'}}>.xlsx</p>
-                  </label>
+                  {rawB ? (
+                    <div className="upload-zone has-data" style={{cursor:'default'}}>
+                      <div className="icon">✅</div>
+                      <p>{rawB.data.length} Zeilen geladen</p>
+                      <button className="btn btn-ghost btn-sm" style={{marginTop:'0.5rem'}} onClick={() => { setRawB(null); setColMapB({nachname:'',vorname:'',date:'',klasse:''}); }}>Ändern / Löschen</button>
+                    </div>
+                  ) : (
+                    <div style={{display:'flex', flexDirection:'column'}}>
+                      <label className="upload-zone" style={{borderBottomRightRadius:0, borderBottomLeftRadius:0, marginBottom:0, padding:'1rem'}}>
+                        <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'B')} />
+                        <div className="icon" style={{fontSize:'2rem', marginBottom:'0.2rem'}}>📂</div>
+                        <p style={{fontSize:'0.85rem'}}>Excel-Datei hochladen (.xlsx)</p>
+                      </label>
+                      <textarea
+                        className="textarea"
+                        style={{borderTopRightRadius:0, borderTopLeftRadius:0, borderTop:'none', border:'2px dashed var(--border)', background:'var(--bg)', minHeight:'60px', textAlign:'center', fontSize:'0.85rem', padding:'0.75rem', resize:'none', width:'100%'}}
+                        placeholder="...oder direkt Zellen (Tabelle) mit Strg+V hier einfügen"
+                        onPaste={(e) => handlePasteData(e, 'B')}
+                      ></textarea>
+                    </div>
+                  )}
                 </div>
               </div>
               {(rawA || rawB) && (
