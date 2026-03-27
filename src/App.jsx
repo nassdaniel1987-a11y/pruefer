@@ -3385,6 +3385,22 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     if (selectedKindId === id) setSelectedKindId(null);
   };
 
+  // Kind (Duplikat) zusammenführen
+  const mergeKind = async (hauptId, typoId) => {
+    const ok = await confirmDialog(
+      'Mit Haupt-Eintrag zusammenführen', 
+      'Möchtest du den Tippfehler unwiderruflich in den Haupt-Eintrag überführen? Alle bisherigen Anmeldungen und Buchungen des Tippfehlers werden auf den Haupt-Namen überschrieben, und das Duplikat verschwindet.', 
+      'Ja, zusammenführen'
+    );
+    if (!ok) return;
+    const res = await API.post('kinder', { action: 'merge', haupt_id: hauptId, typo_id: typoId });
+    if (res.success) {
+      toast.success('Kinder erfolgreich zusammengeführt!');
+      loadKinder(filterBlock);
+      if (selectedKindId === typoId) setSelectedKindId(hauptId);
+    }
+  };
+
   // Filter + Sortierung
   const filtered = kinder.filter(k =>
     (k.nachname + ' ' + k.vorname + ' ' + (k.klasse || ''))
@@ -3724,6 +3740,15 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
                     <span className="badge badge-orange">{e.reason}</span>
 
                     <span style={{ marginLeft: 'auto' }} />
+                    {j > 0 && (
+                      <button
+                        className="btn btn-sm"
+                        style={{ color: 'var(--primary)', width: 'auto', padding: '0.3rem 0.75rem', background: 'rgba(0,90,156,0.1)', border: 'none', marginRight: '0.5rem' }}
+                        onClick={() => mergeKind(allEntries[0].kind.id, e.kind.id)}
+                      >
+                        🔗 Zu Haupt-Eintrag
+                      </button>
+                    )}
                     <button
                       className="btn btn-sm"
                       style={{ color: 'var(--danger)', width: 'auto', padding: '0.3rem 0.75rem', background: 'rgba(220,53,69,0.1)', border: 'none' }}

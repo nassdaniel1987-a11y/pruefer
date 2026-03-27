@@ -412,6 +412,58 @@ exports.handler = async (event) => {
         return respond(200, { success: true });
       }
 
+      // ── Merge: Duplikat/Tippfehler in Haupt-Eintrag übernehmen ──
+      if (body.action === 'merge') {
+        const { haupt_id, typo_id } = body;
+        if (!haupt_id || !typo_id) return respond(400, { error: 'haupt_id und typo_id erforderlich' });
+        
+        const hauptId = parseInt(haupt_id, 10);
+        const typoId = parseInt(typo_id, 10);
+        
+        const hauptRes = await client.query('SELECT nachname, vorname FROM kinder WHERE id = $1', [hauptId]);
+        const typoRes = await client.query('SELECT nachname, vorname FROM kinder WHERE id = $1', [typoId]);
+        if (hauptRes.rows.length === 0 || typoRes.rows.length === 0) return respond(404, { error: 'Kind nicht gefunden' });
+
+        const hk = hauptRes.rows[0];
+        const tk = typoRes.rows[0];
+
+        // 1. liste_a anpassen
+        await client.query(`
+          UPDATE liste_a 
+          SET nachname = $1, vorname = $2 
+          WHERE (LOWER(nachname) = LOWER($3) AND LOWER(vorname) = LOWER($4))
+             OR (LOWER(nachname) = LOWER($4) AND LOWER(vorname) = LOWER($3))
+        `, [hk.nachname, hk.vorname, tk.nachname, tk.vorname]);
+
+        // 2. liste_b anpassen
+        await client.query(`
+          UPDATE liste_b 
+          SET nachname = $1, vorname = $2 
+          WHERE (LOWER(nachname) = LOWER($3) AND LOWER(vorname) = LOWER($4))
+             OR (LOWER(nachname) = LOWER($4) AND LOWER(vorname) = LOWER($3))
+        `, [hk.nachname, hk.vorname, tk.nachname, tk.vorname]);
+
+        // 3. abgleich_matches anpassen
+        await client.query(`
+          UPDATE abgleich_matches 
+          SET a_nachname = $1, a_vorname = $2 
+          WHERE (LOWER(a_nachname) = LOWER($3) AND LOWER(a_vorname) = LOWER($4))
+             OR (LOWER(a_nachname) = LOWER($4) AND LOWER(a_vorname) = LOWER($3))
+        `, [hk.nachname, hk.vorname, tk.nachname, tk.vorname]);
+        
+        await client.query(`
+          UPDATE abgleich_matches 
+          SET b_nachname = $1, b_vorname = $2 
+          WHERE (LOWER(b_nachname) = LOWER($3) AND LOWER(b_vorname) = LOWER($4))
+             OR (LOWER(b_nachname) = LOWER($4) AND LOWER(b_vorname) = LOWER($3))
+        `, [hk.nachname, hk.vorname, tk.nachname, tk.vorname]);
+
+        // 4. Lösche die Typo-Akte aus dem Verzeichnis
+        await client.query('DELETE FROM kinder WHERE id = $1', [typoId]);
+
+        return respond(200, { success: true });
+      }
+
       // ── Delete All: Alle Kinder aus Stamm entfernen ──
       if (body.action === 'delete_all') {
         const result = await client.query('DELETE FROM kinder');
