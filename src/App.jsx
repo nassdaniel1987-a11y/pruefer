@@ -35,7 +35,7 @@ const confirmDialog = (title, message, dangerLabel = 'Löschen') => {
   return new Promise(resolve => {
     _confirmResolver = resolve;
     _confirmState = { title, message, dangerLabel };
-    _confirmListeners.forEach(fn => fn({..._confirmState}));
+    _confirmListeners.forEach(fn => fn({ ..._confirmState }));
   });
 };
 const ConfirmDialog = () => {
@@ -50,7 +50,7 @@ const ConfirmDialog = () => {
         <p>{state.message}</p>
         <div className="confirm-actions">
           <button className="btn btn-ghost" onClick={() => close(false)}>Abbrechen</button>
-          <button className="btn btn-danger" style={{width:'auto'}} onClick={() => close(true)}>{state.dangerLabel}</button>
+          <button className="btn btn-danger" style={{ width: 'auto' }} onClick={() => close(true)}>{state.dangerLabel}</button>
         </div>
       </div>
     </div>
@@ -107,8 +107,8 @@ const API = {
 const printFehlendeKinder = (title, kinder, blockName) => {
   // kinder = Array von { nachname, vorname, klasse, dates: ['2025-07-01',...] }
   const now = new Date();
-  const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   const totalTage = kinder.reduce((s, k) => s + (k.dates ? k.dates.length : 0), 0);
 
   let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
@@ -129,7 +129,7 @@ const printFehlendeKinder = (title, kinder, blockName) => {
 <table><thead><tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Tage</th><th>Daten</th></tr></thead><tbody>`;
 
   kinder.forEach((k, i) => {
-    html += `<tr><td>${i+1}</td><td><b>${k.nachname || ''}</b></td><td>${k.vorname || ''}</td><td>${k.klasse || '–'}</td>`;
+    html += `<tr><td>${i + 1}</td><td><b>${k.nachname || ''}</b></td><td>${k.vorname || ''}</td><td>${k.klasse || '–'}</td>`;
     html += `<td><span class="badge-red">${k.dates ? k.dates.length : 0}</span></td>`;
     html += `<td>${k.dates ? k.dates.sort().map(d => fmtDate(d)).join(', ') : ''}</td></tr>`;
   });
@@ -145,23 +145,23 @@ const printFehlendeKinder = (title, kinder, blockName) => {
 };
 
 // ─── MATCHING-ALGORITHMEN (aus Originalversion) ────────
-const nicknames = { 'alex':'alexander','sandra':'alexandra','max':'maximilian','hans':'johannes','chris':'christoph','sepp':'josef','joe':'josef','jörg':'georg','joerg':'georg' };
+const nicknames = { 'alex': 'alexander', 'sandra': 'alexandra', 'max': 'maximilian', 'hans': 'johannes', 'chris': 'christoph', 'sepp': 'josef', 'joe': 'josef', 'jörg': 'georg', 'joerg': 'georg' };
 const tokenizeName = (name) => {
   if (typeof name !== 'string') return [];
-  const stop = ['dr','von','van','de','und'];
-  let n = name.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,' ');
+  const stop = ['dr', 'von', 'van', 'de', 'und'];
+  let n = name.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ');
   return n.split(/\s+/).map(p => nicknames[p] || p).filter(t => t && !stop.includes(t));
 };
 const koelnerPhonetik = (word) => {
   if (!word) return '';
-  const map = {a:0,e:0,i:0,j:0,o:0,u:0,y:0,b:1,p:1,d:2,t:2,f:3,v:3,w:3,g:4,k:4,q:4,c:4,x:48,l:5,m:6,n:6,r:7,s:8,z:8,ß:8,h:'.'};
-  word = word.toLowerCase().replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ß/g,'ss');
+  const map = { a: 0, e: 0, i: 0, j: 0, o: 0, u: 0, y: 0, b: 1, p: 1, d: 2, t: 2, f: 3, v: 3, w: 3, g: 4, k: 4, q: 4, c: 4, x: 48, l: 5, m: 6, n: 6, r: 7, s: 8, z: 8, ß: 8, h: '.' };
+  word = word.toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss');
   let last = null, res = '';
   for (let i = 0; i < word.length; i++) {
     let ch = word[i], code;
-    if (ch === 'c' && i === 0 && 'ahkloqrux'.includes(word[i+1])) code = 4;
-    else if (ch === 'c' && 'sz'.includes(word[i-1])) code = 8;
-    else if ('dt'.includes(ch) && 'csz'.includes(word[i+1])) code = 8;
+    if (ch === 'c' && i === 0 && 'ahkloqrux'.includes(word[i + 1])) code = 4;
+    else if (ch === 'c' && 'sz'.includes(word[i - 1])) code = 8;
+    else if ('dt'.includes(ch) && 'csz'.includes(word[i + 1])) code = 8;
     else code = map[ch];
     if (code && code !== last && code !== '.') res += code;
     last = code === '.' ? last : code;
@@ -173,17 +173,17 @@ const jaroWinkler = (s1, s2) => {
   let m = 0, range = Math.floor(Math.max(s1.length, s2.length) / 2) - 1;
   let m1 = new Array(s1.length).fill(false), m2 = new Array(s2.length).fill(false);
   for (let i = 0; i < s1.length; i++) {
-    for (let j = Math.max(0,i-range); j < Math.min(i+range+1,s2.length); j++) {
-      if (!m2[j] && s1[i] === s2[j]) { m1[i]=m2[j]=true; m++; break; }
+    for (let j = Math.max(0, i - range); j < Math.min(i + range + 1, s2.length); j++) {
+      if (!m2[j] && s1[i] === s2[j]) { m1[i] = m2[j] = true; m++; break; }
     }
   }
   if (!m) return 0;
-  let k=0, t=0;
-  for (let i=0;i<s1.length;i++) { if(m1[i]){while(!m2[k])k++;if(s1[i]!==s2[k])t++;k++;} }
-  t/=2;
-  let jaro=(m/s1.length+m/s2.length+(m-t)/m)/3;
-  let l=0; while(l<4&&s1[l]===s2[l])l++;
-  return jaro+l*0.1*(1-jaro);
+  let k = 0, t = 0;
+  for (let i = 0; i < s1.length; i++) { if (m1[i]) { while (!m2[k]) k++; if (s1[i] !== s2[k]) t++; k++; } }
+  t /= 2;
+  let jaro = (m / s1.length + m / s2.length + (m - t) / m) / 3;
+  let l = 0; while (l < 4 && s1[l] === s2[l]) l++;
+  return jaro + l * 0.1 * (1 - jaro);
 };
 const calcScore = (nameA, nameB) => {
   const tA = tokenizeName(nameA), tB = tokenizeName(nameB);
@@ -200,13 +200,13 @@ const calcScore = (nameA, nameB) => {
     if (best.partner) { matches.push(best.score); avail.splice(best.idx, 1); }
   }
   if (!matches.length) return { score: 0, reason: 'Keine Übereinstimmung' };
-  const avg = matches.reduce((a,b)=>a+b,0)/matches.length;
+  const avg = matches.reduce((a, b) => a + b, 0) / matches.length;
   const minTokens = Math.min(tA.length, tB.length);
   const maxTokens = Math.max(tA.length, tB.length);
   const missingInShorter = minTokens - matches.length;
   const extraInLonger = maxTokens - matches.length - missingInShorter;
   const penalty = (missingInShorter * 30) + (extraInLonger * 5);
-  const score = Math.max(0, Math.round(avg-penalty));
+  const score = Math.max(0, Math.round(avg - penalty));
   const reason = avail.length > 0 ? `${avail.length} Teil(e) ohne Partner` : 'Alle Teile zugeordnet';
   return { score, reason };
 };
@@ -228,8 +228,8 @@ const analyzeMatch = (nameA, nameB) => {
     }
   }
   return {
-    tokensA: origA.map((t,i) => ({ token: t, matched: matchedA.has(i) })),
-    tokensB: origB.map((t,i) => ({ token: t, matched: matchedB.has(i) }))
+    tokensA: origA.map((t, i) => ({ token: t, matched: matchedA.has(i) })),
+    tokensB: origB.map((t, i) => ({ token: t, matched: matchedB.has(i) }))
   };
 };
 const normalizeDate = (d) => {
@@ -244,20 +244,20 @@ const normalizeDate = (d) => {
   // DD.MM.YYYY oder DD/MM/YY etc.
   const m = String(d).match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
   if (!m) return null;
-  let [,day,mon,yr] = m;
-  if (yr.length===2) yr = parseInt(yr)>50?`19${yr}`:`20${yr}`;
-  return `${yr}-${mon.padStart(2,'0')}-${day.padStart(2,'0')}`;
+  let [, day, mon, yr] = m;
+  if (yr.length === 2) yr = parseInt(yr) > 50 ? `19${yr}` : `20${yr}`;
+  return `${yr}-${mon.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 const fmtDate = (d) => { if (!d) return ''; const p = String(d).split('T')[0].split('-'); return `${p[2]}.${p[1]}.${p[0]}`; };
 const fmtDateTime = (d) => {
   if (!d) return '';
   try {
     const dt = new Date(d);
-    const dd = String(dt.getDate()).padStart(2,'0');
-    const mm = String(dt.getMonth()+1).padStart(2,'0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
     const yy = dt.getFullYear();
-    const hh = String(dt.getHours()).padStart(2,'0');
-    const mi = String(dt.getMinutes()).padStart(2,'0');
+    const hh = String(dt.getHours()).padStart(2, '0');
+    const mi = String(dt.getMinutes()).padStart(2, '0');
     return `${dd}.${mm}.${yy} ${hh}:${mi}`;
   } catch { return fmtDate(d); }
 };
@@ -269,8 +269,8 @@ const computeDiff = (matchesOld, matchesNew) => {
 
   // Normalisierung: Kommas, Punkte, Extra-Leerzeichen entfernen
   // damit "Elif, Acar" und "Elif Acar" denselben Key ergeben
-  const norm = (s) => (s||'').replace(/[,.\-;:]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-  const makeKeyA = (m) => (norm(m.a_vorname) + '|' + norm(m.a_nachname) + '|' + String(m.a_datum||'').split('T')[0]);
+  const norm = (s) => (s || '').replace(/[,.\-;:]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  const makeKeyA = (m) => (norm(m.a_vorname) + '|' + norm(m.a_nachname) + '|' + String(m.a_datum || '').split('T')[0]);
   const hasName = (m) => !!(m.a_nachname || m.a_vorname || m.b_nachname || m.b_vorname);
 
   // Ein Durchlauf pro Array: Maps + Zähler gleichzeitig
@@ -374,11 +374,11 @@ const LoginPage = ({ onLogin }) => {
         <form onSubmit={submit}>
           <div className="form-group">
             <label>Benutzername</label>
-            <input className="form-input" value={user} onChange={e=>setUser(e.target.value)} autoFocus />
+            <input className="form-input" value={user} onChange={e => setUser(e.target.value)} autoFocus />
           </div>
           <div className="form-group">
             <label>Passwort</label>
-            <input className="form-input" type="password" value={pass} onChange={e=>setPass(e.target.value)} />
+            <input className="form-input" type="password" value={pass} onChange={e => setPass(e.target.value)} />
           </div>
           <button className="btn btn-primary" disabled={loading || !user || !pass}>
             {loading ? 'Anmelden...' : 'Anmelden'}
@@ -418,7 +418,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
     setAbgleichDetail({});
     setExpandedBlock(null);
     blocks.forEach(b => {
-      setLoadingDetail(prev => ({...prev, [b.id]: true}));
+      setLoadingDetail(prev => ({ ...prev, [b.id]: true }));
       Promise.all([
         API.get('listen', { ferienblock_id: b.id, liste: 'A' }),
         API.get('listen', { ferienblock_id: b.id, liste: 'B' }),
@@ -439,24 +439,26 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
         let kinderBkorrigiert = kinderBroh.size;
         if (letzter && matches !== null) kinderBkorrigiert = matches + (nur_in_b || 0);
 
-        setBlockDetail(prev => ({...prev, [b.id]: {
-          kinder_a: kinderA.size, kinder_b: kinderBkorrigiert, kinder_b_roh: kinderBroh.size,
-          eintraege_a: aArr.length, eintraege_b: bArr.length,
-          abgleich_count: abglArr.length, letzter_abgleich: letzter,
-          matches, nur_in_a, nur_in_b,
-          matches_zeilen, nur_in_a_zeilen, nur_in_b_zeilen
-        }}));
-        setLoadingDetail(prev => ({...prev, [b.id]: false}));
+        setBlockDetail(prev => ({
+          ...prev, [b.id]: {
+            kinder_a: kinderA.size, kinder_b: kinderBkorrigiert, kinder_b_roh: kinderBroh.size,
+            eintraege_a: aArr.length, eintraege_b: bArr.length,
+            abgleich_count: abglArr.length, letzter_abgleich: letzter,
+            matches, nur_in_a, nur_in_b,
+            matches_zeilen, nur_in_a_zeilen, nur_in_b_zeilen
+          }
+        }));
+        setLoadingDetail(prev => ({ ...prev, [b.id]: false }));
       });
     });
   }, [blocks]);
 
   const vals = Object.values(blockDetail);
-  const gesamtKinderA   = vals.reduce((s,d) => s + (d?.kinder_a || 0), 0);
-  const gesamtKinderB   = vals.reduce((s,d) => s + (d?.kinder_b || 0), 0);
-  const gesamtMatches   = vals.reduce((s,d) => s + (d?.matches ?? 0), 0);
-  const gesamtFehltInB  = vals.reduce((s,d) => s + (d?.nur_in_a ?? 0), 0);
-  const hatAbgleich     = vals.some(d => d?.letzter_abgleich);
+  const gesamtKinderA = vals.reduce((s, d) => s + (d?.kinder_a || 0), 0);
+  const gesamtKinderB = vals.reduce((s, d) => s + (d?.kinder_b || 0), 0);
+  const gesamtMatches = vals.reduce((s, d) => s + (d?.matches ?? 0), 0);
+  const gesamtFehltInB = vals.reduce((s, d) => s + (d?.nur_in_a ?? 0), 0);
+  const hatAbgleich = vals.some(d => d?.letzter_abgleich);
 
   // Excel-Export: Fehlende Kinder
   const exportFehlende = () => {
@@ -483,20 +485,20 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
       const am = abgleichDetail[bId]?.matches;
       if (!am) continue;
       am.filter(m => m.match_typ === 'nur_in_a').forEach(m => {
-        const key = ((m.a_nachname||'') + '|' + (m.a_vorname||'')).toLowerCase();
+        const key = ((m.a_nachname || '') + '|' + (m.a_vorname || '')).toLowerCase();
         if (!grouped[key]) grouped[key] = { nachname: m.a_nachname, vorname: m.a_vorname, klasse: m.a_klasse || '', dateSet: new Set() };
         grouped[key].dateSet.add(m.a_datum);
       });
     }
     Object.values(grouped).forEach(g => { g.dates = [...g.dateSet]; delete g.dateSet; });
-    const printData = Object.values(grouped).sort((a, b) => (a.nachname||'').localeCompare(b.nachname||'', 'de'));
+    const printData = Object.values(grouped).sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
     if (!printData.length) { toast.info('Lade erst Details, dann drucken'); return; }
     printFehlendeKinder('Alle fehlenden Kinder — OHNE Buchung', printData, 'Alle Blöcke');
   };
 
   return (
     <div>
-      <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Dashboard</h1>
           <p>Übersicht aller Ferienblöcke und aktueller Status</p>
@@ -546,7 +548,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
             <div className="icon">📅</div>
             <p>Noch kein Ferienblock angelegt.</p>
             <br />
-            <button className="btn btn-primary" style={{width:'auto'}} onClick={() => onNavigate('ferienblock')}>
+            <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => onNavigate('ferienblock')}>
               Ersten Block anlegen
             </button>
           </div>
@@ -555,7 +557,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
         <div className="card">
           <div className="card-title">
             Alle Ferienblöcke
-            <div style={{display:'flex',gap:'0.5rem'}}>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               {hatAbgleich && gesamtFehltInB > 0 && <>
                 <button className="btn btn-ghost btn-sm" onClick={printAllFehlende}>🖨️ Drucken</button>
                 <button className="btn btn-ghost btn-sm" onClick={exportFehlende}>📥 Excel</button>
@@ -586,141 +588,141 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                   const hatErgebnis = d?.letzter_abgleich != null;
                   return (
                     <React.Fragment key={b.id}>
-                    <tr>
-                      <td><strong>{b.name}</strong></td>
-                      <td style={{whiteSpace:'nowrap'}}>{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</td>
-                      <td>{parseFloat(b.preis_pro_tag).toFixed(2)} €</td>
-                      <td>
-                        {loading ? '…' : <><span className="badge badge-blue">{d?.kinder_a ?? 0}</span>
-                        <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:4}}>({d?.eintraege_a ?? 0} Tage)</span></>}
-                      </td>
-                      <td>
-                        {loading ? '…' : <><span className="badge badge-blue">{d?.kinder_b ?? 0}</span>
-                        <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:4}}>({d?.eintraege_b ?? 0} Tage)</span></>}
-                      </td>
-                      <td>
-                        {loading ? '…' : hatErgebnis
-                          ? <><span className="badge badge-green">{d.matches}</span>
-                            <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.matches_zeilen} Tage)</span></>
-                          : <span style={{color:'var(--text2)'}}>–</span>}
-                      </td>
-                      <td>
-                        {loading ? '…' : hatErgebnis
-                          ? <><span className={`badge ${d.nur_in_a > 0 ? 'badge-red' : 'badge-green'}`}>{d.nur_in_a}</span>
-                            {d.nur_in_a > 0 && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.nur_in_a_zeilen} Tage)</span>}</>
-                          : <span style={{color:'var(--text2)'}}>–</span>}
-                      </td>
-                      <td>
-                        {loading ? '…' : hatErgebnis
-                          ? <><span className="badge badge-orange">{d.nur_in_b}</span>
-                            {d.nur_in_b > 0 && <span style={{fontSize:'0.65rem',color:'var(--text2)',marginLeft:3}}>({d.nur_in_b_zeilen} Tage)</span>}</>
-                          : <span style={{color:'var(--text2)'}}>–</span>}
-                      </td>
-                      <td>{loading ? '…' : <span className="badge badge-blue">{d?.abgleich_count ?? 0}</span>}</td>
-                      <td style={{display:'flex',gap:'0.4rem',flexWrap:'wrap'}}>
-                        {hatErgebnis && d.nur_in_a > 0 && (
-                          <button className="btn btn-danger btn-sm" style={{width:'auto'}} onClick={() => {
-                            if (expandedBlock === b.id) { setExpandedBlock(null); return; }
-                            setExpandedBlock(b.id);
-                            if (!abgleichDetail[b.id] && d.letzter_abgleich) {
-                              setLoadingAbgleich(prev => ({...prev, [b.id]: true}));
-                              API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
-                                setAbgleichDetail(prev => ({...prev, [b.id]: res}));
-                                setLoadingAbgleich(prev => ({...prev, [b.id]: false}));
-                              });
-                            }
-                          }}>
-                            ⚠ Fehlende anzeigen
+                      <tr>
+                        <td><strong>{b.name}</strong></td>
+                        <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</td>
+                        <td>{parseFloat(b.preis_pro_tag).toFixed(2)} €</td>
+                        <td>
+                          {loading ? '…' : <><span className="badge badge-blue">{d?.kinder_a ?? 0}</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 4 }}>({d?.eintraege_a ?? 0} Tage)</span></>}
+                        </td>
+                        <td>
+                          {loading ? '…' : <><span className="badge badge-blue">{d?.kinder_b ?? 0}</span>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 4 }}>({d?.eintraege_b ?? 0} Tage)</span></>}
+                        </td>
+                        <td>
+                          {loading ? '…' : hatErgebnis
+                            ? <><span className="badge badge-green">{d.matches}</span>
+                              <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 3 }}>({d.matches_zeilen} Tage)</span></>
+                            : <span style={{ color: 'var(--text2)' }}>–</span>}
+                        </td>
+                        <td>
+                          {loading ? '…' : hatErgebnis
+                            ? <><span className={`badge ${d.nur_in_a > 0 ? 'badge-red' : 'badge-green'}`}>{d.nur_in_a}</span>
+                              {d.nur_in_a > 0 && <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 3 }}>({d.nur_in_a_zeilen} Tage)</span>}</>
+                            : <span style={{ color: 'var(--text2)' }}>–</span>}
+                        </td>
+                        <td>
+                          {loading ? '…' : hatErgebnis
+                            ? <><span className="badge badge-orange">{d.nur_in_b}</span>
+                              {d.nur_in_b > 0 && <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 3 }}>({d.nur_in_b_zeilen} Tage)</span>}</>
+                            : <span style={{ color: 'var(--text2)' }}>–</span>}
+                        </td>
+                        <td>{loading ? '…' : <span className="badge badge-blue">{d?.abgleich_count ?? 0}</span>}</td>
+                        <td style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          {hatErgebnis && d.nur_in_a > 0 && (
+                            <button className="btn btn-danger btn-sm" style={{ width: 'auto' }} onClick={() => {
+                              if (expandedBlock === b.id) { setExpandedBlock(null); return; }
+                              setExpandedBlock(b.id);
+                              if (!abgleichDetail[b.id] && d.letzter_abgleich) {
+                                setLoadingAbgleich(prev => ({ ...prev, [b.id]: true }));
+                                API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
+                                  setAbgleichDetail(prev => ({ ...prev, [b.id]: res }));
+                                  setLoadingAbgleich(prev => ({ ...prev, [b.id]: false }));
+                                });
+                              }
+                            }}>
+                              ⚠ Fehlende anzeigen
+                            </button>
+                          )}
+                          <button className="btn btn-primary btn-sm" style={{ width: 'auto' }} onClick={() => onNavigate('abgleich', b.id)}>
+                            Abgleich starten
                           </button>
-                        )}
-                        <button className="btn btn-primary btn-sm" style={{width:'auto'}} onClick={() => onNavigate('abgleich', b.id)}>
-                          Abgleich starten
-                        </button>
-                      </td>
-                    </tr>
-                    {expandedBlock === b.id && (
-                      <tr key={b.id + '-detail'}>
-                        <td colSpan="10" style={{padding:'1rem',background:'var(--surface2)'}}>
-                          {loadingAbgleich[b.id] ? <Spinner /> : abgleichDetail[b.id]?.matches ? (() => {
-                            const am = abgleichDetail[b.id].matches;
-                            const fehlende = am.filter(m => m.match_typ === 'nur_in_a');
-                            const nurInB   = am.filter(m => m.match_typ === 'nur_in_b');
-                            const matched  = am.filter(m => m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted');
-
-                            // Nach Kind gruppieren
-                            const groupEntries = (entries, prefix) => {
-                              const map = {};
-                              entries.forEach(m => {
-                                const key = ((m[prefix+'_nachname']||'') + '|' + (m[prefix+'_vorname']||'')).toLowerCase();
-                                if (!map[key]) map[key] = { nachname: m[prefix+'_nachname'], vorname: m[prefix+'_vorname'], klasse: m[prefix+'_klasse'] || '', dateSet: new Set() };
-                                map[key].dateSet.add(m[prefix+'_datum']);
-                              });
-                              return Object.values(map).map(k => ({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse, dates: [...k.dateSet] })).sort((a, b) => (a.nachname||'').localeCompare(b.nachname||'', 'de'));
-                            };
-                            const fehlendeGrp = groupEntries(fehlende, 'a');
-                            const nurInBGrp = groupEntries(nurInB, 'b');
-
-                            return (
-                              <div>
-                                {fehlendeGrp.length > 0 && (() => {
-                                  const sorted = sortDetailList(fehlendeGrp);
-                                  const thStyle = {cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'};
-                                  return <div style={{marginBottom:'1rem'}}>
-                                    <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem',flexWrap:'wrap'}}>
-                                      <h4 style={{color:'var(--danger)',margin:0}}>⚠ {fehlendeGrp.length} Kinder OHNE Buchung ({fehlende.length} Tage)</h4>
-                                      <button className="btn btn-ghost btn-sm" style={{width:'auto',fontSize:'0.75rem'}}
-                                        onClick={() => printFehlendeKinder('Fehlende Kinder — OHNE Buchung', sorted, b.name)}>
-                                        🖨️ Drucken
-                                      </button>
-                                    </div>
-                                    <div className="table-wrap"><table><thead><tr>
-                                      <th>#</th>
-                                      <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
-                                      <th style={thStyle} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
-                                      <th style={thStyle} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
-                                      <th style={thStyle} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
-                                      <th>Daten</th>
-                                    </tr></thead>
-                                    <tbody>{sorted.map((k, i) => (<tr key={i} style={{background:'rgba(220,53,69,0.06)'}}>
-                                      <td>{i+1}</td><td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse||'–'}</td>
-                                      <td><span className="badge badge-red">{k.dates.length}</span></td>
-                                      <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                                    </tr>))}</tbody></table></div>
-                                  </div>;
-                                })()}
-                                {nurInBGrp.length > 0 && (() => {
-                                  const sorted = sortDetailList(nurInBGrp);
-                                  const thStyle = {cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'};
-                                  return <div style={{marginBottom:'1rem'}}>
-                                    <h4 style={{color:'var(--warning)',marginBottom:'0.5rem'}}>ℹ {nurInBGrp.length} Kinder NUR in Liste B ({nurInB.length} Tage)</h4>
-                                    <div className="table-wrap"><table><thead><tr>
-                                      <th>#</th>
-                                      <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
-                                      <th style={thStyle} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
-                                      <th style={thStyle} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
-                                      <th style={thStyle} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
-                                      <th>Daten</th>
-                                    </tr></thead>
-                                    <tbody>{sorted.map((k, i) => (<tr key={i} style={{background:'rgba(230,168,23,0.06)'}}>
-                                      <td>{i+1}</td><td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse||'–'}</td>
-                                      <td><span className="badge badge-orange">{k.dates.length}</span></td>
-                                      <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                                    </tr>))}</tbody></table></div>
-                                  </div>;
-                                })()}
-                                {matched.length > 0 && (
-                                  <div>
-                                    <h4 style={{color:'var(--success)',marginBottom:'0.5rem'}}>✓ {new Set(matched.map(m => (m.a_nachname+'|'+m.a_vorname).toLowerCase())).size} Kinder übereinstimmend ({matched.length} Tage)</h4>
-                                    <p style={{fontSize:'0.82rem',color:'var(--text2)'}}>Alle Kinder mit Anmeldung und Buchung stimmen überein.</p>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })() : <p style={{color:'var(--text2)'}}>Keine Abgleich-Daten verfügbar</p>}
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
+                      {expandedBlock === b.id && (
+                        <tr key={b.id + '-detail'}>
+                          <td colSpan="10" style={{ padding: '1rem', background: 'var(--surface2)' }}>
+                            {loadingAbgleich[b.id] ? <Spinner /> : abgleichDetail[b.id]?.matches ? (() => {
+                              const am = abgleichDetail[b.id].matches;
+                              const fehlende = am.filter(m => m.match_typ === 'nur_in_a');
+                              const nurInB = am.filter(m => m.match_typ === 'nur_in_b');
+                              const matched = am.filter(m => m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted');
+
+                              // Nach Kind gruppieren
+                              const groupEntries = (entries, prefix) => {
+                                const map = {};
+                                entries.forEach(m => {
+                                  const key = ((m[prefix + '_nachname'] || '') + '|' + (m[prefix + '_vorname'] || '')).toLowerCase();
+                                  if (!map[key]) map[key] = { nachname: m[prefix + '_nachname'], vorname: m[prefix + '_vorname'], klasse: m[prefix + '_klasse'] || '', dateSet: new Set() };
+                                  map[key].dateSet.add(m[prefix + '_datum']);
+                                });
+                                return Object.values(map).map(k => ({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse, dates: [...k.dateSet] })).sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
+                              };
+                              const fehlendeGrp = groupEntries(fehlende, 'a');
+                              const nurInBGrp = groupEntries(nurInB, 'b');
+
+                              return (
+                                <div>
+                                  {fehlendeGrp.length > 0 && (() => {
+                                    const sorted = sortDetailList(fehlendeGrp);
+                                    const thStyle = { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' };
+                                    return <div style={{ marginBottom: '1rem' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                                        <h4 style={{ color: 'var(--danger)', margin: 0 }}>⚠ {fehlendeGrp.length} Kinder OHNE Buchung ({fehlende.length} Tage)</h4>
+                                        <button className="btn btn-ghost btn-sm" style={{ width: 'auto', fontSize: '0.75rem' }}
+                                          onClick={() => printFehlendeKinder('Fehlende Kinder — OHNE Buchung', sorted, b.name)}>
+                                          🖨️ Drucken
+                                        </button>
+                                      </div>
+                                      <div className="table-wrap"><table><thead><tr>
+                                        <th>#</th>
+                                        <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
+                                        <th style={thStyle} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
+                                        <th style={thStyle} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
+                                        <th style={thStyle} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
+                                        <th>Daten</th>
+                                      </tr></thead>
+                                        <tbody>{sorted.map((k, i) => (<tr key={i} style={{ background: 'rgba(220,53,69,0.06)' }}>
+                                          <td>{i + 1}</td><td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse || '–'}</td>
+                                          <td><span className="badge badge-red">{k.dates.length}</span></td>
+                                          <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                                        </tr>))}</tbody></table></div>
+                                    </div>;
+                                  })()}
+                                  {nurInBGrp.length > 0 && (() => {
+                                    const sorted = sortDetailList(nurInBGrp);
+                                    const thStyle = { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' };
+                                    return <div style={{ marginBottom: '1rem' }}>
+                                      <h4 style={{ color: 'var(--warning)', marginBottom: '0.5rem' }}>ℹ {nurInBGrp.length} Kinder NUR in Liste B ({nurInB.length} Tage)</h4>
+                                      <div className="table-wrap"><table><thead><tr>
+                                        <th>#</th>
+                                        <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
+                                        <th style={thStyle} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
+                                        <th style={thStyle} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
+                                        <th style={thStyle} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
+                                        <th>Daten</th>
+                                      </tr></thead>
+                                        <tbody>{sorted.map((k, i) => (<tr key={i} style={{ background: 'rgba(230,168,23,0.06)' }}>
+                                          <td>{i + 1}</td><td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse || '–'}</td>
+                                          <td><span className="badge badge-orange">{k.dates.length}</span></td>
+                                          <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                                        </tr>))}</tbody></table></div>
+                                    </div>;
+                                  })()}
+                                  {matched.length > 0 && (
+                                    <div>
+                                      <h4 style={{ color: 'var(--success)', marginBottom: '0.5rem' }}>✓ {new Set(matched.map(m => (m.a_nachname + '|' + m.a_vorname).toLowerCase())).size} Kinder übereinstimmend ({matched.length} Tage)</h4>
+                                      <p style={{ fontSize: '0.82rem', color: 'var(--text2)' }}>Alle Kinder mit Anmeldung und Buchung stimmen überein.</p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })() : <p style={{ color: 'var(--text2)' }}>Keine Abgleich-Daten verfügbar</p>}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -735,14 +737,14 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
 // FERIENBLOCK VERWALTUNG
 const FerienblockPage = ({ blocks, onReload }) => {
   const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing]     = useState(null);
-  const [form, setForm]           = useState({ name: '', startdatum: '', enddatum: '', preis_pro_tag: '3.50' });
-  const [saving, setSaving]       = useState(false);
-  const [expanded, setExpanded]   = useState(null); // welcher Block ist aufgeklappt
-  const [detail, setDetail]       = useState({});   // { blockId: { a: [...], b: [...] } }
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ name: '', startdatum: '', enddatum: '', preis_pro_tag: '3.50' });
+  const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(null); // welcher Block ist aufgeklappt
+  const [detail, setDetail] = useState({});   // { blockId: { a: [...], b: [...] } }
   const [detailLoading, setDetailLoading] = useState({});
 
-  const openNew  = () => { setEditing(null); setForm({ name: '', startdatum: '', enddatum: '', preis_pro_tag: '3.50' }); setShowModal(true); };
+  const openNew = () => { setEditing(null); setForm({ name: '', startdatum: '', enddatum: '', preis_pro_tag: '3.50' }); setShowModal(true); };
   const openEdit = (b) => {
     setEditing(b);
     setForm({ name: b.name, startdatum: String(b.startdatum).split('T')[0], enddatum: String(b.enddatum).split('T')[0], preis_pro_tag: String(b.preis_pro_tag) });
@@ -752,7 +754,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
   const save = async () => {
     setSaving(true);
     if (editing) await API.put('ferienblock', { ...form, id: editing.id });
-    else         await API.post('ferienblock', form);
+    else await API.post('ferienblock', form);
     setSaving(false);
     setShowModal(false);
     onReload();
@@ -769,16 +771,18 @@ const FerienblockPage = ({ blocks, onReload }) => {
     if (expanded === blockId) { setExpanded(null); return; }
     setExpanded(blockId);
     if (detail[blockId]) return; // schon geladen
-    setDetailLoading(prev => ({...prev, [blockId]: true}));
+    setDetailLoading(prev => ({ ...prev, [blockId]: true }));
     const [a, b] = await Promise.all([
       API.get('listen', { ferienblock_id: blockId, liste: 'A' }),
       API.get('listen', { ferienblock_id: blockId, liste: 'B' })
     ]);
-    setDetail(prev => ({...prev, [blockId]: {
-      a: Array.isArray(a) ? a : [],
-      b: Array.isArray(b) ? b : []
-    }}));
-    setDetailLoading(prev => ({...prev, [blockId]: false}));
+    setDetail(prev => ({
+      ...prev, [blockId]: {
+        a: Array.isArray(a) ? a : [],
+        b: Array.isArray(b) ? b : []
+      }
+    }));
+    setDetailLoading(prev => ({ ...prev, [blockId]: false }));
   };
 
   // Alle Einträge einer Liste löschen
@@ -786,7 +790,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
     if (!window.confirm(`Alle Einträge in Liste ${liste} für diesen Block löschen?`)) return;
     await API.post('listen', { action: 'delete', ferienblock_id: blockId, liste });
     // Detail-Cache leeren und neu laden
-    setDetail(prev => { const n = {...prev}; delete n[blockId]; return n; });
+    setDetail(prev => { const n = { ...prev }; delete n[blockId]; return n; });
     setExpanded(null);
     setTimeout(() => toggleExpand(blockId), 100);
     onReload();
@@ -794,16 +798,18 @@ const FerienblockPage = ({ blocks, onReload }) => {
 
   // Einzelnen Eintrag löschen (nicht direkt in API, aber wir können über listen.js erweitern - vorerst ganze Liste neu laden)
   const reloadDetail = async (blockId) => {
-    setDetailLoading(prev => ({...prev, [blockId]: true}));
+    setDetailLoading(prev => ({ ...prev, [blockId]: true }));
     const [a, b] = await Promise.all([
       API.get('listen', { ferienblock_id: blockId, liste: 'A' }),
       API.get('listen', { ferienblock_id: blockId, liste: 'B' })
     ]);
-    setDetail(prev => ({...prev, [blockId]: {
-      a: Array.isArray(a) ? a : [],
-      b: Array.isArray(b) ? b : []
-    }}));
-    setDetailLoading(prev => ({...prev, [blockId]: false}));
+    setDetail(prev => ({
+      ...prev, [blockId]: {
+        a: Array.isArray(a) ? a : [],
+        b: Array.isArray(b) ? b : []
+      }
+    }));
+    setDetailLoading(prev => ({ ...prev, [blockId]: false }));
     onReload();
   };
 
@@ -814,8 +820,8 @@ const FerienblockPage = ({ blocks, onReload }) => {
         <p>Verwalte Ferienblöcke, Daten und Einträge</p>
       </div>
 
-      <div style={{marginBottom:'1.5rem'}}>
-        <button className="btn btn-primary" style={{width:'auto'}} onClick={openNew}>+ Neuer Ferienblock</button>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <button className="btn btn-primary" style={{ width: 'auto' }} onClick={openNew}>+ Neuer Ferienblock</button>
       </div>
 
       {blocks.length === 0 ? (
@@ -830,19 +836,19 @@ const FerienblockPage = ({ blocks, onReload }) => {
         const d = detail[b.id];
         const loading = detailLoading[b.id];
         return (
-          <div key={b.id} className="card" style={{marginBottom:'1rem'}}>
+          <div key={b.id} className="card" style={{ marginBottom: '1rem' }}>
             {/* Block-Header */}
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
-              <div style={{flex:1}}>
-                <div style={{display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
-                  <strong style={{fontSize:'1.05rem'}}>{b.name}</strong>
-                  <span style={{fontSize:'0.85rem',color:'var(--text2)'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                  <strong style={{ fontSize: '1.05rem' }}>{b.name}</strong>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text2)' }}>
                     {fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}
                   </span>
                   <span className="badge badge-orange">{parseFloat(b.preis_pro_tag).toFixed(2)} €/Tag</span>
                 </div>
                 {d && (
-                  <div style={{display:'flex',gap:'0.75rem',marginTop:'0.4rem',flexWrap:'wrap'}}>
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
                     <span className="badge badge-blue">📋 {d.a.length} Anmeldungen</span>
                     <span className="badge badge-green">🍽 {d.b.length} Buchungen</span>
                     {d.a.length > d.b.length && (
@@ -851,7 +857,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
                   </div>
                 )}
               </div>
-              <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <button className="btn btn-ghost btn-sm" onClick={() => toggleExpand(b.id)}>
                   {isOpen ? '▲ Zuklappen' : '▼ Details'}
                 </button>
@@ -862,14 +868,14 @@ const FerienblockPage = ({ blocks, onReload }) => {
 
             {/* Aufgeklappte Details */}
             {isOpen && (
-              <div style={{marginTop:'1.25rem',borderTop:'1px solid var(--border)',paddingTop:'1.25rem'}}>
+              <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
                 {loading ? <Spinner /> : (
-                  <div className="two-col" style={{gap:'1rem'}}>
+                  <div className="two-col" style={{ gap: '1rem' }}>
                     {/* Liste A */}
                     <div>
-                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.75rem'}}>
-                        <strong style={{fontSize:'0.9rem'}}>📋 Liste A – Anmeldungen ({d?.a.length || 0})</strong>
-                        <div style={{display:'flex',gap:'0.5rem'}}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <strong style={{ fontSize: '0.9rem' }}>📋 Liste A – Anmeldungen ({d?.a.length || 0})</strong>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button className="btn btn-ghost btn-sm" onClick={() => reloadDetail(b.id)}>↻</button>
                           {d?.a.length > 0 && (
                             <button className="btn btn-danger btn-sm" onClick={() => clearListe(b.id, 'A')}>
@@ -879,10 +885,10 @@ const FerienblockPage = ({ blocks, onReload }) => {
                         </div>
                       </div>
                       {!d?.a.length ? (
-                        <p style={{color:'var(--text2)',fontSize:'0.85rem'}}>Keine Einträge vorhanden.</p>
+                        <p style={{ color: 'var(--text2)', fontSize: '0.85rem' }}>Keine Einträge vorhanden.</p>
                       ) : (
-                        <div style={{maxHeight:'300px',overflowY:'auto',border:'1px solid var(--border)',borderRadius:'8px'}}>
-                          <table style={{margin:0}}>
+                        <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                          <table style={{ margin: 0 }}>
                             <thead>
                               <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th></tr>
                             </thead>
@@ -903,9 +909,9 @@ const FerienblockPage = ({ blocks, onReload }) => {
 
                     {/* Liste B */}
                     <div>
-                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'0.75rem'}}>
-                        <strong style={{fontSize:'0.9rem'}}>🍽 Liste B – Buchungen ({d?.b.length || 0})</strong>
-                        <div style={{display:'flex',gap:'0.5rem'}}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <strong style={{ fontSize: '0.9rem' }}>🍽 Liste B – Buchungen ({d?.b.length || 0})</strong>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button className="btn btn-ghost btn-sm" onClick={() => reloadDetail(b.id)}>↻</button>
                           {d?.b.length > 0 && (
                             <button className="btn btn-danger btn-sm" onClick={() => clearListe(b.id, 'B')}>
@@ -915,10 +921,10 @@ const FerienblockPage = ({ blocks, onReload }) => {
                         </div>
                       </div>
                       {!d?.b.length ? (
-                        <p style={{color:'var(--text2)',fontSize:'0.85rem'}}>Keine Einträge vorhanden.</p>
+                        <p style={{ color: 'var(--text2)', fontSize: '0.85rem' }}>Keine Einträge vorhanden.</p>
                       ) : (
-                        <div style={{maxHeight:'300px',overflowY:'auto',border:'1px solid var(--border)',borderRadius:'8px'}}>
-                          <table style={{margin:0}}>
+                        <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                          <table style={{ margin: 0 }}>
                             <thead>
                               <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th><th>Menü</th></tr>
                             </thead>
@@ -929,7 +935,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
                                   <td>{e.vorname}</td>
                                   <td>{e.klasse || '–'}</td>
                                   <td>{fmtDate(e.datum)}</td>
-                                  <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{e.menu || '–'}</td>
+                                  <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{e.menu || '–'}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -951,25 +957,25 @@ const FerienblockPage = ({ blocks, onReload }) => {
             <h3>{editing ? 'Ferienblock bearbeiten' : 'Neuer Ferienblock'}</h3>
             <div className="form-group">
               <label>Name</label>
-              <input className="form-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="z.B. Winterferien 2026" autoFocus />
+              <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="z.B. Winterferien 2026" autoFocus />
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label>Startdatum</label>
-                <input className="form-input" type="date" value={form.startdatum} onChange={e => setForm({...form, startdatum: e.target.value})} />
+                <input className="form-input" type="date" value={form.startdatum} onChange={e => setForm({ ...form, startdatum: e.target.value })} />
               </div>
               <div className="form-group">
                 <label>Enddatum</label>
-                <input className="form-input" type="date" value={form.enddatum} onChange={e => setForm({...form, enddatum: e.target.value})} />
+                <input className="form-input" type="date" value={form.enddatum} onChange={e => setForm({ ...form, enddatum: e.target.value })} />
               </div>
             </div>
             <div className="form-group">
               <label>Preis pro Tag (€)</label>
-              <input className="form-input" type="number" step="0.01" value={form.preis_pro_tag} onChange={e => setForm({...form, preis_pro_tag: e.target.value})} />
+              <input className="form-input" type="number" step="0.01" value={form.preis_pro_tag} onChange={e => setForm({ ...form, preis_pro_tag: e.target.value })} />
             </div>
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Abbrechen</button>
-              <button className="btn btn-primary" style={{width:'auto'}} disabled={saving || !form.name || !form.startdatum || !form.enddatum} onClick={save}>
+              <button className="btn btn-primary" style={{ width: 'auto' }} disabled={saving || !form.name || !form.startdatum || !form.enddatum} onClick={save}>
                 {saving ? 'Speichern...' : 'Speichern'}
               </button>
             </div>
@@ -984,22 +990,36 @@ const FerienblockPage = ({ blocks, onReload }) => {
 const MiniExcel = ({ onImport, label }) => {
   const defaultCols = 5;
   const defaultRows = 12;
-  const [data, setData] = useState(Array.from({length: defaultRows}, () => Array(defaultCols).fill('')));
-  
+  const [data, setData] = useState(Array.from({ length: defaultRows }, () => Array(defaultCols).fill('')));
+
   const handlePaste = (e) => {
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain');
     if (!text) return;
-    const pastedRows = text.trim().split('\n').map(row => row.split('\t').map(c => c.trim()));
-    
-    // Vergrößere Tabelle falls nötig
-    const newRows = Math.max(data.length, pastedRows.length + 1);
-    const newCols = Math.max(data[0].length, pastedRows.length > 0 ? pastedRows[0].length + 1 : defaultCols);
-    
-    const newData = Array.from({length: newRows}, () => Array(newCols).fill(''));
-    pastedRows.forEach((r, i) => {
+    const rawRows = text.trim().split('\n').map(row => row.split('\t').map(c => c.trim()));
+
+    // Excel kopiert oft tausende leere Zellen, wenn man ganze Zeilen markiert. Wir kürzen diese weg!
+    let maxContentCols = defaultCols;
+    const validRows = rawRows.map(row => {
+      let lastFilled = row.length - 1;
+      while (lastFilled >= 0 && row[lastFilled] === '') lastFilled--;
+      const cleanRow = row.slice(0, Math.max(0, lastFilled + 1));
+      if (cleanRow.length > maxContentCols) maxContentCols = cleanRow.length;
+      return cleanRow;
+    });
+
+    let lastFilledRow = validRows.length - 1;
+    while (lastFilledRow >= 0 && validRows[lastFilledRow].length === 0) lastFilledRow--;
+    const finalRows = validRows.slice(0, Math.max(0, lastFilledRow + 1));
+
+    // Begrenze auf sinnvolle Max-Größen (z.B. max 50 Spalten, falls doch was schiefgeht)
+    const newRows = Math.max(data.length, finalRows.length + 2); // 2 Leerzeilen Puffer
+    const newCols = Math.min(30, Math.max(data[0].length, maxContentCols + 1));
+
+    const newData = Array.from({ length: newRows }, () => Array(newCols).fill(''));
+    finalRows.forEach((r, i) => {
       r.forEach((c, j) => {
-         if (i < newRows && j < newCols) newData[i][j] = c;
+        if (i < newRows && j < newCols) newData[i][j] = c;
       });
     });
     setData(newData);
@@ -1025,17 +1045,17 @@ const MiniExcel = ({ onImport, label }) => {
   };
 
   return (
-    <div style={{border:'2px solid var(--border)', borderRadius:'8px', overflow:'hidden', background:'var(--bg)', display:'flex', flexDirection:'column', height:'100%'}}>
-      <div style={{background:'var(--bg2)', padding:'0.5rem', borderBottom:'1px solid var(--border)', fontSize:'0.75rem', color:'var(--text2)', textAlign:'center'}}>
+    <div style={{ minWidth: 0, border: '2px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ background: 'var(--bg2)', padding: '0.5rem', borderBottom: '1px solid var(--border)', fontSize: '0.75rem', color: 'var(--text2)', textAlign: 'center' }}>
         Strg+V drücken, um Zellen direkt als Tabelle einzufügen
       </div>
-      <div style={{overflowX:'auto', overflowY:'auto', minHeight:'180px', maxHeight:'280px', width:'100%'}} onPaste={handlePaste}>
-        <table style={{borderCollapse:'collapse', width:'100%', minWidth:'max-content', tableLayout:'fixed'}}>
-          <thead style={{position:'sticky', top:0, zIndex:2}}>
+      <div style={{ minWidth: 0, overflowX: 'auto', overflowY: 'auto', minHeight: '180px', maxHeight: '280px', width: '100%' }} onPaste={handlePaste}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 'max-content', tableLayout: 'fixed' }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 2 }}>
             <tr>
-              <th style={{background:'var(--bg2)', width:'35px', borderBottom:'1px solid var(--border)', borderRight:'1px solid var(--border)'}}></th>
+              <th style={{ background: 'var(--bg2)', width: '35px', borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)' }}></th>
               {data[0].map((_, i) => (
-                <th key={i} style={{background:'var(--bg2)', width:'100px', padding:'0.2rem', borderBottom:'1px solid var(--border)', borderRight:'1px solid var(--border)', fontSize:'0.75rem', fontWeight:600, color:'var(--text2)'}}>
+                <th key={i} style={{ background: 'var(--bg2)', width: '100px', padding: '0.2rem', borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text2)' }}>
                   {String.fromCharCode(65 + i)}
                 </th>
               ))}
@@ -1044,11 +1064,11 @@ const MiniExcel = ({ onImport, label }) => {
           <tbody>
             {data.map((row, r) => (
               <tr key={r}>
-                <td style={{background:'var(--bg2)', textAlign:'center', fontSize:'0.7rem', color:'var(--text2)', borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'sticky', left:0, zIndex:1}}>{r + 1}</td>
+                <td style={{ background: 'var(--bg2)', textAlign: 'center', fontSize: '0.7rem', color: 'var(--text2)', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', position: 'sticky', left: 0, zIndex: 1 }}>{r + 1}</td>
                 {row.map((cell, c) => (
-                  <td key={c} style={{padding:0, borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)'}}>
-                    <input 
-                      style={{width:'100%', height:'100%', border:'none', outline:'none', padding:'0.3rem 0.5rem', fontSize:'0.82rem', background: cell ? 'rgba(var(--primary-rgb),0.06)' : 'transparent', color:'var(--text)'}}
+                  <td key={c} style={{ padding: 0, borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+                    <input
+                      style={{ width: '100%', height: '100%', border: 'none', outline: 'none', padding: '0.3rem 0.5rem', fontSize: '0.82rem', background: cell ? 'rgba(var(--primary-rgb),0.06)' : 'transparent', color: 'var(--text)' }}
                       value={cell}
                       onChange={e => handleChange(r, c, e.target.value)}
                     />
@@ -1059,9 +1079,9 @@ const MiniExcel = ({ onImport, label }) => {
           </tbody>
         </table>
       </div>
-      <div style={{padding:'0.6rem', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', background:'var(--bg2)'}}>
-        <span style={{fontSize:'0.75rem', color:'var(--text2)'}}>{data.filter(r => r.some(c => String(c).trim())).length} Zeilen erkannt</span>
-        <button className="btn btn-primary btn-sm" style={{width:'auto'}} onClick={submit}>✔️ Daten übernehmen</button>
+      <div style={{ padding: '0.6rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg2)' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text2)' }}>{data.filter(r => r.some(c => String(c).trim())).length} Zeilen erkannt</span>
+        <button className="btn btn-primary btn-sm" style={{ width: 'auto' }} onClick={submit}>✔️ Daten übernehmen</button>
       </div>
     </div>
   );
@@ -1087,6 +1107,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const [comparisonSummary, setComparisonSummary] = useState(null); // { exact, fuzzy, onlyA, onlyB }
   const [usedDbForA, setUsedDbForA] = useState(false);
   const [usedDbForB, setUsedDbForB] = useState(false);
+  const [showPasteModal, setShowPasteModal] = useState(null); // 'A', 'B' oder null
 
   // Listen aus DB laden wenn Block gewählt
   useEffect(() => {
@@ -1147,7 +1168,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     setIsLoading(true);
     const rawRows = text.trim().split('\n');
     if (rawRows.length < 2) { toast.error('Mindestens 2 Zeilen (Kopfzeile + Daten) benötigt.'); setIsLoading(false); return; }
-    
+
     // Tabulator-getrennte Tabelle parsen
     const json = rawRows.map(row => row.split('\t').map(c => c.trim()));
     processImportArray(json, which);
@@ -1166,11 +1187,11 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     // Hilfsfunktion: Zeile -> { nachname, vorname, datum, ... }
     const buildEntry = (row, headers, cm, extraCols = {}) => {
       const ni = cm.nachname ? headers.indexOf(cm.nachname) : -1;
-      const vi = cm.vorname  ? headers.indexOf(cm.vorname)  : -1;
-      const di = cm.date     ? headers.indexOf(cm.date)     : -1;
+      const vi = cm.vorname ? headers.indexOf(cm.vorname) : -1;
+      const di = cm.date ? headers.indexOf(cm.date) : -1;
       const nachname = ni >= 0 ? String(row[ni] || '').trim() : '';
-      const vorname  = vi >= 0 ? String(row[vi] || '').trim() : '';
-      const datum    = di >= 0 ? normalizeDate(row[di]) : null;
+      const vorname = vi >= 0 ? String(row[vi] || '').trim() : '';
+      const datum = di >= 0 ? normalizeDate(row[di]) : null;
       if (!nachname && !vorname) return null;
       if (!datum) return null;
       const entry = { nachname, vorname, datum };
@@ -1216,8 +1237,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     if (rawB && colMapB.nachname) {
       const h = rawB.headers;
       const extraCols = {
-        klasse:     colMapB.klasse ? h.indexOf(colMapB.klasse) : h.findIndex(x => /klasse/i.test(x)),
-        menu:       h.findIndex(x => /men[uü]/i.test(x)),
+        klasse: colMapB.klasse ? h.indexOf(colMapB.klasse) : h.findIndex(x => /klasse/i.test(x)),
+        menu: h.findIndex(x => /men[uü]/i.test(x)),
         kontostand: h.findIndex(x => /konto/i.test(x)),
       };
       newB = rawB.data.map(row => buildEntry(row, h, colMapB, extraCols)).filter(Boolean);
@@ -1243,8 +1264,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     setListADb(Array.isArray(freshA) ? freshA : []);
     setListBDb(Array.isArray(freshB) ? freshB : []);
 
-    const mA = (Array.isArray(freshA) ? freshA : []).map((e,i) => ({ id: `a${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
-    const mB = (Array.isArray(freshB) ? freshB : []).map((e,i) => ({ id: `b${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
+    const mA = (Array.isArray(freshA) ? freshA : []).map((e, i) => ({ id: `a${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
+    const mB = (Array.isArray(freshB) ? freshB : []).map((e, i) => ({ id: `b${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
     setListA(mA); setListB(mB);
 
     // Automatisch neue Kinder aus Liste A ins Kinder-Verzeichnis synchronisieren
@@ -1280,7 +1301,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           }
         }
       }
-      const fuzzyGroups = Object.values(groups).sort((a,b) => b.score-a.score);
+      const fuzzyGroups = Object.values(groups).sort((a, b) => b.score - a.score);
       setPotentialMatches(fuzzyGroups);
 
       // Zusammenfassung für Transparenz
@@ -1388,7 +1409,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     if (finalResults.onlyInA.length > 0) {
       const data = finalResults.onlyInA.map(i => {
         const parts = i.name.split(/\s+/);
-        return { Vorname: parts.slice(0,-1).join(' '), Nachname: parts.pop()||'', Datum: fmt(i.date) };
+        return { Vorname: parts.slice(0, -1).join(' '), Nachname: parts.pop() || '', Datum: fmt(i.date) };
       });
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Fehlt in Liste B');
     }
@@ -1396,14 +1417,14 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     if (finalResults.onlyInB.length > 0) {
       const data = finalResults.onlyInB.map(i => {
         const parts = i.name.split(/\s+/);
-        return { Vorname: parts.slice(0,-1).join(' '), Nachname: parts.pop()||'', Datum: fmt(i.date) };
+        return { Vorname: parts.slice(0, -1).join(' '), Nachname: parts.pop() || '', Datum: fmt(i.date) };
       });
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Nur in Liste B');
     }
     // Matches
     const matchData = finalResults.matches.map(i => {
       const parts = i.name.split(/\s+/);
-      return { Vorname: parts.slice(0,-1).join(' '), Nachname: parts.pop()||'', Datum: fmt(i.date), Status: 'Bestätigt' };
+      return { Vorname: parts.slice(0, -1).join(' '), Nachname: parts.pop() || '', Datum: fmt(i.date), Status: 'Bestätigt' };
     });
     if (matchData.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matchData), 'Übereinstimmungen');
 
@@ -1433,82 +1454,82 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
     return (
       <div>
-        <p style={{marginBottom:'0.5rem',fontSize:'0.88rem',color:'var(--text2)'}}>
+        <p style={{ marginBottom: '0.5rem', fontSize: '0.88rem', color: 'var(--text2)' }}>
           <strong>{raw.data.length}</strong> Zeilen gefunden
         </p>
         {!raw.hasTextHeader && (
-          <div style={{background:'rgba(220,53,69,0.1)',border:'1px solid var(--danger)',borderRadius:'8px',padding:'0.6rem 0.9rem',marginBottom:'0.75rem',fontSize:'0.85rem',color:'var(--danger)'}}>
+          <div style={{ background: 'rgba(220,53,69,0.1)', border: '1px solid var(--danger)', borderRadius: '8px', padding: '0.6rem 0.9rem', marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--danger)' }}>
             ⚠️ <strong>Keine Headerzeile erkannt!</strong> Die Spalten wurden automatisch benannt (Spalte A, B, C...).
             Am besten füge in deiner Excel-Datei eine erste Zeile mit Spaltenüberschriften ein (z.B. <em>Vorname | Nachname | Datum</em>).
           </div>
         )}
 
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:'0.75rem',marginBottom:'1rem'}}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
           <div>
-            <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
+            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
               Nachname-Spalte *
             </label>
-            <select className="select-input" style={{width:'100%'}} value={colMap.nachname}
-              onChange={e => onChange({...colMap, nachname: e.target.value})}>
+            <select className="select-input" style={{ width: '100%' }} value={colMap.nachname}
+              onChange={e => onChange({ ...colMap, nachname: e.target.value })}>
               <option value="">– wählen –</option>
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div>
-            <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
+            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
               Vorname-Spalte
             </label>
-            <select className="select-input" style={{width:'100%'}} value={colMap.vorname}
-              onChange={e => onChange({...colMap, vorname: e.target.value})}>
+            <select className="select-input" style={{ width: '100%' }} value={colMap.vorname}
+              onChange={e => onChange({ ...colMap, vorname: e.target.value })}>
               <option value="">– optional –</option>
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div>
-            <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
+            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
               Datums-Spalte *
             </label>
-            <select className="select-input" style={{width:'100%'}} value={colMap.date}
-              onChange={e => onChange({...colMap, date: e.target.value})}>
+            <select className="select-input" style={{ width: '100%' }} value={colMap.date}
+              onChange={e => onChange({ ...colMap, date: e.target.value })}>
               <option value="">– wählen –</option>
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div>
-            <label style={{fontSize:'0.78rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase'}}>
+            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
               Klasse
             </label>
-            <select className="select-input" style={{width:'100%'}} value={colMap.klasse}
-              onChange={e => onChange({...colMap, klasse: e.target.value})}>
+            <select className="select-input" style={{ width: '100%' }} value={colMap.klasse}
+              onChange={e => onChange({ ...colMap, klasse: e.target.value })}>
               <option value="">– optional –</option>
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
         </div>
 
-        <p style={{fontSize:'0.8rem',color:'var(--text2)',marginBottom:'0.5rem'}}>Vorschau (erste 3 Zeilen):</p>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>Vorschau (erste 3 Zeilen):</p>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>{raw.headers.map(h => (
                 <th key={h} style={{
-                  color: (h===colMap.nachname||h===colMap.vorname) ? 'var(--success)' : h===colMap.date ? 'var(--primary)' : h===colMap.klasse ? 'var(--warning)' : undefined
+                  color: (h === colMap.nachname || h === colMap.vorname) ? 'var(--success)' : h === colMap.date ? 'var(--primary)' : h === colMap.klasse ? 'var(--warning)' : undefined
                 }}>
                   {h}
-                  {h===colMap.nachname && ' 👤'}
-                  {h===colMap.vorname  && ' 👤'}
-                  {h===colMap.date     && ' 📅'}
-                  {h===colMap.klasse   && ' 🏫'}
+                  {h === colMap.nachname && ' 👤'}
+                  {h === colMap.vorname && ' 👤'}
+                  {h === colMap.date && ' 📅'}
+                  {h === colMap.klasse && ' 🏫'}
                 </th>
               ))}</tr>
             </thead>
             <tbody>
-              {raw.data.slice(0,3).map((row,i) => (
-                <tr key={i}>{raw.headers.map((h,j) => (
+              {raw.data.slice(0, 3).map((row, i) => (
+                <tr key={i}>{raw.headers.map((h, j) => (
                   <td key={j} style={{
-                    fontWeight: (h===colMap.nachname||h===colMap.vorname||h===colMap.date||h===colMap.klasse) ? 700 : undefined,
-                    color: (h===colMap.nachname||h===colMap.vorname) ? 'var(--success)' : h===colMap.date ? 'var(--primary)' : h===colMap.klasse ? 'var(--warning)' : undefined
+                    fontWeight: (h === colMap.nachname || h === colMap.vorname || h === colMap.date || h === colMap.klasse) ? 700 : undefined,
+                    color: (h === colMap.nachname || h === colMap.vorname) ? 'var(--success)' : h === colMap.date ? 'var(--primary)' : h === colMap.klasse ? 'var(--warning)' : undefined
                   }}>
                     {previewCell(row[j], h)}
                   </td>
@@ -1541,9 +1562,9 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
         <>
           {/* Wizard */}
           <div className="wizard-bar">
-            {['Daten laden','Spalten zuordnen','Prüfen','Ergebnis'].map((n,i) => (
-              <div key={i} className={`wiz-step ${step===i+1?'active':step>i+1?'done':''}`}>
-                <span className="wiz-num">{i+1}</span>{n}
+            {['Daten laden', 'Spalten zuordnen', 'Prüfen', 'Ergebnis'].map((n, i) => (
+              <div key={i} className={`wiz-step ${step === i + 1 ? 'active' : step > i + 1 ? 'done' : ''}`}>
+                <span className="wiz-num">{i + 1}</span>{n}
               </div>
             ))}
           </div>
@@ -1556,15 +1577,15 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
               {(listADb.length > 0 || listBDb.length > 0) && (() => {
                 const uniqueA = new Set(listADb.map(e => (e.nachname + '|' + e.vorname).toLowerCase())).size;
                 const uniqueB = new Set(listBDb.map(e => (e.nachname + '|' + e.vorname).toLowerCase())).size;
-                return <div className="info-box" style={{marginBottom:'1rem'}}>
+                return <div className="info-box" style={{ marginBottom: '1rem' }}>
                   In der Datenbank vorhanden:
-                  {listADb.length > 0 && <> <strong>{uniqueA} Kinder</strong> <span style={{opacity:0.7}}>· {listADb.length} Tage</span> (Liste A)</>}
+                  {listADb.length > 0 && <> <strong>{uniqueA} Kinder</strong> <span style={{ opacity: 0.7 }}>· {listADb.length} Tage</span> (Liste A)</>}
                   {listADb.length > 0 && listBDb.length > 0 && ', '}
-                  {listBDb.length > 0 && <> <strong>{uniqueB} Kinder</strong> <span style={{opacity:0.7}}>· {listBDb.length} Tage</span> (Liste B)</>}
+                  {listBDb.length > 0 && <> <strong>{uniqueB} Kinder</strong> <span style={{ opacity: 0.7 }}>· {listBDb.length} Tage</span> (Liste B)</>}
                   {listADb.length > 0 && listBDb.length > 0 && (
-                    <> – <button className="btn btn-primary btn-sm" style={{marginLeft:'0.75rem'}} onClick={startComparisonFromDb}>Direkt vergleichen</button></>
+                    <> – <button className="btn btn-primary btn-sm" style={{ marginLeft: '0.75rem' }} onClick={startComparisonFromDb}>Direkt vergleichen</button></>
                   )}
-                  <button className="btn btn-ghost btn-sm" style={{marginLeft:'0.5rem',color:'var(--danger)'}} onClick={async () => {
+                  <button className="btn btn-ghost btn-sm" style={{ marginLeft: '0.5rem', color: 'var(--danger)' }} onClick={async () => {
                     const ok = await confirmDialog(
                       'Alle Daten löschen',
                       `Alle Listen (${listADb.length} A + ${listBDb.length} B) und gespeicherte Abgleiche für diesen Block löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
@@ -1589,38 +1610,50 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 <div className="card">
                   <div className="card-title">Liste A – Anmeldungen</div>
                   {rawA ? (
-                    <div className="upload-zone has-data" style={{cursor:'default'}}>
+                    <div className="upload-zone has-data" style={{ cursor: 'default' }}>
                       <div className="icon">✅</div>
                       <p>{rawA.data.length} Zeilen geladen</p>
-                      <button className="btn btn-ghost btn-sm" style={{marginTop:'0.5rem'}} onClick={() => { setRawA(null); setColMapA({nachname:'',vorname:'',date:'',klasse:''}); }}>Ändern / Löschen</button>
+                      <button className="btn btn-ghost btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { setRawA(null); setColMapA({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
                     </div>
                   ) : (
-                    <div style={{display:'flex', flexDirection:'column'}}>
-                      <label className="upload-zone" style={{borderBottomRightRadius:0, borderBottomLeftRadius:0, marginBottom:0, padding:'1rem'}}>
-                        <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'A')} />
-                        <div className="icon" style={{fontSize:'2rem', marginBottom:'0.2rem'}}>📂</div>
-                        <p style={{fontSize:'0.85rem'}}>Excel-Datei hochladen (.xlsx)</p>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label className="upload-zone" style={{ borderBottomRightRadius: 0, borderBottomLeftRadius: 0, marginBottom: 0, padding: '1rem', flex: 1 }}>
+                        <input type="file" accept=".xlsx" style={{ display: 'none' }} onChange={e => handleExcelUpload(e.target.files[0], 'A')} />
+                        <div className="icon" style={{ fontSize: '2rem', marginBottom: '0.2rem' }}>📂</div>
+                        <p style={{ fontSize: '0.85rem' }}>Excel-Datei hochladen (.xlsx)</p>
                       </label>
-                      <MiniExcel onImport={(json) => { setIsLoading(true); processImportArray(json, 'A'); }} label="A" />
+                      <button 
+                        className="btn btn-secondary" 
+                        style={{ borderTopRightRadius: 0, borderTopLeftRadius: 0, width: '100%', padding: '0.75rem', fontWeight: 'bold' }}
+                        onClick={() => setShowPasteModal('A')}
+                      >
+                        oder Tabelle einfügen (Strg+V)
+                      </button>
                     </div>
                   )}
                 </div>
-                <div className="card" style={{display:'flex', flexDirection:'column'}}>
+                <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
                   <div className="card-title">Liste B – Essensbuchungen</div>
                   {rawB ? (
-                    <div className="upload-zone has-data" style={{cursor:'default'}}>
+                    <div className="upload-zone has-data" style={{ cursor: 'default' }}>
                       <div className="icon">✅</div>
                       <p>{rawB.data.length} Zeilen geladen</p>
-                      <button className="btn btn-ghost btn-sm" style={{marginTop:'0.5rem'}} onClick={() => { setRawB(null); setColMapB({nachname:'',vorname:'',date:'',klasse:''}); }}>Ändern / Löschen</button>
+                      <button className="btn btn-ghost btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { setRawB(null); setColMapB({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
                     </div>
                   ) : (
-                    <div style={{display:'flex', flexDirection:'column', flex:1}}>
-                      <label className="upload-zone" style={{borderBottomRightRadius:0, borderBottomLeftRadius:0, marginBottom:0, padding:'1rem'}}>
-                        <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'B')} />
-                        <div className="icon" style={{fontSize:'2rem', marginBottom:'0.2rem'}}>📂</div>
-                        <p style={{fontSize:'0.85rem'}}>Excel-Datei hochladen (.xlsx)</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <label className="upload-zone" style={{ borderBottomRightRadius: 0, borderBottomLeftRadius: 0, marginBottom: 0, padding: '1rem', flex: 1 }}>
+                        <input type="file" accept=".xlsx" style={{ display: 'none' }} onChange={e => handleExcelUpload(e.target.files[0], 'B')} />
+                        <div className="icon" style={{ fontSize: '2rem', marginBottom: '0.2rem' }}>📂</div>
+                        <p style={{ fontSize: '0.85rem' }}>Excel-Datei hochladen (.xlsx)</p>
                       </label>
-                      <MiniExcel onImport={(json) => { setIsLoading(true); processImportArray(json, 'B'); }} label="B" />
+                      <button 
+                        className="btn btn-secondary" 
+                        style={{ borderTopRightRadius: 0, borderTopLeftRadius: 0, width: '100%', padding: '0.75rem', fontWeight: 'bold' }}
+                        onClick={() => setShowPasteModal('B')}
+                      >
+                        oder Tabelle einfügen (Strg+V)
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1664,33 +1697,33 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
             <div>
               {/* Datenquelle-Warnung: DB statt Upload */}
               {(usedDbForA || usedDbForB) && (
-                <div className="info-box" style={{marginBottom:'1rem',background:'rgba(230,168,23,0.1)',border:'1px solid var(--warning)'}}>
+                <div className="info-box" style={{ marginBottom: '1rem', background: 'rgba(230,168,23,0.1)', border: '1px solid var(--warning)' }}>
                   ⚠️ <strong>Hinweis:</strong>{' '}
                   {usedDbForA && usedDbForB
                     ? 'Beide Listen stammen aus der Datenbank (kein neuer Upload).'
                     : usedDbForA
-                    ? 'Liste A stammt aus der Datenbank — nur Liste B wurde neu hochgeladen.'
-                    : 'Liste B stammt aus der Datenbank — nur Liste A wurde neu hochgeladen.'}
+                      ? 'Liste A stammt aus der Datenbank — nur Liste B wurde neu hochgeladen.'
+                      : 'Liste B stammt aus der Datenbank — nur Liste A wurde neu hochgeladen.'}
                   {' '}Für einen komplett frischen Vergleich beide Listen hochladen.
                 </div>
               )}
 
               {/* Zusammenfassung: Was wurde automatisch zugeordnet */}
               {comparisonSummary && (
-                <div className="stat-grid" style={{marginBottom:'1rem'}}>
-                  <div className="stat-card accent-green" style={{padding:'0.75rem 1rem'}}>
-                    <div className="stat-label" style={{fontSize:'0.7rem'}}>Exakte Treffer</div>
-                    <div className="stat-value" style={{fontSize:'1.5rem'}}>{comparisonSummary.exact}</div>
+                <div className="stat-grid" style={{ marginBottom: '1rem' }}>
+                  <div className="stat-card accent-green" style={{ padding: '0.75rem 1rem' }}>
+                    <div className="stat-label" style={{ fontSize: '0.7rem' }}>Exakte Treffer</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem' }}>{comparisonSummary.exact}</div>
                     <div className="stat-sub">{comparisonSummary.exactKinder} Kinder · automatisch zugeordnet</div>
                   </div>
-                  <div className="stat-card accent-orange" style={{padding:'0.75rem 1rem'}}>
-                    <div className="stat-label" style={{fontSize:'0.7rem'}}>Ähnliche Namen</div>
-                    <div className="stat-value" style={{fontSize:'1.5rem'}}>{potentialMatches.length}</div>
+                  <div className="stat-card accent-orange" style={{ padding: '0.75rem 1rem' }}>
+                    <div className="stat-label" style={{ fontSize: '0.7rem' }}>Ähnliche Namen</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem' }}>{potentialMatches.length}</div>
                     <div className="stat-sub">{potentialMatches.length === 1 ? 'Vorschlag' : 'Vorschläge'} zur Prüfung</div>
                   </div>
-                  <div className="stat-card accent-blue" style={{padding:'0.75rem 1rem'}}>
-                    <div className="stat-label" style={{fontSize:'0.7rem'}}>Gesamt geladen</div>
-                    <div className="stat-value" style={{fontSize:'1.5rem'}}>{comparisonSummary.totalA}</div>
+                  <div className="stat-card accent-blue" style={{ padding: '0.75rem 1rem' }}>
+                    <div className="stat-label" style={{ fontSize: '0.7rem' }}>Gesamt geladen</div>
+                    <div className="stat-value" style={{ fontSize: '1.5rem' }}>{comparisonSummary.totalA}</div>
                     <div className="stat-sub">Einträge A · {comparisonSummary.totalB} Einträge B</div>
                   </div>
                 </div>
@@ -1699,39 +1732,39 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
               <div className="card">
                 <div className="card-title">
                   Mögliche Übereinstimmungen
-                  <span style={{fontSize:'0.85rem',color:'var(--text2)'}}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text2)' }}>
                     {openGroups.length} offen
                   </span>
                 </div>
-                <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1.5rem'}}>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                   <button className="btn btn-ghost btn-sm" onClick={() => bulkAction('accept', 90)}>Alle &gt;90% akzeptieren</button>
                   <button className="btn btn-ghost btn-sm" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
                 </div>
 
                 {openGroups.length === 0 && potentialMatches.length === 0 && (
-                  <p style={{color:'var(--text2)'}}>Keine ähnlichen Namen gefunden — alle Einträge wurden exakt zugeordnet oder haben keine Entsprechung.</p>
+                  <p style={{ color: 'var(--text2)' }}>Keine ähnlichen Namen gefunden — alle Einträge wurden exakt zugeordnet oder haben keine Entsprechung.</p>
                 )}
                 {openGroups.length === 0 && potentialMatches.length > 0 && (
-                  <p style={{color:'var(--text2)'}}>Alle Vorschläge überprüft.</p>
+                  <p style={{ color: 'var(--text2)' }}>Alle Vorschläge überprüft.</p>
                 )}
 
                 {openGroups.map(group => {
                   const cls = scoreClass(group.score);
                   const analysis = analyzeMatch(group.nameA, group.nameB);
                   return (
-                    <div key={group.nameA+group.nameB} className={`match-card ${cls}`}>
+                    <div key={group.nameA + group.nameB} className={`match-card ${cls}`}>
                       <div className="match-header">
-                        <div style={{display:'flex',alignItems:'center',gap:'1rem',flex:1,flexWrap:'wrap'}}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, flexWrap: 'wrap' }}>
                           <span className={`score-pill ${cls}`}>{group.score}%</span>
                           <div>
                             <div className="name-tokens">
                               <strong>A:</strong>
-                              {analysis.tokensA.map((t,i) => <span key={i} className={`token ${t.matched?'matched':'unmatched'}`}>{t.token}</span>)}
-                              <span style={{color:'var(--text2)',margin:'0 0.25rem'}}>↔</span>
+                              {analysis.tokensA.map((t, i) => <span key={i} className={`token ${t.matched ? 'matched' : 'unmatched'}`}>{t.token}</span>)}
+                              <span style={{ color: 'var(--text2)', margin: '0 0.25rem' }}>↔</span>
                               <strong>B:</strong>
-                              {analysis.tokensB.map((t,i) => <span key={i} className={`token ${t.matched?'matched':'unmatched'}`}>{t.token}</span>)}
+                              {analysis.tokensB.map((t, i) => <span key={i} className={`token ${t.matched ? 'matched' : 'unmatched'}`}>{t.token}</span>)}
                             </div>
-                            <div style={{fontSize:'0.8rem',color:'var(--text2)',marginTop:'0.3rem'}}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text2)', marginTop: '0.3rem' }}>
                               {group.reason} · {group.entries.length} Einträge · {fmtDate(group.entries[0]?.entryA.date)}
                             </div>
                           </div>
@@ -1768,113 +1801,133 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
             const nurInBKinder = groupByKind(finalResults.onlyInB);
 
             return (
-            <div>
-              <div className="stat-grid" style={{marginBottom:'1.5rem'}}>
-                <div className="stat-card accent-green">
-                  <div className="stat-label">Übereinstimmung</div>
-                  <div className="stat-value">{matchedKinder.length}</div>
-                  <div className="stat-sub">{matchedKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.matches.length} Tage</div>
+              <div>
+                <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
+                  <div className="stat-card accent-green">
+                    <div className="stat-label">Übereinstimmung</div>
+                    <div className="stat-value">{matchedKinder.length}</div>
+                    <div className="stat-sub">{matchedKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.matches.length} Tage</div>
+                  </div>
+                  <div className="stat-card accent-red">
+                    <div className="stat-label">Fehlt in B</div>
+                    <div className="stat-value">{fehlendeKinder.length}</div>
+                    <div className="stat-sub">{fehlendeKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInA.length} Tage ohne Buchung</div>
+                  </div>
+                  <div className="stat-card accent-orange">
+                    <div className="stat-label">Nur in B</div>
+                    <div className="stat-value">{nurInBKinder.length}</div>
+                    <div className="stat-sub">{nurInBKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInB.length} Tage ohne Anmeldung</div>
+                  </div>
                 </div>
-                <div className="stat-card accent-red">
-                  <div className="stat-label">Fehlt in B</div>
-                  <div className="stat-value">{fehlendeKinder.length}</div>
-                  <div className="stat-sub">{fehlendeKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInA.length} Tage ohne Buchung</div>
-                </div>
-                <div className="stat-card accent-orange">
-                  <div className="stat-label">Nur in B</div>
-                  <div className="stat-value">{nurInBKinder.length}</div>
-                  <div className="stat-sub">{nurInBKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInB.length} Tage ohne Anmeldung</div>
+
+                {fehlendeKinder.length > 0 && (
+                  <div className="card" style={{ marginBottom: '1rem' }}>
+                    <div className="card-title" style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      Fehlt in Liste B <span className="badge badge-red" style={{ marginLeft: '0.5rem' }}>{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
+                      <button className="btn btn-ghost btn-sm" style={{ width: 'auto', fontSize: '0.75rem', marginLeft: 'auto' }}
+                        onClick={() => {
+                          const bName = blocks.find(bl => String(bl.id) === String(blockId))?.name || '';
+                          const printData = fehlendeKinder.map(k => {
+                            const parts = k.name.split(' ');
+                            return { vorname: parts[0] || '', nachname: parts.slice(1).join(' ') || k.name, klasse: '', dates: k.dates };
+                          });
+                          printFehlendeKinder('Fehlende Kinder — OHNE Buchung', printData, bName);
+                        }}>🖨️ Drucken</button>
+                    </div>
+                    <div className="table-wrap">
+                      <table>
+                        <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
+                        <tbody>
+                          {fehlendeKinder.map(k => (
+                            <tr key={k.name}>
+                              <td><strong>{k.name}</strong></td>
+                              <td><span className="badge badge-red">{k.dates.length}</span></td>
+                              <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {matchedKinder.length > 0 && (
+                  <div className="card" style={{ marginBottom: '1rem' }}>
+                    <div className="card-title" style={{ color: 'var(--success)' }}>
+                      Übereinstimmungen <span className="badge badge-green" style={{ marginLeft: '0.5rem' }}>{matchedKinder.length} Kinder · {finalResults.matches.length} Tage</span>
+                    </div>
+                    <div className="table-wrap">
+                      <table>
+                        <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
+                        <tbody>
+                          {matchedKinder.map(k => (
+                            <tr key={k.name}>
+                              <td><strong>{k.name}</strong></td>
+                              <td><span className="badge badge-green">{k.dates.length}</span></td>
+                              <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {nurInBKinder.length > 0 && (
+                  <div className="card" style={{ marginBottom: '1rem' }}>
+                    <div className="card-title" style={{ color: 'var(--warning)' }}>
+                      Nur in Liste B <span className="badge badge-orange" style={{ marginLeft: '0.5rem' }}>{nurInBKinder.length} Kinder · {finalResults.onlyInB.length} Tage</span>
+                    </div>
+                    <div className="table-wrap">
+                      <table>
+                        <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
+                        <tbody>
+                          {nurInBKinder.map(k => (
+                            <tr key={k.name}>
+                              <td><strong>{k.name}</strong></td>
+                              <td><span className="badge badge-orange">{k.dates.length}</span></td>
+                              <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div className="action-row">
+                  <button className="btn btn-ghost" onClick={() => setStep(3)}>Zurück</button>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button className="btn btn-ghost" onClick={exportExcel}>Excel exportieren</button>
+                    <button className="btn btn-primary" disabled={saving} onClick={saveAbgleich}>
+                      {saving ? 'Speichern...' : 'In Datenbank speichern'}
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {fehlendeKinder.length > 0 && (
-                <div className="card" style={{marginBottom:'1rem'}}>
-                  <div className="card-title" style={{color:'var(--danger)',display:'flex',alignItems:'center',gap:'0.5rem',flexWrap:'wrap'}}>
-                    Fehlt in Liste B <span className="badge badge-red" style={{marginLeft:'0.5rem'}}>{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
-                    <button className="btn btn-ghost btn-sm" style={{width:'auto',fontSize:'0.75rem',marginLeft:'auto'}}
-                      onClick={() => {
-                        const bName = blocks.find(bl => String(bl.id) === String(blockId))?.name || '';
-                        const printData = fehlendeKinder.map(k => {
-                          const parts = k.name.split(' ');
-                          return { vorname: parts[0] || '', nachname: parts.slice(1).join(' ') || k.name, klasse: '', dates: k.dates };
-                        });
-                        printFehlendeKinder('Fehlende Kinder — OHNE Buchung', printData, bName);
-                      }}>🖨️ Drucken</button>
-                  </div>
-                  <div className="table-wrap">
-                    <table>
-                      <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
-                      <tbody>
-                        {fehlendeKinder.map(k => (
-                          <tr key={k.name}>
-                            <td><strong>{k.name}</strong></td>
-                            <td><span className="badge badge-red">{k.dates.length}</span></td>
-                            <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {matchedKinder.length > 0 && (
-                <div className="card" style={{marginBottom:'1rem'}}>
-                  <div className="card-title" style={{color:'var(--success)'}}>
-                    Übereinstimmungen <span className="badge badge-green" style={{marginLeft:'0.5rem'}}>{matchedKinder.length} Kinder · {finalResults.matches.length} Tage</span>
-                  </div>
-                  <div className="table-wrap">
-                    <table>
-                      <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
-                      <tbody>
-                        {matchedKinder.map(k => (
-                          <tr key={k.name}>
-                            <td><strong>{k.name}</strong></td>
-                            <td><span className="badge badge-green">{k.dates.length}</span></td>
-                            <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {nurInBKinder.length > 0 && (
-                <div className="card" style={{marginBottom:'1rem'}}>
-                  <div className="card-title" style={{color:'var(--warning)'}}>
-                    Nur in Liste B <span className="badge badge-orange" style={{marginLeft:'0.5rem'}}>{nurInBKinder.length} Kinder · {finalResults.onlyInB.length} Tage</span>
-                  </div>
-                  <div className="table-wrap">
-                    <table>
-                      <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
-                      <tbody>
-                        {nurInBKinder.map(k => (
-                          <tr key={k.name}>
-                            <td><strong>{k.name}</strong></td>
-                            <td><span className="badge badge-orange">{k.dates.length}</span></td>
-                            <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              <div className="action-row">
-                <button className="btn btn-ghost" onClick={() => setStep(3)}>Zurück</button>
-                <div style={{display:'flex',gap:'0.75rem'}}>
-                  <button className="btn btn-ghost" onClick={exportExcel}>Excel exportieren</button>
-                  <button className="btn btn-primary" disabled={saving} onClick={saveAbgleich}>
-                    {saving ? 'Speichern...' : 'In Datenbank speichern'}
-                  </button>
-                </div>
-              </div>
-            </div>
             );
           })()}
         </>
+      )}
+
+      {showPasteModal && (
+        <div className="modal-overlay" onClick={() => setShowPasteModal(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%' }}>
+            <h2>Daten für Liste {showPasteModal} einfügen</h2>
+            <p className="text-muted" style={{ marginBottom: '1rem' }}>Kopiere deine Daten aus Excel/Word und füge sie hier mit Strg+V ein.</p>
+            <MiniExcel 
+              onImport={(json) => { 
+                setIsLoading(true); 
+                processImportArray(json, showPasteModal); 
+                setShowPasteModal(null);
+              }} 
+              label={showPasteModal} 
+            />
+            <div className="action-row" style={{ marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setShowPasteModal(null)}>Abbrechen</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1903,7 +1956,7 @@ const FinanzenPage = ({ blocks }) => {
         <p>Kostenkalkulation: {data?.block?.preis_pro_tag || '3.50'} € pro Kind pro Tag</p>
       </div>
 
-      <div className="card" style={{marginBottom:'1.5rem'}}>
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
         <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
           <option value="">– Block wählen –</option>
           {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1933,7 +1986,7 @@ const FinanzenPage = ({ blocks }) => {
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Ohne Buchung');
           }
           if (wb.SheetNames.length) {
-            XLSX.writeFile(wb, `Finanzen_${data.block.name.replace(/\s+/g,'_')}.xlsx`);
+            XLSX.writeFile(wb, `Finanzen_${data.block.name.replace(/\s+/g, '_')}.xlsx`);
             toast.success('Finanzen exportiert');
           }
         };
@@ -1965,20 +2018,20 @@ const FinanzenPage = ({ blocks }) => {
 
           {data.fehlende_buchungen?.length > 0 && (
             <div className="card">
-              <div className="card-title" style={{color:'var(--danger)'}}>
+              <div className="card-title" style={{ color: 'var(--danger)' }}>
                 Fehlende Buchungen
                 <span className="count-badge red">{data.fehlende_buchungen.length}</span>
               </div>
-              <p style={{fontSize:'0.88rem',color:'var(--text2)',marginBottom:'1rem'}}>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text2)', marginBottom: '1rem' }}>
                 Diese Kinder sind bei uns angemeldet, haben aber keine Buchung beim Caterer.
               </p>
               <div className="table-wrap">
                 <table>
                   <thead><tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Tage angemeldet</th></tr></thead>
                   <tbody>
-                    {data.fehlende_buchungen.map((k,i) => (
+                    {data.fehlende_buchungen.map((k, i) => (
                       <tr key={i}>
-                        <td>{k.nachname}</td><td>{k.vorname}</td><td>{k.klasse||'–'}</td><td>{k.tage_angemeldet}</td>
+                        <td>{k.nachname}</td><td>{k.vorname}</td><td>{k.klasse || '–'}</td><td>{k.tage_angemeldet}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1995,11 +2048,11 @@ const FinanzenPage = ({ blocks }) => {
                   <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Tage</th><th>Gesamtbetrag</th><th>Kontostand</th></tr>
                 </thead>
                 <tbody>
-                  {data.buchungen.map((k,i) => (
+                  {data.buchungen.map((k, i) => (
                     <tr key={i}>
                       <td>{k.nachname}</td>
                       <td>{k.vorname}</td>
-                      <td>{k.klasse||'–'}</td>
+                      <td>{k.klasse || '–'}</td>
                       <td>{k.tage_gebucht}</td>
                       <td><strong>{parseFloat(k.gesamtbetrag).toFixed(2)} €</strong></td>
                       <td>{k.kontostand ? `${parseFloat(k.kontostand).toFixed(2)} €` : '–'}</td>
@@ -2020,14 +2073,14 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
   const diff = useMemo(() => computeDiff(matchesOld, matchesNew), [matchesOld, matchesNew]);
   const [groupBy, setGroupBy] = useState('kind'); // 'kind' oder 'tag'
 
-  if (!diff) return <p style={{color:'var(--text2)'}}>Keine Daten</p>;
+  if (!diff) return <p style={{ color: 'var(--text2)' }}>Keine Daten</p>;
 
   // Nach Kind gruppieren (mit Status-Tracking)
   const groupByKindFn = (entries, getMatch) => {
     const map = {};
     entries.forEach(e => {
       const m = getMatch(e);
-      const key = ((m.a_nachname||'') + '|' + (m.a_vorname||'')).toLowerCase();
+      const key = ((m.a_nachname || '') + '|' + (m.a_vorname || '')).toLowerCase();
       if (!map[key]) map[key] = { nachname: m.a_nachname || '', vorname: m.a_vorname || '', klasse: m.a_klasse || '', dateSet: new Set(), statusSet: new Set() };
       map[key].dateSet.add(String(m.a_datum || '').split('T')[0]);
       if (e.status) map[key].statusSet.add(e.status);
@@ -2042,7 +2095,7 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
       const m = getMatch(e);
       const date = String(m.a_datum || '').split('T')[0];
       if (!map[date]) map[date] = { date, kinderSet: new Set(), statusSet: new Set() };
-      map[date].kinderSet.add(((m.a_vorname||'') + ' ' + (m.a_nachname||'')).trim());
+      map[date].kinderSet.add(((m.a_vorname || '') + ' ' + (m.a_nachname || '')).trim());
       if (e.status) map[date].statusSet.add(e.status);
     });
     return Object.values(map).map(d => ({ ...d, kinder: [...d.kinderSet], statuses: [...d.statusSet] })).sort((a, b) => a.date.localeCompare(b.date));
@@ -2052,7 +2105,7 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
   const StatusBadge = ({ statuses }) => {
     if (!statuses || statuses.length === 0) return null;
     if (statuses.includes('matched') && statuses.includes('missing')) {
-      return <span style={{fontSize:'0.75rem'}}><span className="badge badge-green" style={{marginRight:'0.25rem'}}>✓ OK</span><span className="badge badge-orange">✗ Fehlt</span></span>;
+      return <span style={{ fontSize: '0.75rem' }}><span className="badge badge-green" style={{ marginRight: '0.25rem' }}>✓ OK</span><span className="badge badge-orange">✗ Fehlt</span></span>;
     }
     if (statuses.includes('matched')) return <span className="badge badge-green">✓ OK</span>;
     if (statuses.includes('missing')) return <span className="badge badge-orange">✗ Fehlt in B</span>;
@@ -2073,24 +2126,36 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
 
   // Sektionen: nur echte ÄNDERUNGEN bekommen Farbe
   const sections = [
-    { key: 'neuGeloest', title: 'Neu gelöst (jetzt gebucht)', icon: '✅', badge: 'badge-green',
+    {
+      key: 'neuGeloest', title: 'Neu gelöst (jetzt gebucht)', icon: '✅', badge: 'badge-green',
       changed: true, border: 'rgba(34,197,94,0.5)',
-      items: diff.neuGeloest, getMatch: e => e.neu, desc: 'Waren vorher ohne Buchung, sind jetzt korrekt zugeordnet.' },
-    { key: 'neuFehlend', title: 'Buchung verloren (noch angemeldet)', icon: '💔', badge: 'badge-red',
+      items: diff.neuGeloest, getMatch: e => e.neu, desc: 'Waren vorher ohne Buchung, sind jetzt korrekt zugeordnet.'
+    },
+    {
+      key: 'neuFehlend', title: 'Buchung verloren (noch angemeldet)', icon: '💔', badge: 'badge-red',
       changed: true, border: 'rgba(220,53,69,0.5)',
-      items: diff.neuFehlend, getMatch: e => e.neu, desc: 'Waren vorher Treffer, aber die Buchung in Liste B fehlt jetzt.' },
-    { key: 'entfallenOk', title: 'Nicht mehr angemeldet (waren Treffer)', icon: '🔴', badge: 'badge-red',
+      items: diff.neuFehlend, getMatch: e => e.neu, desc: 'Waren vorher Treffer, aber die Buchung in Liste B fehlt jetzt.'
+    },
+    {
+      key: 'entfallenOk', title: 'Nicht mehr angemeldet (waren Treffer)', icon: '🔴', badge: 'badge-red',
       changed: true, border: 'rgba(220,53,69,0.5)',
-      items: entfallenOk, getMatch: e => e.match, desc: 'Hatten vorher einen Treffer, sind in den neuen Daten komplett entfallen.' },
-    { key: 'neueEintraege', title: 'Neue Einträge', icon: '🆕', badge: 'badge-blue',
+      items: entfallenOk, getMatch: e => e.match, desc: 'Hatten vorher einen Treffer, sind in den neuen Daten komplett entfallen.'
+    },
+    {
+      key: 'neueEintraege', title: 'Neue Einträge', icon: '🆕', badge: 'badge-blue',
       changed: true, border: 'rgba(0,90,156,0.5)', showStatus: true,
-      items: diff.neueEintraege, getMatch: e => e.match, desc: 'Im älteren Abgleich nicht vorhanden.' },
-    { key: 'unveraendertFehlend', title: 'Weiterhin fehlend', icon: '⚠', badge: 'badge-orange',
+      items: diff.neueEintraege, getMatch: e => e.match, desc: 'Im älteren Abgleich nicht vorhanden.'
+    },
+    {
+      key: 'unveraendertFehlend', title: 'Weiterhin fehlend', icon: '⚠', badge: 'badge-orange',
       changed: false,
-      items: diff.unveraendertFehlend, getMatch: e => e.neu, desc: 'Fehlten vorher und fehlen weiterhin — keine Änderung.' },
-    { key: 'entfallenFehlend', title: 'Nicht mehr angemeldet (waren bereits fehlend)', icon: '🗑', badge: 'badge-grey',
+      items: diff.unveraendertFehlend, getMatch: e => e.neu, desc: 'Fehlten vorher und fehlen weiterhin — keine Änderung.'
+    },
+    {
+      key: 'entfallenFehlend', title: 'Nicht mehr angemeldet (waren bereits fehlend)', icon: '🗑', badge: 'badge-grey',
       changed: false,
-      items: entfallenFehlend, getMatch: e => e.match, desc: 'Waren schon vorher ohne Buchung und sind jetzt entfallen — keine Auswirkung.' },
+      items: entfallenFehlend, getMatch: e => e.match, desc: 'Waren schon vorher ohne Buchung und sind jetzt entfallen — keine Auswirkung.'
+    },
   ];
 
   // Excel-Export
@@ -2116,25 +2181,25 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
   return (
     <div>
       {/* Delta-Summary — 4 Karten */}
-      <div className="stat-grid" style={{marginBottom:'1rem'}}>
-        <div className="stat-card accent-green" style={{padding:'0.75rem 1rem'}}>
-          <div className="stat-label" style={{fontSize:'0.7rem'}}>✓ Treffer</div>
-          <div className="stat-value" style={{fontSize:'1.5rem'}}>{diff.newCounts.matched}</div>
+      <div className="stat-grid" style={{ marginBottom: '1rem' }}>
+        <div className="stat-card accent-green" style={{ padding: '0.75rem 1rem' }}>
+          <div className="stat-label" style={{ fontSize: '0.7rem' }}>✓ Treffer</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem' }}>{diff.newCounts.matched}</div>
           <div className="stat-sub">{fmtDelta(diff.delta.matched)} vs. vorher ({diff.oldCounts.matched})</div>
         </div>
-        <div className="stat-card accent-red" style={{padding:'0.75rem 1rem'}}>
-          <div className="stat-label" style={{fontSize:'0.7rem'}}>✗ Fehlend in B</div>
-          <div className="stat-value" style={{fontSize:'1.5rem'}}>{diff.newCounts.nur_in_a}</div>
+        <div className="stat-card accent-red" style={{ padding: '0.75rem 1rem' }}>
+          <div className="stat-label" style={{ fontSize: '0.7rem' }}>✗ Fehlend in B</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem' }}>{diff.newCounts.nur_in_a}</div>
           <div className="stat-sub">{fmtDelta(diff.delta.nur_in_a)} vs. vorher ({diff.oldCounts.nur_in_a})</div>
         </div>
-        <div className="stat-card accent-orange" style={{padding:'0.75rem 1rem'}}>
-          <div className="stat-label" style={{fontSize:'0.7rem'}}>⚠ Nur in B</div>
-          <div className="stat-value" style={{fontSize:'1.5rem'}}>{diff.newCounts.nur_in_b}</div>
+        <div className="stat-card accent-orange" style={{ padding: '0.75rem 1rem' }}>
+          <div className="stat-label" style={{ fontSize: '0.7rem' }}>⚠ Nur in B</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem' }}>{diff.newCounts.nur_in_b}</div>
           <div className="stat-sub">{fmtDelta(diff.delta.nur_in_b)} vs. vorher ({diff.oldCounts.nur_in_b})</div>
         </div>
-        <div className="stat-card" style={{padding:'0.75rem 1rem'}}>
-          <div className="stat-label" style={{fontSize:'0.7rem'}}>✅ Neu gelöst</div>
-          <div className="stat-value" style={{fontSize:'1.5rem',color:'var(--success)'}}>{diff.neuGeloest.length}</div>
+        <div className="stat-card" style={{ padding: '0.75rem 1rem' }}>
+          <div className="stat-label" style={{ fontSize: '0.7rem' }}>✅ Neu gelöst</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem', color: 'var(--success)' }}>{diff.neuGeloest.length}</div>
           <div className="stat-sub">Vorher fehlend, jetzt OK</div>
         </div>
       </div>
@@ -2142,25 +2207,25 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
       {/* Hinweis wenn Detail-Zuordnung unvollständig (fehlende Namen im alten Abgleich) */}
       {diff.oldOhneNamen > 0 && (
         <div style={{
-          background:'rgba(230,168,23,0.08)', borderRadius:'0.5rem', padding:'0.6rem 1rem',
-          fontSize:'0.82rem', color:'var(--text2)', marginBottom:'1rem',
-          borderLeft:'3px solid var(--warning)'
+          background: 'rgba(230,168,23,0.08)', borderRadius: '0.5rem', padding: '0.6rem 1rem',
+          fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '1rem',
+          borderLeft: '3px solid var(--warning)'
         }}>
           ⚠ Der ältere Abgleich hat <strong>{diff.oldOhneNamen} Einträge ohne gespeicherte Namen</strong> — die Detail-Zuordnung (wer genau gewonnen/verloren hat) ist daher unvollständig.
-          <span style={{display:'block',marginTop:'0.25rem',fontSize:'0.78rem'}}>
+          <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.78rem' }}>
             Tipp: Vergleiche nur Abgleiche die nach der letzten Migration erstellt wurden.
           </span>
         </div>
       )}
 
       {/* Steuerung */}
-      <div style={{display:'flex',gap:'0.5rem',marginBottom:'1rem',flexWrap:'wrap',alignItems:'center'}}>
-        <button className={`btn btn-sm ${groupBy==='kind'?'btn-primary':'btn-ghost'}`} style={{width:'auto'}}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <button className={`btn btn-sm ${groupBy === 'kind' ? 'btn-primary' : 'btn-ghost'}`} style={{ width: 'auto' }}
           onClick={() => setGroupBy('kind')}>Nach Kind</button>
-        <button className={`btn btn-sm ${groupBy==='tag'?'btn-primary':'btn-ghost'}`} style={{width:'auto'}}
+        <button className={`btn btn-sm ${groupBy === 'tag' ? 'btn-primary' : 'btn-ghost'}`} style={{ width: 'auto' }}
           onClick={() => setGroupBy('tag')}>Nach Tag</button>
-        <div style={{flex:1}} />
-        <button className="btn btn-ghost btn-sm" style={{width:'auto'}} onClick={exportDiffExcel}>📊 Excel exportieren</button>
+        <div style={{ flex: 1 }} />
+        <button className="btn btn-ghost btn-sm" style={{ width: 'auto' }} onClick={exportDiffExcel}>📊 Excel exportieren</button>
       </div>
 
       {/* Detail-Sektionen */}
@@ -2168,24 +2233,24 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
         if (!sec.items.length) return null;
 
         const cardStyle = sec.changed
-          ? {marginBottom:'1rem', borderLeft:`4px solid ${sec.border}`}
-          : {marginBottom:'1rem', opacity: 0.75};
+          ? { marginBottom: '1rem', borderLeft: `4px solid ${sec.border}` }
+          : { marginBottom: '1rem', opacity: 0.75 };
 
         if (groupBy === 'kind') {
           const grouped = groupByKindFn(sec.items, sec.getMatch);
           return (
             <div key={sec.key} className="card" style={cardStyle}>
-              <div className="card-title">{sec.icon} {sec.title} <span className={`badge ${sec.badge}`} style={{marginLeft:'0.5rem'}}>{grouped.length} Kinder · {sec.items.length} Tage</span></div>
-              {sec.changed && <p style={{fontSize:'0.82rem',color:'var(--text2)',marginBottom:'0.75rem'}}>{sec.desc}</p>}
+              <div className="card-title">{sec.icon} {sec.title} <span className={`badge ${sec.badge}`} style={{ marginLeft: '0.5rem' }}>{grouped.length} Kinder · {sec.items.length} Tage</span></div>
+              {sec.changed && <p style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>{sec.desc}</p>}
               <div className="table-wrap"><table>
                 <thead><tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th>{sec.showStatus && <th>Status</th>}<th>Tage</th><th>Daten</th></tr></thead>
                 <tbody>{grouped.map((k, i) => (
                   <tr key={i}>
-                    <td>{i+1}</td>
+                    <td>{i + 1}</td>
                     <td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse || '–'}</td>
                     {sec.showStatus && <td><StatusBadge statuses={k.statuses} /></td>}
                     <td><span className={`badge ${sec.badge}`}>{k.dates.length}</span></td>
-                    <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
                   </tr>
                 ))}</tbody>
               </table></div>
@@ -2195,19 +2260,19 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
           const grouped = groupByTagFn(sec.items, sec.getMatch);
           return (
             <div key={sec.key} className="card" style={cardStyle}>
-              <div className="card-title">{sec.icon} {sec.title} <span className={`badge ${sec.badge}`} style={{marginLeft:'0.5rem'}}>{grouped.length} Tage · {sec.items.length} Einträge</span></div>
-              {sec.changed && <p style={{fontSize:'0.82rem',color:'var(--text2)',marginBottom:'0.75rem'}}>{sec.desc}</p>}
+              <div className="card-title">{sec.icon} {sec.title} <span className={`badge ${sec.badge}`} style={{ marginLeft: '0.5rem' }}>{grouped.length} Tage · {sec.items.length} Einträge</span></div>
+              {sec.changed && <p style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>{sec.desc}</p>}
               <div className="table-wrap"><table>
                 <thead><tr><th>Tag</th><th>Datum</th>{sec.showStatus && <th>Status</th>}<th>Kinder</th><th>Namen</th></tr></thead>
                 <tbody>{grouped.map((d, i) => (
                   <tr key={i}>
                     <td>
-                      <strong>{(() => { try { return new Date(d.date).toLocaleDateString('de-DE', {weekday:'short'}); } catch { return ''; } })()}</strong>
+                      <strong>{(() => { try { return new Date(d.date).toLocaleDateString('de-DE', { weekday: 'short' }); } catch { return ''; } })()}</strong>
                     </td>
                     <td>{fmtDate(d.date)}</td>
                     {sec.showStatus && <td><StatusBadge statuses={d.statuses} /></td>}
                     <td><span className={`badge ${sec.badge}`}>{d.kinder.length}</span></td>
-                    <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{d.kinder.sort().join(', ')}</td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{d.kinder.sort().join(', ')}</td>
                   </tr>
                 ))}</tbody>
               </table></div>
@@ -2221,10 +2286,10 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
         && diff.neueEintraege.length === 0 && diff.unveraendertFehlend.length === 0
         && diff.entfallen.length === 0 && diff.delta.matched === 0
         && diff.delta.nur_in_a === 0 && diff.delta.nur_in_b === 0 && (
-        <div className="card"><div className="empty-state">
-          <div className="icon">✅</div><p>Keine Veränderungen zwischen den beiden Abgleichen.</p>
-        </div></div>
-      )}
+          <div className="card"><div className="empty-state">
+            <div className="icon">✅</div><p>Keine Veränderungen zwischen den beiden Abgleichen.</p>
+          </div></div>
+        )}
     </div>
   );
 };
@@ -2234,8 +2299,8 @@ const VerlaufPage = ({ blocks }) => {
   const [blockId, setBlockId] = useState(blocks[0]?.id || '');
   const [verlauf, setVerlauf] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [openId, setOpenId]   = useState(null);
-  const [detail, setDetail]   = useState({});
+  const [openId, setOpenId] = useState(null);
+  const [detail, setDetail] = useState({});
   const [detailLoading, setDetailLoading] = useState({});
   // Vergleichsmodus
   const [compareMode, setCompareMode] = useState(false);
@@ -2248,7 +2313,7 @@ const VerlaufPage = ({ blocks }) => {
     if (!id) return;
     setLoading(true);
     setOpenId(null);
-    setCompareMode(false); setCompareA(''); setCompareB(''); setCompareData({a:null,b:null});
+    setCompareMode(false); setCompareA(''); setCompareB(''); setCompareData({ a: null, b: null });
     API.get('abgleich', { ferienblock_id: id }).then(d => {
       setVerlauf(Array.isArray(d) ? d : []);
       setLoading(false);
@@ -2272,18 +2337,18 @@ const VerlaufPage = ({ blocks }) => {
     if (openId === id) { setOpenId(null); return; }
     setOpenId(id);
     if (detail[id]) return;
-    setDetailLoading(prev => ({...prev, [id]: true}));
+    setDetailLoading(prev => ({ ...prev, [id]: true }));
     const res = await API.get('abgleich', { abgleich_id: id });
-    setDetail(prev => ({...prev, [id]: res}));
-    setDetailLoading(prev => ({...prev, [id]: false}));
+    setDetail(prev => ({ ...prev, [id]: res }));
+    setDetailLoading(prev => ({ ...prev, [id]: false }));
   };
 
   const typConfig = [
-    { key: 'exact',          label: '✅ Exakte Treffer',        badge: 'badge-green'  },
-    { key: 'fuzzy_accepted', label: '🟡 Angenommene Treffer',   badge: 'badge-orange' },
-    { key: 'fuzzy_rejected', label: '❌ Abgelehnte Vorschläge', badge: 'badge-red'    },
-    { key: 'nur_in_a',       label: '⚠️ Nur in Liste A',        badge: 'badge-red'    },
-    { key: 'nur_in_b',       label: '📋 Nur in Liste B',        badge: 'badge-blue'   },
+    { key: 'exact', label: '✅ Exakte Treffer', badge: 'badge-green' },
+    { key: 'fuzzy_accepted', label: '🟡 Angenommene Treffer', badge: 'badge-orange' },
+    { key: 'fuzzy_rejected', label: '❌ Abgelehnte Vorschläge', badge: 'badge-red' },
+    { key: 'nur_in_a', label: '⚠️ Nur in Liste A', badge: 'badge-red' },
+    { key: 'nur_in_b', label: '📋 Nur in Liste B', badge: 'badge-blue' },
   ];
 
   return (
@@ -2293,8 +2358,8 @@ const VerlaufPage = ({ blocks }) => {
         <p>Gespeicherte Abgleiche einsehen</p>
       </div>
 
-      <div className="card" style={{marginBottom:'1.5rem'}}>
-        <div style={{display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <select className="ferienblock-select" value={blockId}
             onChange={e => { setBlockId(e.target.value); setVerlauf([]); }}>
             <option value="">– Block wählen –</option>
@@ -2302,7 +2367,7 @@ const VerlaufPage = ({ blocks }) => {
           </select>
           {blockId && <button className="btn btn-ghost btn-sm" onClick={() => loadVerlauf(blockId)}>↻ Neu laden</button>}
           {blockId && verlauf.length > 0 && (
-            <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)'}} onClick={async () => {
+            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={async () => {
               const ok = await confirmDialog(
                 'Alle Abgleiche löschen',
                 `Alle ${verlauf.length} gespeicherten Abgleiche für diesen Block löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
@@ -2329,22 +2394,22 @@ const VerlaufPage = ({ blocks }) => {
 
       {/* ── Vergleichsmodus ── */}
       {!loading && blockId && verlauf.length >= 2 && (
-        <div className="card" style={{marginBottom:'1.5rem'}}>
-          <div className="card-title" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>↔ Abgleiche vergleichen</span>
-            <button className="btn btn-ghost btn-sm" style={{width:'auto'}}
-              onClick={() => { setCompareMode(!compareMode); setCompareData({a:null,b:null}); setCompareA(''); setCompareB(''); }}>
+            <button className="btn btn-ghost btn-sm" style={{ width: 'auto' }}
+              onClick={() => { setCompareMode(!compareMode); setCompareData({ a: null, b: null }); setCompareA(''); setCompareB(''); }}>
               {compareMode ? '✗ Schließen' : '↔ Vergleichen'}
             </button>
           </div>
           {compareMode && (
             <div>
-              <div style={{display:'flex',gap:'0.75rem',alignItems:'flex-end',flexWrap:'wrap',marginBottom:'1rem'}}>
-                <div style={{flex:1,minWidth:'180px'}}>
-                  <label style={{fontSize:'0.75rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase',letterSpacing:'0.5px'}}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                <div style={{ flex: 1, minWidth: '180px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Alter Abgleich (vorher)
                   </label>
-                  <select className="form-input" value={compareA} onChange={e => { setCompareA(e.target.value); setCompareData({a:null,b:null}); }}>
+                  <select className="form-input" value={compareA} onChange={e => { setCompareA(e.target.value); setCompareData({ a: null, b: null }); }}>
                     <option value="">– wählen –</option>
                     {verlauf.map(v => (
                       <option key={v.id} value={v.id} disabled={String(v.id) === String(compareB)}>
@@ -2353,12 +2418,12 @@ const VerlaufPage = ({ blocks }) => {
                     ))}
                   </select>
                 </div>
-                <div style={{fontSize:'1.5rem',color:'var(--text2)',padding:'0 0.25rem 0.5rem'}}>→</div>
-                <div style={{flex:1,minWidth:'180px'}}>
-                  <label style={{fontSize:'0.75rem',fontWeight:700,color:'var(--text2)',display:'block',marginBottom:'0.3rem',textTransform:'uppercase',letterSpacing:'0.5px'}}>
+                <div style={{ fontSize: '1.5rem', color: 'var(--text2)', padding: '0 0.25rem 0.5rem' }}>→</div>
+                <div style={{ flex: 1, minWidth: '180px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Neuer Abgleich (nachher)
                   </label>
-                  <select className="form-input" value={compareB} onChange={e => { setCompareB(e.target.value); setCompareData({a:null,b:null}); }}>
+                  <select className="form-input" value={compareB} onChange={e => { setCompareB(e.target.value); setCompareData({ a: null, b: null }); }}>
                     <option value="">– wählen –</option>
                     {verlauf.map(v => (
                       <option key={v.id} value={v.id} disabled={String(v.id) === String(compareA)}>
@@ -2367,7 +2432,7 @@ const VerlaufPage = ({ blocks }) => {
                     ))}
                   </select>
                 </div>
-                <button className="btn btn-primary btn-sm" style={{width:'auto',marginBottom:'2px'}}
+                <button className="btn btn-primary btn-sm" style={{ width: 'auto', marginBottom: '2px' }}
                   disabled={!compareA || !compareB || compareA === compareB || compareLoading}
                   onClick={loadComparison}>
                   {compareLoading ? '⏳ Lade…' : 'Vergleichen'}
@@ -2392,25 +2457,25 @@ const VerlaufPage = ({ blocks }) => {
         const d = detail[v.id];
         const dLoading = detailLoading[v.id];
         return (
-          <div key={v.id} className="card" style={{marginBottom:'1rem'}}>
+          <div key={v.id} className="card" style={{ marginBottom: '1rem' }}>
             {/* Abgleich-Kopfzeile */}
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'1rem'}}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                   <strong>Abgleich vom {fmtDateTime(v.erstellt_am)}</strong>
                   <span className="badge badge-green">{v.status}</span>
                 </div>
-                <div style={{display:'flex',gap:'0.75rem',marginTop:'0.4rem',flexWrap:'wrap',fontSize:'0.85rem'}}>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
                   <span className="badge badge-green">✅ {v.matches_count} Treffer</span>
                   {parseInt(v.nur_in_a_count) > 0 && <span className="badge badge-red">⚠️ {v.nur_in_a_count} nur in A</span>}
                   {parseInt(v.nur_in_b_count) > 0 && <span className="badge badge-blue">📋 {v.nur_in_b_count} nur in B</span>}
                 </div>
               </div>
-              <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <button className="btn btn-ghost btn-sm" onClick={() => toggleDetail(v.id)}>
                   {isOpen ? '▲ Zuklappen' : '▼ Details anzeigen'}
                 </button>
-                <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)',width:'auto'}} title="Diesen Abgleich löschen" onClick={async (e) => {
+                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', width: 'auto' }} title="Diesen Abgleich löschen" onClick={async (e) => {
                   e.stopPropagation();
                   const ok = await confirmDialog('Abgleich löschen', `Abgleich vom ${fmtDateTime(v.erstellt_am)} löschen?`, 'Löschen');
                   if (!ok) return;
@@ -2423,15 +2488,15 @@ const VerlaufPage = ({ blocks }) => {
 
             {/* Detail-Bereich */}
             {isOpen && (
-              <div style={{marginTop:'1.25rem',borderTop:'1px solid var(--border)',paddingTop:'1.25rem'}}>
+              <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
                 {dLoading && <Spinner />}
                 {d && typConfig.map(({ key, label, badge }) => {
                   const items = d.matches?.filter(m => m.match_typ === key) || [];
                   if (!items.length) return null;
                   return (
-                    <div key={key} style={{marginBottom:'1.25rem'}}>
-                      <div style={{display:'flex',alignItems:'center',gap:'0.75rem',marginBottom:'0.6rem'}}>
-                        <strong style={{fontSize:'0.9rem'}}>{label}</strong>
+                    <div key={key} style={{ marginBottom: '1.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+                        <strong style={{ fontSize: '0.9rem' }}>{label}</strong>
                         <span className={`badge ${badge}`}>{items.length}</span>
                       </div>
                       <div className="table-wrap">
@@ -2440,10 +2505,10 @@ const VerlaufPage = ({ blocks }) => {
                             <tr>
                               <th>Name A</th>
                               <th>Datum A</th>
-                              {['exact','fuzzy_accepted','fuzzy_rejected'].includes(key) && <th>Name B</th>}
-                              {['exact','fuzzy_accepted','fuzzy_rejected'].includes(key) && <th>Datum B</th>}
-                              {['fuzzy_accepted','fuzzy_rejected'].includes(key) && <th>Score</th>}
-                              {['fuzzy_accepted','fuzzy_rejected'].includes(key) && <th>Grund</th>}
+                              {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th>Name B</th>}
+                              {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th>Datum B</th>}
+                              {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th>Score</th>}
+                              {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th>Grund</th>}
                             </tr>
                           </thead>
                           <tbody>
@@ -2451,10 +2516,10 @@ const VerlaufPage = ({ blocks }) => {
                               <tr key={m.id}>
                                 <td>{m.a_vorname} {m.a_nachname}</td>
                                 <td>{fmtDate(m.a_datum)}</td>
-                                {['exact','fuzzy_accepted','fuzzy_rejected'].includes(key) && <td>{m.b_vorname} {m.b_nachname}</td>}
-                                {['exact','fuzzy_accepted','fuzzy_rejected'].includes(key) && <td>{fmtDate(m.b_datum)}</td>}
-                                {['fuzzy_accepted','fuzzy_rejected'].includes(key) && <td><span className={`badge ${m.score>=90?'badge-green':m.score>=75?'badge-orange':'badge-red'}`}>{m.score}%</span></td>}
-                                {['fuzzy_accepted','fuzzy_rejected'].includes(key) && <td style={{fontSize:'0.8rem',color:'var(--text2)'}}>{m.grund}</td>}
+                                {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td>{m.b_vorname} {m.b_nachname}</td>}
+                                {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td>{fmtDate(m.b_datum)}</td>}
+                                {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td><span className={`badge ${m.score >= 90 ? 'badge-green' : m.score >= 75 ? 'badge-orange' : 'badge-red'}`}>{m.score}%</span></td>}
+                                {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{m.grund}</td>}
                               </tr>
                             ))}
                           </tbody>
@@ -2647,7 +2712,7 @@ const TagesansichtPage = ({ blocks }) => {
         <p>Welche Kinder sind pro Tag angemeldet und gebucht?</p>
       </div>
 
-      <div className="card" style={{marginBottom:'1.5rem'}}>
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
         <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
           <option value="">– Block wählen –</option>
           {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
@@ -2661,27 +2726,27 @@ const TagesansichtPage = ({ blocks }) => {
       )}
 
       {!loading && dayStats.length > 0 && (
-        <div className="card" style={{marginBottom:'1.5rem'}}>
-          <div className="card-title" style={{display:'flex',alignItems:'center',gap:'0.5rem',flexWrap:'wrap'}}>
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             Tage im Überblick
-            {!hasAbgleich && <span style={{fontSize:'0.78rem',color:'var(--text2)',fontWeight:400}}>– Führe zuerst einen Abgleich durch für OK/Fehlt/Nur-in-B Spalten</span>}
+            {!hasAbgleich && <span style={{ fontSize: '0.78rem', color: 'var(--text2)', fontWeight: 400 }}>– Führe zuerst einen Abgleich durch für OK/Fehlt/Nur-in-B Spalten</span>}
           </div>
           <div className="table-wrap">
             <table>
               <thead><tr><th>Tag</th><th>Datum</th><th>Angemeldet (A)</th><th>Gebucht (B)</th>{hasAbgleich && <><th>✓ OK</th><th>✗ Fehlt in B</th><th>⚠ Nur in B</th></>}<th></th></tr></thead>
               <tbody>
                 {dayStats.map(d => (
-                  <tr key={d.date} style={{background: selectedDate === d.date ? 'rgba(0,90,156,0.08)' : undefined, cursor:'pointer'}} onClick={() => setSelectedDate(selectedDate === d.date ? null : d.date)}>
+                  <tr key={d.date} style={{ background: selectedDate === d.date ? 'rgba(0,90,156,0.08)' : undefined, cursor: 'pointer' }} onClick={() => setSelectedDate(selectedDate === d.date ? null : d.date)}>
                     <td><strong>{weekday(d.date)}</strong></td>
                     <td>{fmtDate(d.date)}</td>
                     <td><span className="badge badge-blue">{d.angemeldet}</span></td>
                     <td><span className="badge badge-green">{d.gebucht}</span></td>
                     {hasAbgleich && <>
                       <td><span className="badge badge-green">{d.matched}</span></td>
-                      <td>{d.missingInB > 0 ? <span className="badge badge-red">{d.missingInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
-                      <td>{d.onlyInB > 0 ? <span className="badge badge-orange">{d.onlyInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                      <td>{d.missingInB > 0 ? <span className="badge badge-red">{d.missingInB}</span> : <span style={{ color: 'var(--text2)' }}>0</span>}</td>
+                      <td>{d.onlyInB > 0 ? <span className="badge badge-orange">{d.onlyInB}</span> : <span style={{ color: 'var(--text2)' }}>0</span>}</td>
                     </>}
-                    <td style={{fontSize:'0.8rem',color:'var(--primary)'}}>{selectedDate === d.date ? '▲' : '▼'}</td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>{selectedDate === d.date ? '▲' : '▼'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2696,18 +2761,18 @@ const TagesansichtPage = ({ blocks }) => {
             {weekday(selectedDate)} {fmtDate(selectedDate)} — {dayDetail.length} Kinder
           </div>
           {hasAbgleich && (
-            <div className="stat-grid" style={{marginBottom:'1rem'}}>
-              <div className="stat-card accent-green" style={{padding:'0.75rem 1rem'}}>
-                <div className="stat-label" style={{fontSize:'0.7rem'}}>Angemeldet + Gebucht</div>
-                <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => k.inA && k.inB).length}</div>
+            <div className="stat-grid" style={{ marginBottom: '1rem' }}>
+              <div className="stat-card accent-green" style={{ padding: '0.75rem 1rem' }}>
+                <div className="stat-label" style={{ fontSize: '0.7rem' }}>Angemeldet + Gebucht</div>
+                <div className="stat-value" style={{ fontSize: '1.5rem' }}>{dayDetail.filter(k => k.inA && k.inB).length}</div>
               </div>
-              <div className={`stat-card ${dayDetail.filter(k => k.inA && !k.inB).length > 0 ? 'accent-red' : 'accent-green'}`} style={{padding:'0.75rem 1rem'}}>
-                <div className="stat-label" style={{fontSize:'0.7rem'}}>Angemeldet, nicht gebucht</div>
-                <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => k.inA && !k.inB).length}</div>
+              <div className={`stat-card ${dayDetail.filter(k => k.inA && !k.inB).length > 0 ? 'accent-red' : 'accent-green'}`} style={{ padding: '0.75rem 1rem' }}>
+                <div className="stat-label" style={{ fontSize: '0.7rem' }}>Angemeldet, nicht gebucht</div>
+                <div className="stat-value" style={{ fontSize: '1.5rem' }}>{dayDetail.filter(k => k.inA && !k.inB).length}</div>
               </div>
-              <div className="stat-card accent-orange" style={{padding:'0.75rem 1rem'}}>
-                <div className="stat-label" style={{fontSize:'0.7rem'}}>Nur gebucht (nicht angemeldet)</div>
-                <div className="stat-value" style={{fontSize:'1.5rem'}}>{dayDetail.filter(k => !k.inA && k.inB).length}</div>
+              <div className="stat-card accent-orange" style={{ padding: '0.75rem 1rem' }}>
+                <div className="stat-label" style={{ fontSize: '0.7rem' }}>Nur gebucht (nicht angemeldet)</div>
+                <div className="stat-value" style={{ fontSize: '1.5rem' }}>{dayDetail.filter(k => !k.inA && k.inB).length}</div>
               </div>
             </div>
           )}
@@ -2715,16 +2780,16 @@ const TagesansichtPage = ({ blocks }) => {
             <table>
               <thead><tr>
                 <th>#</th>
-                <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
-                <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
-                <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
-                {hasAbgleich && <th style={{cursor:'pointer',userSelect:'none'}} onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>}
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
+                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
+                {hasAbgleich && <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>}
                 <th>Liste</th>
               </tr></thead>
               <tbody>
                 {sortedDetail.map((k, i) => (
-                  <tr key={i} style={{background: hasAbgleich && k.inA && !k.inB ? 'rgba(220,53,69,0.06)' : hasAbgleich && !k.inA && k.inB ? 'rgba(230,168,23,0.06)' : undefined}}>
-                    <td>{i+1}</td>
+                  <tr key={i} style={{ background: hasAbgleich && k.inA && !k.inB ? 'rgba(220,53,69,0.06)' : hasAbgleich && !k.inA && k.inB ? 'rgba(230,168,23,0.06)' : undefined }}>
+                    <td>{i + 1}</td>
                     <td><strong>{k.nachname}</strong></td>
                     <td>{k.vorname}</td>
                     <td>{k.klasse || '–'}</td>
@@ -2733,8 +2798,8 @@ const TagesansichtPage = ({ blocks }) => {
                       {k.inA && !k.inB && <span className="badge badge-red">✗ Fehlt in B</span>}
                       {!k.inA && k.inB && <span className="badge badge-orange">⚠ Nur in B</span>}
                     </td>}
-                    <td style={{fontSize:'0.8rem'}}>
-                      {k.inA && <span className="badge badge-blue" style={{marginRight:3}}>A</span>}
+                    <td style={{ fontSize: '0.8rem' }}>
+                      {k.inA && <span className="badge badge-blue" style={{ marginRight: 3 }}>A</span>}
                       {k.inB && <span className="badge badge-green">B</span>}
                     </td>
                   </tr>
@@ -2856,8 +2921,8 @@ const KlassenPage = ({ blocks }) => {
         <p>Statistiken gruppiert nach Schulklasse</p>
       </div>
 
-      <div className="card" style={{marginBottom:'1.5rem'}}>
-        <div style={{display:'flex',alignItems:'center',gap:'1rem',flexWrap:'wrap'}}>
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
             <option value="">– Block wählen –</option>
             {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
@@ -2887,7 +2952,7 @@ const KlassenPage = ({ blocks }) => {
 
       {!loading && klassenData.length > 0 && (
         <div className="card">
-          {!hasAbgleich && <p style={{fontSize:'0.82rem',color:'var(--text2)',marginBottom:'0.75rem',fontStyle:'italic'}}>
+          {!hasAbgleich && <p style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '0.75rem', fontStyle: 'italic' }}>
             Hinweis: Ohne Abgleich basieren "Fehlt in B" und "Nur in B" auf einfachem Namensvergleich (ungenau bei unterschiedlicher Schreibweise).
           </p>}
           <div className="table-wrap">
@@ -2903,22 +2968,22 @@ const KlassenPage = ({ blocks }) => {
                     <td><strong>{k.klasse}</strong></td>
                     <td><span className="badge badge-blue">{k.kinderA}</span></td>
                     <td><span className="badge badge-green">{k.kinderB}</span></td>
-                    <td style={{color:'var(--text2)'}}>{k.tageA}</td>
-                    <td style={{color:'var(--text2)'}}>{k.tageB}</td>
-                    <td>{k.ohneB > 0 ? <span className="badge badge-red">{k.ohneB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
-                    <td>{k.nurInB > 0 ? <span className="badge badge-orange">{k.nurInB}</span> : <span style={{color:'var(--text2)'}}>0</span>}</td>
+                    <td style={{ color: 'var(--text2)' }}>{k.tageA}</td>
+                    <td style={{ color: 'var(--text2)' }}>{k.tageB}</td>
+                    <td>{k.ohneB > 0 ? <span className="badge badge-red">{k.ohneB}</span> : <span style={{ color: 'var(--text2)' }}>0</span>}</td>
+                    <td>{k.nurInB > 0 ? <span className="badge badge-orange">{k.nurInB}</span> : <span style={{ color: 'var(--text2)' }}>0</span>}</td>
                     <td><strong>{(k.tageB * preis).toFixed(2)} €</strong></td>
                   </tr>
                 ))}
-                <tr style={{fontWeight:700,borderTop:'2px solid var(--border)'}}>
+                <tr style={{ fontWeight: 700, borderTop: '2px solid var(--border)' }}>
                   <td>Gesamt</td>
-                  <td>{klassenData.reduce((s,k) => s + k.kinderA, 0)}</td>
-                  <td>{klassenData.reduce((s,k) => s + k.kinderB, 0)}</td>
-                  <td>{klassenData.reduce((s,k) => s + k.tageA, 0)}</td>
-                  <td>{klassenData.reduce((s,k) => s + k.tageB, 0)}</td>
-                  <td style={{color:'var(--danger)'}}>{klassenData.reduce((s,k) => s + k.ohneB, 0)}</td>
-                  <td style={{color:'var(--warning)'}}>{klassenData.reduce((s,k) => s + k.nurInB, 0)}</td>
-                  <td>{(klassenData.reduce((s,k) => s + k.tageB, 0) * preis).toFixed(2)} €</td>
+                  <td>{klassenData.reduce((s, k) => s + k.kinderA, 0)}</td>
+                  <td>{klassenData.reduce((s, k) => s + k.kinderB, 0)}</td>
+                  <td>{klassenData.reduce((s, k) => s + k.tageA, 0)}</td>
+                  <td>{klassenData.reduce((s, k) => s + k.tageB, 0)}</td>
+                  <td style={{ color: 'var(--danger)' }}>{klassenData.reduce((s, k) => s + k.ohneB, 0)}</td>
+                  <td style={{ color: 'var(--warning)' }}>{klassenData.reduce((s, k) => s + k.nurInB, 0)}</td>
+                  <td>{(klassenData.reduce((s, k) => s + k.tageB, 0) * preis).toFixed(2)} €</td>
                 </tr>
               </tbody>
             </table>
@@ -2956,7 +3021,7 @@ const EinstellungenPage = ({ user, onLogout }) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       const now = new Date();
-      const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+      const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
       a.href = url;
       a.download = `backup_${ts}.json`;
       a.click();
@@ -3013,15 +3078,15 @@ const EinstellungenPage = ({ user, onLogout }) => {
         <p>Konto, Sicherheit und Datensicherung</p>
       </div>
 
-      <div style={{display:'grid',gap:'1.5rem',maxWidth:560}}>
+      <div style={{ display: 'grid', gap: '1.5rem', maxWidth: 560 }}>
         {/* Passwort */}
         <div className="card">
           <div className="card-title">Passwort ändern</div>
-          <p style={{fontSize:'0.88rem',color:'var(--text2)',marginBottom:'1rem'}}>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text2)', marginBottom: '1rem' }}>
             Angemeldet als: <strong>{user?.username}</strong>
           </p>
           {err && <div className="error-msg">{err}</div>}
-          {msg && <div style={{background:'#efe',border:'1px solid #8c8',padding:'0.75rem',borderRadius:'8px',marginBottom:'1rem',fontSize:'0.9rem'}}>{msg}</div>}
+          {msg && <div style={{ background: '#efe', border: '1px solid #8c8', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem' }}>{msg}</div>}
           <div className="form-group">
             <label>Neues Passwort</label>
             <input className="form-input" type="password" value={pw1} onChange={e => setPw1(e.target.value)} />
@@ -3030,7 +3095,7 @@ const EinstellungenPage = ({ user, onLogout }) => {
             <label>Passwort wiederholen</label>
             <input className="form-input" type="password" value={pw2} onChange={e => setPw2(e.target.value)} />
           </div>
-          <button className="btn btn-primary" onClick={changePassword} disabled={!pw1||!pw2}>Passwort ändern</button>
+          <button className="btn btn-primary" onClick={changePassword} disabled={!pw1 || !pw2}>Passwort ändern</button>
           <hr />
           <button className="btn btn-danger" onClick={onLogout}>Abmelden</button>
         </div>
@@ -3038,22 +3103,22 @@ const EinstellungenPage = ({ user, onLogout }) => {
         {/* Backup */}
         <div className="card">
           <div className="card-title">💾 Datensicherung (Backup)</div>
-          <p style={{fontSize:'0.88rem',color:'var(--text2)',marginBottom:'1rem'}}>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text2)', marginBottom: '1rem' }}>
             Erstelle ein vollständiges Backup aller Daten (Ferienblöcke, Listen, Abgleiche, Kinder) als JSON-Datei.
           </p>
 
-          <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap',marginBottom:'1rem'}}>
-            <button className="btn btn-primary" onClick={exportBackup} disabled={backupLoading} style={{width:'auto'}}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <button className="btn btn-primary" onClick={exportBackup} disabled={backupLoading} style={{ width: 'auto' }}>
               {backupLoading ? '⏳ Exportiere…' : '📥 Backup herunterladen'}
             </button>
 
-            <label className="btn btn-ghost" style={{width:'auto',cursor: restoreLoading ? 'wait' : 'pointer',display:'inline-flex',alignItems:'center',gap:'0.4rem'}}>
+            <label className="btn btn-ghost" style={{ width: 'auto', cursor: restoreLoading ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
               {restoreLoading ? '⏳ Wiederherstelle…' : '📤 Backup wiederherstellen'}
-              <input type="file" accept=".json" onChange={importBackup} style={{display:'none'}} disabled={restoreLoading} />
+              <input type="file" accept=".json" onChange={importBackup} style={{ display: 'none' }} disabled={restoreLoading} />
             </label>
           </div>
 
-          <div style={{fontSize:'0.82rem',color:'var(--text2)',background:'var(--surface2)',padding:'0.75rem',borderRadius:'8px',lineHeight:1.5}}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--text2)', background: 'var(--surface2)', padding: '0.75rem', borderRadius: '8px', lineHeight: 1.5 }}>
             <strong>Hinweis:</strong> Beim Wiederherstellen werden alle bestehenden Daten überschrieben.
             Erstelle vorher ein frisches Backup, falls du die aktuellen Daten behalten möchtest.
           </div>
@@ -3065,16 +3130,16 @@ const EinstellungenPage = ({ user, onLogout }) => {
 
 // ─── KINDER-VERZEICHNIS ──────────────────────────────
 // Avatar-Farbe aus Name generieren (konsistent)
-const avatarColors = ['#005A9C','#28a745','#dc3545','#e6a817','#17a2b8','#6f42c1','#e83e8c','#fd7e14','#20c997','#4dabf7'];
+const avatarColors = ['#005A9C', '#28a745', '#dc3545', '#e6a817', '#17a2b8', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997', '#4dabf7'];
 const getAvatarColor = (name) => {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return avatarColors[Math.abs(h) % avatarColors.length];
 };
 const Avatar = ({ vorname, nachname, size = 'md' }) => {
-  const initials = ((vorname||'').charAt(0) + (nachname||'').charAt(0)).toUpperCase();
+  const initials = ((vorname || '').charAt(0) + (nachname || '').charAt(0)).toUpperCase();
   const color = getAvatarColor((nachname || '') + (vorname || ''));
-  return <div className={`avatar avatar-${size}`} style={{background: color}}>{initials}</div>;
+  return <div className={`avatar avatar-${size}`} style={{ background: color }}>{initials}</div>;
 };
 
 const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
@@ -3120,9 +3185,9 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
         // Ähnlich (Levenshtein-artig: einfache Prüfung)
         const bName = (b.nachname + ' ' + b.vorname).toLowerCase();
         const { score } = calcScore(aName, bName);
-        
-        const nameClose = aName.replace(/\s+/g,'') === bName.replace(/\s+/g,'') || aName.replace(/[^a-zäöüß]/g,'') === bName.replace(/[^a-zäöüß]/g,'');
-        
+
+        const nameClose = aName.replace(/\s+/g, '') === bName.replace(/\s+/g, '') || aName.replace(/[^a-zäöüß]/g, '') === bName.replace(/[^a-zäöüß]/g, '');
+
         let matchReason = null;
         if (exact) matchReason = 'Exakt gleich';
         else if (swapped) matchReason = 'Vor-/Nachname vertauscht';
@@ -3327,13 +3392,13 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   ).sort((a, b) => {
     let va, vb;
     switch (sortBy) {
-      case 'nachname': va = (a.nachname||'').toLowerCase(); vb = (b.nachname||'').toLowerCase(); break;
-      case 'vorname': va = (a.vorname||'').toLowerCase(); vb = (b.vorname||'').toLowerCase(); break;
-      case 'klasse': va = (a.klasse||'').toLowerCase(); vb = (b.klasse||'').toLowerCase(); break;
-      case 'bloecke': va = parseInt(a.block_count_a)||0; vb = parseInt(b.block_count_a)||0; break;
-      case 'anmeldungen': va = parseInt(a.anmeldungen_count)||0; vb = parseInt(b.anmeldungen_count)||0; break;
-      case 'buchungen': va = parseInt(a.buchungen_count)||0; vb = parseInt(b.buchungen_count)||0; break;
-      default: va = (a.nachname||'').toLowerCase(); vb = (b.nachname||'').toLowerCase();
+      case 'nachname': va = (a.nachname || '').toLowerCase(); vb = (b.nachname || '').toLowerCase(); break;
+      case 'vorname': va = (a.vorname || '').toLowerCase(); vb = (b.vorname || '').toLowerCase(); break;
+      case 'klasse': va = (a.klasse || '').toLowerCase(); vb = (b.klasse || '').toLowerCase(); break;
+      case 'bloecke': va = parseInt(a.block_count_a) || 0; vb = parseInt(b.block_count_a) || 0; break;
+      case 'anmeldungen': va = parseInt(a.anmeldungen_count) || 0; vb = parseInt(b.anmeldungen_count) || 0; break;
+      case 'buchungen': va = parseInt(a.buchungen_count) || 0; vb = parseInt(b.buchungen_count) || 0; break;
+      default: va = (a.nachname || '').toLowerCase(); vb = (b.nachname || '').toLowerCase();
     }
     if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb, 'de') : vb.localeCompare(va, 'de');
     return sortDir === 'asc' ? va - vb : vb - va;
@@ -3343,8 +3408,8 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   // AKTE-DETAILANSICHT (Design-Upgrade)
   // ═══════════════════════════════════════
   if (selectedKindId) {
-    if (akteLoading) return <div style={{display:'flex',justifyContent:'center',padding:'4rem'}}><Spinner /></div>;
-    if (!akte) return <div className="card"><p style={{color:'var(--danger)',padding:'2rem',textAlign:'center'}}>Kind nicht gefunden</p><button className="btn btn-ghost btn-sm" onClick={() => setSelectedKindId(null)}>← Zurück zur Liste</button></div>;
+    if (akteLoading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Spinner /></div>;
+    if (!akte) return <div className="card"><p style={{ color: 'var(--danger)', padding: '2rem', textAlign: 'center' }}>Kind nicht gefunden</p><button className="btn btn-ghost btn-sm" onClick={() => setSelectedKindId(null)}>← Zurück zur Liste</button></div>;
 
     const { kind, aliases, blocks: akteBlocks, summary } = akte;
 
@@ -3356,7 +3421,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     return (
       <div>
         {/* Zurück-Link */}
-        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedKindId(null)} style={{marginBottom:'1rem'}}>
+        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedKindId(null)} style={{ marginBottom: '1rem' }}>
           ← Zurück zur Übersicht
         </button>
 
@@ -3413,7 +3478,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
           </div>
         ) : (
           <div>
-            <h3 style={{fontSize:'1rem',fontWeight:700,marginBottom:'1rem',color:'var(--text2)'}}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text2)' }}>
               Verlauf ({akteBlocks.length} {akteBlocks.length === 1 ? 'Block' : 'Blöcke'})
             </h3>
             <div className="akte-timeline">
@@ -3439,10 +3504,9 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
                         <div className="akte-block-badges">
                           {b.klasse && <span className="badge badge-blue">Klasse {b.klasse}</span>}
                           {b.match_status && (
-                            <span className={`badge ${
-                              b.match_status === 'exact' || b.match_status === 'fuzzy_accepted' ? 'badge-green'
-                              : b.match_status === 'nur_in_a' ? 'badge-red' : 'badge-orange'
-                            }`}>
+                            <span className={`badge ${b.match_status === 'exact' || b.match_status === 'fuzzy_accepted' ? 'badge-green'
+                                : b.match_status === 'nur_in_a' ? 'badge-red' : 'badge-orange'
+                              }`}>
                               {b.match_status === 'exact' ? '✓ Exakt' : b.match_status === 'fuzzy_accepted' ? '≈ Fuzzy' : b.match_status === 'nur_in_a' ? '✗ Fehlt in B' : b.match_status === 'nur_in_b' ? '⚠ Nur in B' : b.match_status}
                             </span>
                           )}
@@ -3458,13 +3522,13 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
                           {[...aDates].sort().map(d => {
                             const inB = bDates.has(d);
                             return (
-                              <div key={'a'+d} className={`day-chip ${inB ? 'matched' : 'missing'}`}>
+                              <div key={'a' + d} className={`day-chip ${inB ? 'matched' : 'missing'}`}>
                                 <span className="day-icon">{inB ? '✓' : '✗'}</span>
                                 <span>{weekday(d)} {fmtDate(d)}</span>
                               </div>
                             );
                           })}
-                          {b.anmeldungen.length === 0 && <span style={{fontSize:'0.82rem',color:'var(--text2)'}}>Keine Anmeldungen</span>}
+                          {b.anmeldungen.length === 0 && <span style={{ fontSize: '0.82rem', color: 'var(--text2)' }}>Keine Anmeldungen</span>}
                         </div>
                       </div>
 
@@ -3478,23 +3542,23 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
                             const inA = aDates.has(d);
                             const buchung = b.buchungen.find(x => String(x.datum).split('T')[0] === d);
                             return (
-                              <div key={'b'+d} className={`day-chip ${inA ? 'matched' : 'extra'}`} title={buchung?.menu || ''}>
+                              <div key={'b' + d} className={`day-chip ${inA ? 'matched' : 'extra'}`} title={buchung?.menu || ''}>
                                 <span className="day-icon">{inA ? '✓' : '⚠'}</span>
                                 <span>{weekday(d)} {fmtDate(d)}</span>
-                                {buchung?.menu && <span style={{opacity:0.7,fontSize:'0.7rem'}}>({buchung.menu})</span>}
+                                {buchung?.menu && <span style={{ opacity: 0.7, fontSize: '0.7rem' }}>({buchung.menu})</span>}
                               </div>
                             );
                           })}
-                          {b.buchungen.length === 0 && <span style={{fontSize:'0.82rem',color:'var(--text2)'}}>Keine Buchungen</span>}
+                          {b.buchungen.length === 0 && <span style={{ fontSize: '0.82rem', color: 'var(--text2)' }}>Keine Buchungen</span>}
                         </div>
                       </div>
 
                       {/* Block-Zusammenfassung */}
                       <div className="block-summary-row">
                         <span>✓ <strong>{matchedDays}</strong> übereinstimmend</span>
-                        {missingDays > 0 && <span style={{color:'var(--danger)'}}>✗ <strong>{missingDays}</strong> ohne Buchung</span>}
-                        {extraDays > 0 && <span style={{color:'var(--warning)'}}>⚠ <strong>{extraDays}</strong> ohne Anmeldung</span>}
-                        <span style={{marginLeft:'auto'}}><strong>{b.kosten.toFixed(2)} €</strong></span>
+                        {missingDays > 0 && <span style={{ color: 'var(--danger)' }}>✗ <strong>{missingDays}</strong> ohne Buchung</span>}
+                        {extraDays > 0 && <span style={{ color: 'var(--warning)' }}>⚠ <strong>{extraDays}</strong> ohne Anmeldung</span>}
+                        <span style={{ marginLeft: 'auto' }}><strong>{b.kosten.toFixed(2)} €</strong></span>
                       </div>
                     </div>
                   </div>
@@ -3511,23 +3575,23 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
               <h3>Kind bearbeiten</h3>
               <div className="form-group">
                 <label>Nachname</label>
-                <input className="form-input" value={editForm.nachname} onChange={e => setEditForm({...editForm, nachname: e.target.value})} />
+                <input className="form-input" value={editForm.nachname} onChange={e => setEditForm({ ...editForm, nachname: e.target.value })} />
               </div>
               <div className="form-group">
                 <label>Vorname</label>
-                <input className="form-input" value={editForm.vorname} onChange={e => setEditForm({...editForm, vorname: e.target.value})} />
+                <input className="form-input" value={editForm.vorname} onChange={e => setEditForm({ ...editForm, vorname: e.target.value })} />
               </div>
               <div className="form-group">
                 <label>Klasse</label>
-                <input className="form-input" value={editForm.klasse} onChange={e => setEditForm({...editForm, klasse: e.target.value})} />
+                <input className="form-input" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} />
               </div>
               <div className="form-group">
                 <label>Notizen</label>
-                <textarea className="textarea" style={{minHeight:'80px'}} value={editForm.notizen} onChange={e => setEditForm({...editForm, notizen: e.target.value})} />
+                <textarea className="textarea" style={{ minHeight: '80px' }} value={editForm.notizen} onChange={e => setEditForm({ ...editForm, notizen: e.target.value })} />
               </div>
               <div className="modal-actions">
                 <button className="btn btn-ghost" onClick={() => setEditKind(null)}>Abbrechen</button>
-                <button className="btn btn-primary" style={{width:'auto'}} onClick={saveEdit}>Speichern</button>
+                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={saveEdit}>Speichern</button>
               </div>
             </div>
           </div>
@@ -3553,7 +3617,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 
   return (
     <div>
-      <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1>Kinder-Verzeichnis</h1>
           <p>Alle registrierten Kinder mit ihren Akten</p>
@@ -3562,11 +3626,11 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 
       {/* Ferienblock-Filter */}
       {blocks.length > 0 && (
-        <div style={{display:'flex',alignItems:'center',gap:'0.75rem',marginBottom:'1rem'}}>
-          <span style={{fontSize:'0.85rem',fontWeight:600,color:'var(--text2)',whiteSpace:'nowrap'}}>Statistik für:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>Statistik für:</span>
           <select
             className="form-input"
-            style={{maxWidth:'300px',padding:'0.45rem 0.75rem',fontSize:'0.85rem'}}
+            style={{ maxWidth: '300px', padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}
             value={filterBlock}
             onChange={e => setFilterBlock(e.target.value)}
           >
@@ -3593,7 +3657,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
       </div>
 
       <div className="toolbar">
-        <button className="btn btn-primary btn-sm" style={{width:'auto'}} onClick={() => setShowImport(!showImport)}>
+        <button className="btn btn-primary btn-sm" style={{ width: 'auto' }} onClick={() => setShowImport(!showImport)}>
           {showImport ? '✗ Import schließen' : '📥 Excel importieren'}
         </button>
         <button className="btn btn-ghost btn-sm" disabled={syncing} onClick={syncFromLists}>
@@ -3617,7 +3681,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
           }}>📊 Excel exportieren</button>
         )}
         {kinder.length > 0 && (
-          <button className="btn btn-ghost btn-sm" style={{color:'var(--danger)'}} onClick={async () => {
+          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={async () => {
             const ok = await confirmDialog(
               'Alle Kinder löschen',
               `Wirklich alle ${kinder.length} Kinder aus dem Verzeichnis löschen? Die Listen-Einträge (A/B) bleiben erhalten.`,
@@ -3639,30 +3703,30 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 
       {/* Duplikat-Warnung */}
       {showDuplicates && duplicates.length > 0 && (
-        <div className="card" style={{marginBottom:'1.5rem',borderLeft:'4px solid var(--warning)'}}>
-          <div className="card-title" style={{color:'var(--warning)', marginBottom:'0.5rem'}}>⚠ {duplicates.length} mögliche Duplikate gefunden</div>
-          <p style={{fontSize:'0.85rem', color:'var(--text2)', marginBottom:'1.5rem'}}>Es sieht so aus, als wären folgende Kinder mehrfach angelegt. Schau auf die Zahl der Anmeldungen (A) und Buchungen (B) und lösche den überflüssigen Eintrag.</p>
-          
+        <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--warning)' }}>
+          <div className="card-title" style={{ color: 'var(--warning)', marginBottom: '0.5rem' }}>⚠ {duplicates.length} mögliche Duplikate gefunden</div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: '1.5rem' }}>Es sieht so aus, als wären folgende Kinder mehrfach angelegt. Schau auf die Zahl der Anmeldungen (A) und Buchungen (B) und lösche den überflüssigen Eintrag.</p>
+
           {duplicates.map((g, i) => {
             const allEntries = [{ kind: g.kind, reason: 'Haupt-Eintrag' }, ...g.matches.map(m => ({ kind: m.kind, reason: m.reason }))];
             return (
-              <div key={i} style={{padding:'1rem', background:'var(--bg)', borderRadius:'8px', marginBottom:'1rem', border:'1px solid var(--border)'}}>
-                <div style={{fontSize:'0.8rem', fontWeight:700, color:'var(--text2)', textTransform:'uppercase', marginBottom:'0.5rem', letterSpacing:'0.5px'}}>Duplikat-Gruppe {i + 1}</div>
+              <div key={i} style={{ padding: '1rem', background: 'var(--bg)', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>Duplikat-Gruppe {i + 1}</div>
                 {allEntries.map((e, j) => (
-                  <div key={j} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.6rem 0',borderBottom: j < allEntries.length - 1 ? '1px dashed var(--border)' : 'none', flexWrap:'wrap'}}>
-                    <strong style={{fontSize:'1rem'}}>{e.kind.vorname} {e.kind.nachname}</strong>
+                  <div key={j} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', borderBottom: j < allEntries.length - 1 ? '1px dashed var(--border)' : 'none', flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '1rem' }}>{e.kind.vorname} {e.kind.nachname}</strong>
                     {e.kind.klasse && <span className="badge badge-blue">Kl. {e.kind.klasse}</span>}
-                    
-                    <span style={{fontSize:'0.85rem', color:'var(--text)', background:'rgba(0,0,0,0.04)', padding:'0.2rem 0.5rem', borderRadius:'4px'}}>
-                      <strong>A:</strong> {parseInt(e.kind.anmeldungen_count)||0} | <strong>B:</strong> {parseInt(e.kind.buchungen_count)||0}
+
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text)', background: 'rgba(0,0,0,0.04)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                      <strong>A:</strong> {parseInt(e.kind.anmeldungen_count) || 0} | <strong>B:</strong> {parseInt(e.kind.buchungen_count) || 0}
                     </span>
-                    
+
                     <span className="badge badge-orange">{e.reason}</span>
-                    
-                    <span style={{marginLeft:'auto'}}/>
-                    <button 
-                      className="btn btn-sm" 
-                      style={{color:'var(--danger)', width:'auto', padding:'0.3rem 0.75rem', background:'rgba(220,53,69,0.1)', border:'none'}} 
+
+                    <span style={{ marginLeft: 'auto' }} />
+                    <button
+                      className="btn btn-sm"
+                      style={{ color: 'var(--danger)', width: 'auto', padding: '0.3rem 0.75rem', background: 'rgba(220,53,69,0.1)', border: 'none' }}
                       onClick={() => deleteKind(e.kind.id)}
                     >
                       ✗ Löschen
@@ -3675,57 +3739,57 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
         </div>
       )}
       {showDuplicates && duplicates.length === 0 && (
-        <div className="info-box" style={{marginBottom:'1.5rem'}}>✅ Keine Duplikate gefunden — alle {kinder.length} Kinder sind eindeutig.</div>
+        <div className="info-box" style={{ marginBottom: '1.5rem' }}>✅ Keine Duplikate gefunden — alle {kinder.length} Kinder sind eindeutig.</div>
       )}
 
       {/* Import-Bereich */}
       {showImport && (
-        <div className="card" style={{marginBottom:'1.5rem'}}>
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div className="card-title">Kinder-Stammliste importieren</div>
-          <p style={{fontSize:'0.85rem',color:'var(--text2)',marginBottom:'1rem'}}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: '1rem' }}>
             Excel-Datei hochladen und Spalten zuordnen. Duplikate werden automatisch übersprungen.
           </p>
-          <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} style={{marginBottom:'1rem'}} />
+          <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} style={{ marginBottom: '1rem' }} />
 
           {importHeaders.length > 0 && (
             <div>
-              <p style={{fontWeight:600,marginBottom:'0.75rem'}}>{importData.length} Zeilen erkannt — Spalten zuordnen:</p>
+              <p style={{ fontWeight: 600, marginBottom: '0.75rem' }}>{importData.length} Zeilen erkannt — Spalten zuordnen:</p>
 
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',marginBottom:'1rem',maxWidth:'600px'}}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem', maxWidth: '600px' }}>
                 <div>
-                  <label style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text2)',display:'block',marginBottom:'0.3rem'}}>
-                    Name (kombiniert) <span style={{fontSize:'0.7rem',fontWeight:400}}>— ODER Nachname+Vorname getrennt</span>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem' }}>
+                    Name (kombiniert) <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>— ODER Nachname+Vorname getrennt</span>
                   </label>
                   <select className="form-input" value={importCols.name}
-                    onChange={e => setImportCols({...importCols, name: e.target.value, nachname: e.target.value ? '' : importCols.nachname, vorname: e.target.value ? '' : importCols.vorname})}>
+                    onChange={e => setImportCols({ ...importCols, name: e.target.value, nachname: e.target.value ? '' : importCols.nachname, vorname: e.target.value ? '' : importCols.vorname })}>
                     <option value="">– nicht verwenden –</option>
-                    {importHeaders.map((h,i) => <option key={i} value={i}>{h}</option>)}
+                    {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text2)',display:'block',marginBottom:'0.3rem'}}>Klasse (optional)</label>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem' }}>Klasse (optional)</label>
                   <select className="form-input" value={importCols.klasse}
-                    onChange={e => setImportCols({...importCols, klasse: e.target.value})}>
+                    onChange={e => setImportCols({ ...importCols, klasse: e.target.value })}>
                     <option value="">– nicht verwenden –</option>
-                    {importHeaders.map((h,i) => <option key={i} value={i}>{h}</option>)}
+                    {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
                   </select>
                 </div>
                 {importCols.name === '' && (
                   <>
                     <div>
-                      <label style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text2)',display:'block',marginBottom:'0.3rem'}}>Nachname *</label>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem' }}>Nachname *</label>
                       <select className="form-input" value={importCols.nachname}
-                        onChange={e => setImportCols({...importCols, nachname: e.target.value})}>
+                        onChange={e => setImportCols({ ...importCols, nachname: e.target.value })}>
                         <option value="">– wählen –</option>
-                        {importHeaders.map((h,i) => <option key={i} value={i}>{h}</option>)}
+                        {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text2)',display:'block',marginBottom:'0.3rem'}}>Vorname *</label>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem' }}>Vorname *</label>
                       <select className="form-input" value={importCols.vorname}
-                        onChange={e => setImportCols({...importCols, vorname: e.target.value})}>
+                        onChange={e => setImportCols({ ...importCols, vorname: e.target.value })}>
                         <option value="">– wählen –</option>
-                        {importHeaders.map((h,i) => <option key={i} value={i}>{h}</option>)}
+                        {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
                       </select>
                     </div>
                   </>
@@ -3733,9 +3797,9 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
               </div>
 
               {importCols.name !== '' && (
-                <div className="info-box" style={{marginBottom:'1rem'}}>
-                  Kombiniertes Namensfeld erkannt — wird automatisch in Vor-/Nachname getrennt.<br/>
-                  <span style={{fontSize:'0.8rem'}}>Format: "Vorname Nachname" oder "Nachname, Vorname"</span>
+                <div className="info-box" style={{ marginBottom: '1rem' }}>
+                  Kombiniertes Namensfeld erkannt — wird automatisch in Vor-/Nachname getrennt.<br />
+                  <span style={{ fontSize: '0.8rem' }}>Format: "Vorname Nachname" oder "Nachname, Vorname"</span>
                 </div>
               )}
 
@@ -3743,16 +3807,16 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
               {(importCols.name !== '' || (importCols.nachname !== '' && importCols.vorname !== '')) && (() => {
                 const preview = getImportPreviewEntries();
                 return (
-                  <div style={{marginBottom:'1rem'}}>
-                    <p style={{fontWeight:600,marginBottom:'0.5rem',fontSize:'0.85rem'}}>Vorschau (erste {preview.length}):</p>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <p style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.85rem' }}>Vorschau (erste {preview.length}):</p>
                     <div className="table-wrap">
                       <table>
                         <thead><tr><th>Vorname</th><th>Nachname</th><th>Klasse</th></tr></thead>
                         <tbody>
                           {preview.map((e, i) => (
-                            <tr key={i} style={!e.nachname || !e.vorname ? {background:'rgba(220,53,69,0.08)'} : {}}>
-                              <td>{e.vorname || <span style={{color:'var(--danger)'}}>–fehlt–</span>}</td>
-                              <td>{e.nachname || <span style={{color:'var(--danger)'}}>–fehlt–</span>}</td>
+                            <tr key={i} style={!e.nachname || !e.vorname ? { background: 'rgba(220,53,69,0.08)' } : {}}>
+                              <td>{e.vorname || <span style={{ color: 'var(--danger)' }}>–fehlt–</span>}</td>
+                              <td>{e.nachname || <span style={{ color: 'var(--danger)' }}>–fehlt–</span>}</td>
                               <td>{e.klasse || '–'}</td>
                             </tr>
                           ))}
@@ -3763,17 +3827,17 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
                 );
               })()}
 
-              <button className="btn btn-primary btn-sm" style={{width:'auto'}} disabled={importing} onClick={executeImport}>
+              <button className="btn btn-primary btn-sm" style={{ width: 'auto' }} disabled={importing} onClick={executeImport}>
                 {importing ? 'Importiere...' : `${importData.length} Kinder importieren`}
               </button>
             </div>
           )}
 
           {importResult && (
-            <div className="info-box" style={{marginTop:'1rem'}}>
+            <div className="info-box" style={{ marginTop: '1rem' }}>
               ✓ {importResult.message}
               {importResult.skipped_names?.length > 0 && (
-                <div style={{marginTop:'0.5rem',fontSize:'0.8rem'}}>Übersprungen: {importResult.skipped_names.join(', ')}</div>
+                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>Übersprungen: {importResult.skipped_names.join(', ')}</div>
               )}
             </div>
           )}
@@ -3781,23 +3845,23 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
       )}
 
       {/* Suche + Sortierung */}
-      <div style={{display:'flex',gap:'0.75rem',marginBottom:'1.25rem',alignItems:'center',flexWrap:'wrap'}}>
-        <div className="search-wrap" style={{flex:'1',minWidth:'200px',marginBottom:0}}>
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="search-wrap" style={{ flex: '1', minWidth: '200px', marginBottom: 0 }}>
           <span className="search-icon">🔍</span>
           <input
             className="form-input"
             placeholder="Kind suchen (Name, Klasse)..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{paddingLeft:'2.5rem'}}
+            style={{ paddingLeft: '2.5rem' }}
           />
         </div>
-        <div style={{display:'flex',gap:'0.3rem',alignItems:'center'}}>
-          <span style={{fontSize:'0.78rem',color:'var(--text2)',whiteSpace:'nowrap'}}>Sortieren:</span>
-          <select className="form-input" style={{padding:'0.4rem 0.6rem',fontSize:'0.82rem'}} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text2)', whiteSpace: 'nowrap' }}>Sortieren:</span>
+          <select className="form-input" style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
             {sortOptions.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
-          <button className="btn btn-ghost btn-sm" style={{width:'auto',padding:'0.4rem 0.5rem',fontSize:'0.85rem'}} onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>
+          <button className="btn btn-ghost btn-sm" style={{ width: 'auto', padding: '0.4rem 0.5rem', fontSize: '0.85rem' }} onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>
             {sortDir === 'asc' ? '↑' : '↓'}
           </button>
         </div>
@@ -3805,15 +3869,15 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 
       {/* Kinder-Ergebnis Zähler */}
       {!loading && filtered.length > 0 && (
-        <div style={{fontSize:'0.8rem',color:'var(--text2)',marginBottom:'0.75rem'}}>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
           {filtered.length} {filtered.length === 1 ? 'Kind' : 'Kinder'}{search ? ` für "${search}"` : ''}
         </div>
       )}
 
       {/* Kinder-Liste */}
-      <div className="card" style={{padding:0,overflow:'hidden'}}>
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         {loading ? (
-          <div style={{padding:'3rem',textAlign:'center'}}><Spinner /></div>
+          <div style={{ padding: '3rem', textAlign: 'center' }}><Spinner /></div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             <div className="icon">👦</div>
@@ -3840,17 +3904,17 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
                 </div>
                 <div className="kind-row-stats">
                   <div className="kind-mini-stat">
-                    <div className="val" style={{color:'var(--primary)'}}>{aCount}</div>
+                    <div className="val" style={{ color: 'var(--primary)' }}>{aCount}</div>
                     <div className="lbl">Anmeld.</div>
                   </div>
                   <div className="kind-mini-stat">
-                    <div className="val" style={{color: fehlend ? 'var(--danger)' : bCount > 0 ? 'var(--success)' : 'var(--text2)'}}>{bCount}</div>
+                    <div className="val" style={{ color: fehlend ? 'var(--danger)' : bCount > 0 ? 'var(--success)' : 'var(--text2)' }}>{bCount}</div>
                     <div className="lbl">Buchung.</div>
                   </div>
                 </div>
                 <div className="kind-row-actions" onClick={e => e.stopPropagation()}>
-                  <button className="btn btn-ghost btn-sm" style={{width:'auto'}} onClick={() => startEdit(k)} title="Bearbeiten">✎</button>
-                  <button className="btn btn-ghost btn-sm" style={{width:'auto',color:'var(--danger)'}} onClick={() => deleteKind(k.id)} title="Löschen">✗</button>
+                  <button className="btn btn-ghost btn-sm" style={{ width: 'auto' }} onClick={() => startEdit(k)} title="Bearbeiten">✎</button>
+                  <button className="btn btn-ghost btn-sm" style={{ width: 'auto', color: 'var(--danger)' }} onClick={() => deleteKind(k.id)} title="Löschen">✗</button>
                 </div>
               </div>
             );
@@ -3865,23 +3929,23 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
             <h3>Kind bearbeiten</h3>
             <div className="form-group">
               <label>Nachname</label>
-              <input className="form-input" value={editForm.nachname} onChange={e => setEditForm({...editForm, nachname: e.target.value})} />
+              <input className="form-input" value={editForm.nachname} onChange={e => setEditForm({ ...editForm, nachname: e.target.value })} />
             </div>
             <div className="form-group">
               <label>Vorname</label>
-              <input className="form-input" value={editForm.vorname} onChange={e => setEditForm({...editForm, vorname: e.target.value})} />
+              <input className="form-input" value={editForm.vorname} onChange={e => setEditForm({ ...editForm, vorname: e.target.value })} />
             </div>
             <div className="form-group">
               <label>Klasse</label>
-              <input className="form-input" value={editForm.klasse} onChange={e => setEditForm({...editForm, klasse: e.target.value})} />
+              <input className="form-input" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} />
             </div>
             <div className="form-group">
               <label>Notizen</label>
-              <textarea className="textarea" style={{minHeight:'80px'}} value={editForm.notizen} onChange={e => setEditForm({...editForm, notizen: e.target.value})} />
+              <textarea className="textarea" style={{ minHeight: '80px' }} value={editForm.notizen} onChange={e => setEditForm({ ...editForm, notizen: e.target.value })} />
             </div>
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setEditKind(null)}>Abbrechen</button>
-              <button className="btn btn-primary" style={{width:'auto'}} onClick={saveEdit}>Speichern</button>
+              <button className="btn btn-primary" style={{ width: 'auto' }} onClick={saveEdit}>Speichern</button>
             </div>
           </div>
         </div>
@@ -3931,7 +3995,7 @@ const App = () => {
 
   const navigate = (p, param = null) => { setPage(p); setNavParam(param); };
 
-  if (checking) return <div style={{display:'flex',justifyContent:'center',alignItems:'center',minHeight:'100vh'}}><Spinner /></div>;
+  if (checking) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spinner /></div>;
   if (!user) return <LoginPage onLogin={handleLogin} />;
 
   const navItems = [
@@ -3955,7 +4019,7 @@ const App = () => {
         </div>
         <nav className="sidebar-nav">
           {navItems.map(n => (
-            <button key={n.id} className={`nav-item ${page===n.id?'active':''}`} onClick={() => navigate(n.id)}>
+            <button key={n.id} className={`nav-item ${page === n.id ? 'active' : ''}`} onClick={() => navigate(n.id)}>
               <span className="nav-icon">{n.icon}</span>
               {n.label}
             </button>
@@ -3963,8 +4027,8 @@ const App = () => {
         </nav>
         <div className="sidebar-footer">
           <div className="user-info">{user.username}</div>
-          <div style={{display:'flex',gap:'0.5rem'}}>
-            <button className="theme-toggle" onClick={() => setTheme(t => t==='light'?'dark':'light')}>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="theme-toggle" onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}>
               {theme === 'dark' ? '☀️ Hell' : '🌙 Dunkel'}
             </button>
             <button className="theme-toggle" onClick={handleLogout} title="Abmelden">
