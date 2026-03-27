@@ -980,6 +980,94 @@ const FerienblockPage = ({ blocks, onReload }) => {
   );
 };
 
+// MINI-EXCEL KOMPONENTE (Interaktive Tabelle für Copy/Paste)
+const MiniExcel = ({ onImport, label }) => {
+  const defaultCols = 5;
+  const defaultRows = 12;
+  const [data, setData] = useState(Array.from({length: defaultRows}, () => Array(defaultCols).fill('')));
+  
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    if (!text) return;
+    const pastedRows = text.trim().split('\n').map(row => row.split('\t').map(c => c.trim()));
+    
+    // Vergrößere Tabelle falls nötig
+    const newRows = Math.max(data.length, pastedRows.length + 1);
+    const newCols = Math.max(data[0].length, pastedRows.length > 0 ? pastedRows[0].length + 1 : defaultCols);
+    
+    const newData = Array.from({length: newRows}, () => Array(newCols).fill(''));
+    pastedRows.forEach((r, i) => {
+      r.forEach((c, j) => {
+         if (i < newRows && j < newCols) newData[i][j] = c;
+      });
+    });
+    setData(newData);
+  };
+
+  const handleChange = (r, c, val) => {
+    const newData = [...data];
+    newData[r] = [...newData[r]];
+    newData[r][c] = val;
+    setData(newData);
+  };
+
+  const submit = () => {
+    // Leere Zeilen ignorieren
+    const validRows = data.filter(row => row.some(cell => String(cell).trim() !== ''));
+    if (validRows.length < 2) {
+      toast.error('Gefühlt zu wenig Daten (Kopfzeile + Zeilen).');
+      return;
+    }
+    // Erstelle JSON-Array für den Import, trimme whitespace
+    const jsonArrays = validRows.map(r => r.map(c => String(c).trim()));
+    onImport(jsonArrays);
+  };
+
+  return (
+    <div style={{border:'2px solid var(--border)', borderRadius:'8px', overflow:'hidden', background:'var(--bg)', display:'flex', flexDirection:'column', height:'100%'}}>
+      <div style={{background:'var(--bg2)', padding:'0.5rem', borderBottom:'1px solid var(--border)', fontSize:'0.75rem', color:'var(--text2)', textAlign:'center'}}>
+        Strg+V drücken, um Zellen direkt als Tabelle einzufügen
+      </div>
+      <div style={{overflowX:'auto', overflowY:'auto', minHeight:'180px', maxHeight:'280px', width:'100%'}} onPaste={handlePaste}>
+        <table style={{borderCollapse:'collapse', width:'100%', minWidth:'max-content', tableLayout:'fixed'}}>
+          <thead style={{position:'sticky', top:0, zIndex:2}}>
+            <tr>
+              <th style={{background:'var(--bg2)', width:'35px', borderBottom:'1px solid var(--border)', borderRight:'1px solid var(--border)'}}></th>
+              {data[0].map((_, i) => (
+                <th key={i} style={{background:'var(--bg2)', width:'100px', padding:'0.2rem', borderBottom:'1px solid var(--border)', borderRight:'1px solid var(--border)', fontSize:'0.75rem', fontWeight:600, color:'var(--text2)'}}>
+                  {String.fromCharCode(65 + i)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, r) => (
+              <tr key={r}>
+                <td style={{background:'var(--bg2)', textAlign:'center', fontSize:'0.7rem', color:'var(--text2)', borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'sticky', left:0, zIndex:1}}>{r + 1}</td>
+                {row.map((cell, c) => (
+                  <td key={c} style={{padding:0, borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)'}}>
+                    <input 
+                      style={{width:'100%', height:'100%', border:'none', outline:'none', padding:'0.3rem 0.5rem', fontSize:'0.82rem', background: cell ? 'rgba(var(--primary-rgb),0.06)' : 'transparent', color:'var(--text)'}}
+                      value={cell}
+                      onChange={e => handleChange(r, c, e.target.value)}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{padding:'0.6rem', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', background:'var(--bg2)'}}>
+        <span style={{fontSize:'0.75rem', color:'var(--text2)'}}>{data.filter(r => r.some(c => String(c).trim())).length} Zeilen erkannt</span>
+        <button className="btn btn-primary btn-sm" style={{width:'auto'}} onClick={submit}>✔️ Daten übernehmen</button>
+      </div>
+    </div>
+  );
+};
+
+
 // ABGLEICH-TOOL
 const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const [blockId, setBlockId] = useState(initialBlockId || (blocks[0]?.id || ''));
@@ -1513,16 +1601,11 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                         <div className="icon" style={{fontSize:'2rem', marginBottom:'0.2rem'}}>📂</div>
                         <p style={{fontSize:'0.85rem'}}>Excel-Datei hochladen (.xlsx)</p>
                       </label>
-                      <textarea
-                        className="textarea"
-                        style={{borderTopRightRadius:0, borderTopLeftRadius:0, borderTop:'none', border:'2px dashed var(--border)', background:'var(--bg)', minHeight:'60px', textAlign:'center', fontSize:'0.85rem', padding:'0.75rem', resize:'none', width:'100%'}}
-                        placeholder="...oder direkt Zellen (Tabelle) mit Strg+V hier einfügen"
-                        onPaste={(e) => handlePasteData(e, 'A')}
-                      ></textarea>
+                      <MiniExcel onImport={(json) => { setIsLoading(true); processImportArray(json, 'A'); }} label="A" />
                     </div>
                   )}
                 </div>
-                <div className="card">
+                <div className="card" style={{display:'flex', flexDirection:'column'}}>
                   <div className="card-title">Liste B – Essensbuchungen</div>
                   {rawB ? (
                     <div className="upload-zone has-data" style={{cursor:'default'}}>
@@ -1531,18 +1614,13 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                       <button className="btn btn-ghost btn-sm" style={{marginTop:'0.5rem'}} onClick={() => { setRawB(null); setColMapB({nachname:'',vorname:'',date:'',klasse:''}); }}>Ändern / Löschen</button>
                     </div>
                   ) : (
-                    <div style={{display:'flex', flexDirection:'column'}}>
+                    <div style={{display:'flex', flexDirection:'column', flex:1}}>
                       <label className="upload-zone" style={{borderBottomRightRadius:0, borderBottomLeftRadius:0, marginBottom:0, padding:'1rem'}}>
                         <input type="file" accept=".xlsx" style={{display:'none'}} onChange={e => handleExcelUpload(e.target.files[0], 'B')} />
                         <div className="icon" style={{fontSize:'2rem', marginBottom:'0.2rem'}}>📂</div>
                         <p style={{fontSize:'0.85rem'}}>Excel-Datei hochladen (.xlsx)</p>
                       </label>
-                      <textarea
-                        className="textarea"
-                        style={{borderTopRightRadius:0, borderTopLeftRadius:0, borderTop:'none', border:'2px dashed var(--border)', background:'var(--bg)', minHeight:'60px', textAlign:'center', fontSize:'0.85rem', padding:'0.75rem', resize:'none', width:'100%'}}
-                        placeholder="...oder direkt Zellen (Tabelle) mit Strg+V hier einfügen"
-                        onPaste={(e) => handlePasteData(e, 'B')}
-                      ></textarea>
+                      <MiniExcel onImport={(json) => { setIsLoading(true); processImportArray(json, 'B'); }} label="B" />
                     </div>
                   )}
                 </div>
