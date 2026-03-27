@@ -272,148 +272,83 @@ exports.handler = async (event) => {
         const { eintraege } = body;
         if (!Array.isArray(eintraege)) return respond(400, { error: 'eintraege Array erforderlich' });
 
-        // Alle existierenden Kinder laden (1 Query statt N)
-        const existingResult = await client.query('SELECT id, LOWER(nachname) as n, LOWER(vorname) as v, klasse FROM kinder');
-        const existingSet = new Set();
-        const existingMap = new Map();
-        const buildKey = (n, v) => (String(n||'') + ' ' + String(v||'')).toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,' ').split(/\s+/).filter(Boolean).sort().join('|');
-        for (const row of existingResult.rows) {
-          const key = buildKey(row.n, row.v);
-          existingSet.add(key);
-          existingMap.set(key, row);
-        }
-
-        const toInsert = [];
-        let skipped = 0;
-        const skippedNames = [];
-        const klasseUpdates = [];
-
-        for (const e of eintraege) {
-          if (!e.nachname || !e.vorname) { skipped++; continue; }
-          const key = buildKey(e.nachname, e.vorname);
-          if (existingSet.has(key)) {
-            skipped++;
-            const ex = existingMap.get(key);
-            if (ex) skippedNames.push(`${e.nachname} ${e.vorname}`);
-            if (e.klasse && ex && !ex.klasse) klasseUpdates.push({ id: ex.id, klasse: e.klasse.trim() });
-            continue;
-          }
-          // Als "schon gesehen" markieren damit keine Duplikate im Batch
-          existingSet.add(key);
-          toInsert.push({ nachname: e.nachname.trim(), vorname: e.vorname.trim(), klasse: e.klasse?.trim() || null });
-        }
-
-        // Klassen in einem Batch updaten
-        for (const u of klasseUpdates) {
-          await client.query('UPDATE kinder SET klasse = $1 WHERE id = $2', [u.klasse, u.id]);
-        }
-
-        // Batch-INSERT: max 200 pro Query
         const BATCH = 200;
         let inserted = 0;
-        for (let i = 0; i < toInsert.length; i += BATCH) {
-          const batch = toInsert.slice(i, i + BATCH);
+        
+        for (let i = 0; i < eintraege.length; i += BATCH) {
+          const batch = eintraege.slice(i, i + BATCH);
           const values = [];
           const params = [];
           let idx = 1;
+          
           for (const e of batch) {
-            values.push(`($${idx},$${idx+1},$${idx+2})`);
-            params.push(e.nachname, e.vorname, e.klasse);
+            if (!e.nachname || !e.vorname) continue;
+            values.push(`($${idx}, $${idx+1}, $${idx+2})`);
+            params.push(e.nachname.trim(), e.vorname.trim(), e.klasse?.trim() || null);
             idx += 3;
           }
-          try {
-            await client.query(`INSERT INTO kinder (nachname, vorname, klasse) VALUES ${values.join(',')} ON CONFLICT DO NOTHING`, params);
-            inserted += batch.length;
-          } catch (insertErr) {
-            // Einzeln einfügen als Fallback bei Fehlern
-            for (const e of batch) {
-              try {
-                await client.query('INSERT INTO kinder (nachname, vorname, klasse) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [e.nachname, e.vorname, e.klasse]);
-                inserted++;
-              } catch (_) { skipped++; }
-            }
-          }
+
+          if (values.length === 0) continue;
+
+          await client.query(`
+            INSERT INTO kinder (nachname, vorname, klasse) 
+            VALUES ${values.join(',')}
+            ON CONFLICT (GREATEST(LOWER(TRIM(nachname)), LOWER(TRIM(vorname))), LEAST(LOWER(TRIM(nachname)), LOWER(TRIM(vorname)))) 
+            DO UPDATE SET klasse = COALESCE(NULLIF(EXCLUDED.klasse, ''), kinder.klasse)
+          `, params);
+          
+          inserted += batch.length;
         }
 
         return respond(200, {
           success: true,
-          inserted,
-          skipped,
-          skipped_names: skippedNames.slice(0, 10),
-          message: `${inserted} Kinder importiert, ${skipped} übersprungen (existieren bereits)`
+          message: `${inserted} Kinder importiert bzw. zusammengeführt`
         });
       }
 
       // ── Sync: Aus bestehenden Listen A automatisch übernehmen (schnell) ──
       if (body.action === 'sync') {
-        // Alle eindeutigen Kinder aus liste_a holen (1 Query)
         const listeAKinder = await client.query(`
           SELECT nachname, vorname, MAX(klasse) as klasse
           FROM liste_a
           GROUP BY LOWER(nachname), LOWER(vorname), nachname, vorname
         `);
 
-        // Alle existierenden Kinder laden (1 Query)
-        const existingResult = await client.query('SELECT id, LOWER(nachname) as n, LOWER(vorname) as v, klasse FROM kinder');
-        const existingSet = new Set();
-        const existingMap = new Map();
-        const buildKey = (n, v) => (String(n||'') + ' ' + String(v||'')).toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,' ').split(/\s+/).filter(Boolean).sort().join('|');
-        for (const row of existingResult.rows) {
-          const key = buildKey(row.n, row.v);
-          existingSet.add(key);
-          existingMap.set(key, row);
+        if (listeAKinder.rows.length === 0) {
+          return respond(200, { success: true, message: 'Keine Kinder in Liste A gefunden' });
         }
 
-        const toInsert = [];
-        let skipped = 0;
-        const klasseUpdates = [];
-
-        for (const e of listeAKinder.rows) {
-          const key = buildKey(e.nachname, e.vorname);
-          if (existingSet.has(key)) {
-            skipped++;
-            const ex = existingMap.get(key);
-            if (e.klasse && ex && !ex.klasse) klasseUpdates.push({ id: ex.id, klasse: e.klasse.trim() });
-            continue;
-          }
-          existingSet.add(key);
-          toInsert.push({ nachname: e.nachname.trim(), vorname: e.vorname.trim(), klasse: e.klasse?.trim() || null });
-        }
-
-        // Klassen updaten
-        for (const u of klasseUpdates) {
-          await client.query('UPDATE kinder SET klasse = $1 WHERE id = $2', [u.klasse, u.id]);
-        }
-
-        // Batch-INSERT
         const BATCH = 200;
         let inserted = 0;
-        for (let i = 0; i < toInsert.length; i += BATCH) {
-          const batch = toInsert.slice(i, i + BATCH);
+        
+        for (let i = 0; i < listeAKinder.rows.length; i += BATCH) {
+          const batch = listeAKinder.rows.slice(i, i + BATCH);
           const values = [];
           const params = [];
           let idx = 1;
+          
           for (const e of batch) {
-            values.push(`($${idx},$${idx+1},$${idx+2})`);
-            params.push(e.nachname, e.vorname, e.klasse);
+            if (!e.nachname || !e.vorname) continue;
+            values.push(`($${idx}, $${idx+1}, $${idx+2})`);
+            params.push(e.nachname.trim(), e.vorname.trim(), e.klasse?.trim() || null);
             idx += 3;
           }
-          try {
-            await client.query(`INSERT INTO kinder (nachname, vorname, klasse) VALUES ${values.join(',')} ON CONFLICT DO NOTHING`, params);
-            inserted += batch.length;
-          } catch (_) {
-            for (const e of batch) {
-              try { await client.query('INSERT INTO kinder (nachname, vorname, klasse) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [e.nachname, e.vorname, e.klasse]); inserted++; }
-              catch (__) { skipped++; }
-            }
-          }
+
+          if (values.length === 0) continue;
+
+          await client.query(`
+            INSERT INTO kinder (nachname, vorname, klasse) 
+            VALUES ${values.join(',')}
+            ON CONFLICT (GREATEST(LOWER(TRIM(nachname)), LOWER(TRIM(vorname))), LEAST(LOWER(TRIM(nachname)), LOWER(TRIM(vorname)))) 
+            DO UPDATE SET klasse = COALESCE(NULLIF(EXCLUDED.klasse, ''), kinder.klasse)
+          `, params);
+          
+          inserted += batch.length;
         }
 
         return respond(200, {
           success: true,
-          inserted,
-          skipped,
-          message: `${inserted} Kinder aus Listen übernommen, ${skipped} existierten bereits`
+          message: `${inserted} Kinder aus Liste A synchronisiert bzw. zusammengeführt`
         });
       }
 
