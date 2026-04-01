@@ -188,13 +188,22 @@ const jaroWinkler = (s1, s2) => {
 const calcScore = (nameA, nameB) => {
   const tA = tokenizeName(nameA), tB = tokenizeName(nameB);
   if (!tA.length || !tB.length) return { score: 0, reason: 'Leerer Name' };
+
+  // Nachname ist der letzte Token — dieser MUSS gut passen
+  const lastA = tA[tA.length - 1], lastB = tB[tB.length - 1];
+  const lastJW = jaroWinkler(lastA, lastB);
+  const lastPH = koelnerPhonetik(lastA) === koelnerPhonetik(lastB) && koelnerPhonetik(lastA).length > 1;
+  const nachnameOk = lastJW >= 0.82 || lastPH;
+
   let matches = [], avail = [...tB];
   for (const a of tA) {
     let best = { score: 0, partner: null, idx: -1 };
     for (let i = 0; i < avail.length; i++) {
       const jw = jaroWinkler(a, avail[i]) * 100;
-      const ph = koelnerPhonetik(a) === koelnerPhonetik(avail[i]) && koelnerPhonetik(a).length > 1 ? 75 : 0;
-      const s = Math.max(jw > 80 ? jw : 0, ph);
+      // Phonetik nur als Bonus wenn die Strings auch textlich einigermaßen ähnlich sind (JW >= 65%)
+      const phMatch = koelnerPhonetik(a) === koelnerPhonetik(avail[i]) && koelnerPhonetik(a).length > 1;
+      const ph = (phMatch && jw >= 65) ? 70 : 0;
+      const s = Math.max(jw > 85 ? jw : 0, ph);
       if (s > best.score) best = { score: s, partner: avail[i], idx: i };
     }
     if (best.partner) { matches.push(best.score); avail.splice(best.idx, 1); }
@@ -205,9 +214,22 @@ const calcScore = (nameA, nameB) => {
   const maxTokens = Math.max(tA.length, tB.length);
   const missingInShorter = minTokens - matches.length;
   const extraInLonger = maxTokens - matches.length - missingInShorter;
-  const penalty = (missingInShorter * 30) + (extraInLonger * 5);
-  const score = Math.max(0, Math.round(avg - penalty));
-  const reason = avail.length > 0 ? `${avail.length} Teil(e) ohne Partner` : 'Alle Teile zugeordnet';
+  // Stärkere Bestrafung für ungematchte Teile (40 statt 30)
+  const penalty = (missingInShorter * 40) + (extraInLonger * 10);
+  // Wenn weniger als die Hälfte der Tokens gematcht → Score halbieren
+  const coverageRatio = matches.length / maxTokens;
+  const coveragePenalty = coverageRatio < 0.5 ? 0.5 : 1;
+  let score = Math.max(0, Math.round((avg - penalty) * coveragePenalty));
+
+  // Wenn Nachname nicht passt → Score auf max 40 deckeln (wird nie zum Vorschlag)
+  if (!nachnameOk) {
+    score = Math.min(score, 40);
+  }
+
+  const reasons = [];
+  if (avail.length > 0) reasons.push(`${avail.length} Teil(e) ohne Partner`);
+  if (!nachnameOk) reasons.push('Nachname unterschiedlich');
+  const reason = reasons.length > 0 ? reasons.join(', ') : 'Alle Teile zugeordnet';
   return { score, reason };
 };
 const analyzeMatch = (nameA, nameB) => {
@@ -1294,7 +1316,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       for (const eA of nonA) {
         for (const eB of (byDate[eA.date] || [])) {
           const { score, reason } = calcScore(eA.name, eB.name);
-          if (score >= 65) {
+          if (score >= 75) {
             const key = `${tokenizeName(eA.name).sort().join('')}|${tokenizeName(eB.name).sort().join('')}`;
             if (!groups[key]) groups[key] = { nameA: eA.name, nameB: eB.name, score, reason, entries: [] };
             groups[key].entries.push({ entryA: eA, entryB: eB });
@@ -3979,6 +4001,400 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   );
 };
 
+// ─── ANGEBOTE PAGE ───────────────────────────────────
+const STATUS_LABEL = {
+  vollstaendig: { label: 'Vollständig', color: '#22c55e' },
+  teilweise:    { label: 'Teilweise',   color: '#f59e0b' },
+  nicht_gebucht:{ label: 'Kein Essen gebucht', color: '#ef4444' },
+  nur_gebucht:  { label: 'Nur gebucht', color: '#8b5cf6' },
+  nicht_vorhanden:{ label: 'Nicht vorhanden', color: '#94a3b8' },
+};
+
+const AngebotePage = ({ blocks }) => {
+  const [angebote, setAngebote] = useState([]);
+  const [selectedAngebot, setSelectedAngebot] = useState(null);
+  const [detailData, setDetailData] = useState(null);
+  const [loadingList, setLoadingList] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(null);
+  const [createForm, setCreateForm] = useState({ name: '', ferienblock_id: '', beschreibung: '' });
+  const [filterBlock, setFilterBlock] = useState('');
+  // Kinder hinzufügen
+  const [kinderSuche, setKinderSuche] = useState('');
+  const [kinderListe, setKinderListe] = useState([]);
+  const [kinderGefiltert, setKinderGefiltert] = useState([]);
+
+  const loadAngebote = async (fbId = filterBlock) => {
+    setLoadingList(true);
+    const params = fbId ? { ferienblock_id: fbId } : {};
+    const res = await API.get('angebote', params);
+    setAngebote(Array.isArray(res) ? res : []);
+    setLoadingList(false);
+  };
+
+  const loadDetail = async (id) => {
+    setLoadingDetail(true);
+    setDetailData(null);
+    const res = await API.get('angebote', { id });
+    setDetailData(res.error ? null : res);
+    setLoadingDetail(false);
+  };
+
+  const loadKinder = async () => {
+    const res = await API.get('kinder');
+    setKinderListe(Array.isArray(res) ? res : []);
+  };
+
+  useEffect(() => { loadAngebote(); loadKinder(); }, []);
+
+  useEffect(() => {
+    if (!kinderSuche.trim()) { setKinderGefiltert([]); return; }
+    const q = kinderSuche.toLowerCase();
+    const bereits = detailData?.kinder?.map(k => k.id) || [];
+    setKinderGefiltert(
+      kinderListe.filter(k =>
+        !bereits.includes(k.id) &&
+        (k.nachname.toLowerCase().includes(q) || k.vorname.toLowerCase().includes(q) || (k.klasse || '').toLowerCase().includes(q))
+      ).slice(0, 10)
+    );
+  }, [kinderSuche, kinderListe, detailData]);
+
+  const handleFilterBlock = (val) => {
+    setFilterBlock(val);
+    loadAngebote(val);
+    setSelectedAngebot(null);
+    setDetailData(null);
+  };
+
+  const handleSelectAngebot = (a) => {
+    setSelectedAngebot(a);
+    loadDetail(a.id);
+    setKinderSuche('');
+  };
+
+  const handleCreate = async () => {
+    if (!createForm.name.trim() || !createForm.ferienblock_id) {
+      toast.error('Name und Ferienblock sind Pflichtfelder');
+      return;
+    }
+    const res = await API.post('angebote', { action: 'create', ...createForm });
+    if (res.success) {
+      toast.success('Angebot erstellt');
+      setShowCreateForm(false);
+      setCreateForm({ name: '', ferienblock_id: '', beschreibung: '' });
+      await loadAngebote();
+    }
+  };
+
+  const handleEdit = async () => {
+    if (!showEditForm) return;
+    const res = await API.post('angebote', { action: 'edit', id: showEditForm.id, name: showEditForm.name, beschreibung: showEditForm.beschreibung });
+    if (res.success) {
+      toast.success('Angebot aktualisiert');
+      setShowEditForm(null);
+      await loadAngebote();
+      if (selectedAngebot?.id === showEditForm.id) loadDetail(showEditForm.id);
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    const ok = await confirmDialog('Angebot löschen', `"${name}" und alle zugeordneten Kinder wirklich löschen?`, 'Löschen');
+    if (!ok) return;
+    const res = await API.post('angebote', { action: 'delete', id });
+    if (res.success) {
+      toast.success('Angebot gelöscht');
+      if (selectedAngebot?.id === id) { setSelectedAngebot(null); setDetailData(null); }
+      await loadAngebote();
+    }
+  };
+
+  const handleAddKind = async (kind) => {
+    const res = await API.post('angebote', { action: 'add_kind', angebot_id: selectedAngebot.id, kind_id: kind.id });
+    if (res.success) {
+      toast.success(`${kind.vorname} ${kind.nachname} hinzugefügt`);
+      setKinderSuche('');
+      await loadDetail(selectedAngebot.id);
+      await loadAngebote();
+    }
+  };
+
+  const handleRemoveKind = async (kind) => {
+    const ok = await confirmDialog('Kind entfernen', `${kind.vorname} ${kind.nachname} aus dem Angebot entfernen?`, 'Entfernen');
+    if (!ok) return;
+    const res = await API.post('angebote', { action: 'remove_kind', angebot_id: selectedAngebot.id, kind_id: kind.id });
+    if (res.success) {
+      toast.success(`${kind.vorname} ${kind.nachname} entfernt`);
+      await loadDetail(selectedAngebot.id);
+      await loadAngebote();
+    }
+  };
+
+  const fmtDatum = (d) => {
+    if (!d) return '—';
+    const dt = new Date(d);
+    return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}.${dt.getFullYear()}`;
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: '1.5rem', height: '100%', minHeight: 0 }}>
+
+      {/* ── Linke Spalte: Angebotsliste ── */}
+      <div style={{ width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="card" style={{ padding: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Angebote</h2>
+            <button className="btn btn-primary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.85rem' }} onClick={() => setShowCreateForm(true)}>
+              + Neu
+            </button>
+          </div>
+
+          <select
+            className="input"
+            style={{ marginBottom: '0.5rem' }}
+            value={filterBlock}
+            onChange={e => handleFilterBlock(e.target.value)}
+          >
+            <option value="">Alle Ferienblöcke</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+
+          {loadingList ? <Spinner /> : (
+            angebote.length === 0
+              ? <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Keine Angebote vorhanden</p>
+              : angebote.map(a => (
+                <div
+                  key={a.id}
+                  onClick={() => handleSelectAngebot(a)}
+                  style={{
+                    padding: '0.6rem 0.75rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    background: selectedAngebot?.id === a.id ? 'var(--accent)' : 'var(--bg-hover)',
+                    color: selectedAngebot?.id === a.id ? '#fff' : 'inherit',
+                    marginBottom: '0.4rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{a.name}</div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{a.block_name}</div>
+                  </div>
+                  <span style={{
+                    background: selectedAngebot?.id === a.id ? 'rgba(255,255,255,0.25)' : 'var(--badge-bg)',
+                    borderRadius: '12px',
+                    padding: '1px 8px',
+                    fontSize: '0.75rem'
+                  }}>{a.kinder_count} Kinder</span>
+                </div>
+              ))
+          )}
+        </div>
+
+        {/* Erstellen-Formular */}
+        {showCreateForm && (
+          <div className="card" style={{ padding: '1rem' }}>
+            <h3 style={{ margin: '0 0 0.75rem' }}>Neues Angebot</h3>
+            <input className="input" placeholder="Name (z.B. Fußball)" value={createForm.name}
+              onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} style={{ marginBottom: '0.5rem' }} />
+            <select className="input" value={createForm.ferienblock_id}
+              onChange={e => setCreateForm(f => ({ ...f, ferienblock_id: e.target.value }))} style={{ marginBottom: '0.5rem' }}>
+              <option value="">Ferienblock wählen</option>
+              {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <textarea className="input" placeholder="Beschreibung (optional)" value={createForm.beschreibung}
+              onChange={e => setCreateForm(f => ({ ...f, beschreibung: e.target.value }))}
+              style={{ marginBottom: '0.75rem', minHeight: '60px', resize: 'vertical' }} />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-primary" onClick={handleCreate}>Erstellen</button>
+              <button className="btn btn-ghost" onClick={() => setShowCreateForm(false)}>Abbrechen</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Rechte Spalte: Detail ── */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {!selectedAngebot && (
+          <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            Angebot aus der Liste auswählen oder neu erstellen
+          </div>
+        )}
+
+        {selectedAngebot && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+            {/* Header */}
+            <div className="card" style={{ padding: '1rem 1.25rem' }}>
+              {showEditForm?.id === selectedAngebot.id ? (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  <input className="input" value={showEditForm.name} onChange={e => setShowEditForm(f => ({ ...f, name: e.target.value }))}
+                    style={{ flex: '1', minWidth: '140px' }} placeholder="Name" />
+                  <input className="input" value={showEditForm.beschreibung || ''} onChange={e => setShowEditForm(f => ({ ...f, beschreibung: e.target.value }))}
+                    style={{ flex: '2', minWidth: '160px' }} placeholder="Beschreibung" />
+                  <button className="btn btn-primary" onClick={handleEdit}>Speichern</button>
+                  <button className="btn btn-ghost" onClick={() => setShowEditForm(null)}>Abbrechen</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <h2 style={{ margin: '0 0 0.2rem' }}>{selectedAngebot.name}</h2>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      {selectedAngebot.block_name} &nbsp;·&nbsp;
+                      {fmtDatum(selectedAngebot.startdatum)} – {fmtDatum(selectedAngebot.enddatum)}
+                    </div>
+                    {selectedAngebot.beschreibung && <div style={{ fontSize: '0.85rem', marginTop: '0.3rem' }}>{selectedAngebot.beschreibung}</div>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-ghost" style={{ fontSize: '0.8rem' }}
+                      onClick={() => setShowEditForm({ id: selectedAngebot.id, name: selectedAngebot.name, beschreibung: selectedAngebot.beschreibung || '' })}>
+                      Bearbeiten
+                    </button>
+                    <button className="btn btn-danger" style={{ fontSize: '0.8rem', width: 'auto' }}
+                      onClick={() => handleDelete(selectedAngebot.id, selectedAngebot.name)}>
+                      Löschen
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {loadingDetail ? <Spinner /> : detailData && (
+              <>
+                {/* Zusammenfassung */}
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  {Object.entries(STATUS_LABEL).map(([key, { label, color }]) => (
+                    <div key={key} className="card" style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />
+                      <span style={{ fontSize: '0.8rem' }}>{label}:</span>
+                      <strong style={{ fontSize: '0.9rem' }}>{detailData.summary[key]}</strong>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Kind hinzufügen */}
+                <div className="card" style={{ padding: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>Kind hinzufügen</h3>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      className="input"
+                      placeholder="Name oder Klasse suchen..."
+                      value={kinderSuche}
+                      onChange={e => setKinderSuche(e.target.value)}
+                    />
+                    {kinderGefiltert.length > 0 && (
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                        background: 'var(--card-bg)', border: '1px solid var(--border)',
+                        borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxHeight: '220px', overflowY: 'auto'
+                      }}>
+                        {kinderGefiltert.map(k => (
+                          <div key={k.id}
+                            style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                            onMouseDown={() => handleAddKind(k)}
+                          >
+                            <span>{k.nachname}, {k.vorname}</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{k.klasse || '—'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Kindertabelle */}
+                <div className="card" style={{ padding: '1rem' }}>
+                  <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem' }}>
+                    Kinder ({detailData.kinder.length})
+                  </h3>
+                  {detailData.kinder.length === 0 ? (
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Noch keine Kinder zugeordnet</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem' }}>Name</th>
+                            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem' }}>Klasse</th>
+                            <th style={{ textAlign: 'center', padding: '0.4rem 0.5rem' }}>Liste A</th>
+                            <th style={{ textAlign: 'center', padding: '0.4rem 0.5rem' }}>Liste B</th>
+                            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem' }}>Status</th>
+                            <th style={{ padding: '0.4rem 0.5rem' }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {detailData.kinder.map(k => {
+                            const s = STATUS_LABEL[k.status] || { label: k.status, color: '#94a3b8' };
+                            return (
+                              <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                <td style={{ padding: '0.5rem 0.5rem', fontWeight: 500 }}>
+                                  {k.nachname}, {k.vorname}
+                                </td>
+                                <td style={{ padding: '0.5rem 0.5rem', color: 'var(--text-muted)' }}>{k.klasse || '—'}</td>
+                                <td style={{ padding: '0.5rem 0.5rem', textAlign: 'center' }}>
+                                  <span title={k.tage_liste_a.join(', ') || 'keine Einträge'}>
+                                    {k.tage_liste_a.length > 0
+                                      ? <span style={{ color: '#22c55e', fontWeight: 600 }}>{k.tage_liste_a.length} Tage</span>
+                                      : <span style={{ color: '#ef4444' }}>—</span>
+                                    }
+                                  </span>
+                                </td>
+                                <td style={{ padding: '0.5rem 0.5rem', textAlign: 'center' }}>
+                                  <span title={k.tage_liste_b.join(', ') || 'keine Einträge'}>
+                                    {k.tage_liste_b.length > 0
+                                      ? <span style={{ color: '#22c55e', fontWeight: 600 }}>{k.tage_liste_b.length} Tage</span>
+                                      : <span style={{ color: '#ef4444' }}>—</span>
+                                    }
+                                  </span>
+                                </td>
+                                <td style={{ padding: '0.5rem 0.5rem' }}>
+                                  <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                                    fontSize: '0.78rem', fontWeight: 500
+                                  }}>
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0, display: 'inline-block' }} />
+                                    {s.label}
+                                  </span>
+                                  {k.nur_in_a.length > 0 && (
+                                    <div style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '2px' }}>
+                                      Ohne Essen: {k.nur_in_a.map(d => {
+                                        const dt = new Date(d); return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}`;
+                                      }).join(', ')}
+                                    </div>
+                                  )}
+                                  {k.nur_in_b.length > 0 && (
+                                    <div style={{ fontSize: '0.72rem', color: '#8b5cf6', marginTop: '2px' }}>
+                                      Nur gebucht: {k.nur_in_b.map(d => {
+                                        const dt = new Date(d); return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}`;
+                                      }).join(', ')}
+                                    </div>
+                                  )}
+                                </td>
+                                <td style={{ padding: '0.5rem 0.5rem', textAlign: 'right' }}>
+                                  <button className="btn btn-ghost" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', color: '#ef4444' }}
+                                    onClick={() => handleRemoveKind(k)}>
+                                    Entfernen
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ─── HAUPT-APP ────────────────────────────────────────
 const App = () => {
   const [user, setUser] = useState(null);
@@ -4026,6 +4442,7 @@ const App = () => {
   const navItems = [
     { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
     { id: 'kinder', icon: '👦', label: 'Kinder' },
+    { id: 'angebote', icon: '🎯', label: 'Angebote' },
     { id: 'abgleich', icon: '🔍', label: 'Abgleich' },
     { id: 'tagesansicht', icon: '🗓️', label: 'Tagesansicht' },
     { id: 'klassen', icon: '🏫', label: 'Klassen' },
@@ -4066,6 +4483,7 @@ const App = () => {
       <main className="main-content">
         {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
         {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
+        {page === 'angebote' && <AngebotePage blocks={blocks} />}
         {page === 'abgleich' && <AbgleichTool blocks={blocks} initialBlockId={navParam} onReload={loadBlocks} />}
         {page === 'tagesansicht' && <TagesansichtPage blocks={blocks} />}
         {page === 'klassen' && <KlassenPage blocks={blocks} />}

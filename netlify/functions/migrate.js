@@ -104,6 +104,32 @@ exports.handler = async (event) => {
       results.push('⚠ Namen-Spalten: ' + e.message);
     }
 
+    // ── Migration 4: Angebote Tabellen ──
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS angebote (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(200) NOT NULL,
+          ferienblock_id INTEGER REFERENCES ferienblock(id) ON DELETE CASCADE,
+          beschreibung TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS angebot_kinder (
+          id SERIAL PRIMARY KEY,
+          angebot_id INTEGER REFERENCES angebote(id) ON DELETE CASCADE,
+          kind_id INTEGER REFERENCES kinder(id) ON DELETE CASCADE,
+          UNIQUE(angebot_id, kind_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_angebot_kinder_angebot ON angebot_kinder(angebot_id);
+        CREATE INDEX IF NOT EXISTS idx_angebot_kinder_kind ON angebot_kinder(kind_id);
+      `);
+      results.push('✓ Tabellen "angebote" und "angebot_kinder" erstellt');
+    } catch (e) {
+      results.push('⚠ Angebote-Tabellen: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
