@@ -4002,12 +4002,12 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 };
 
 // ─── ANGEBOTE PAGE ───────────────────────────────────
-const STATUS_LABEL = {
-  vollstaendig: { label: 'Vollständig', color: '#22c55e' },
-  teilweise:    { label: 'Teilweise',   color: '#f59e0b' },
-  nicht_gebucht:{ label: 'Kein Essen gebucht', color: '#ef4444' },
-  nur_gebucht:  { label: 'Nur gebucht', color: '#8b5cf6' },
-  nicht_vorhanden:{ label: 'Nicht vorhanden', color: '#94a3b8' },
+const STATUS_CFG = {
+  vollstaendig:   { label: 'Vollständig',       badgeClass: 'badge-green'  },
+  teilweise:      { label: 'Teilweise',          badgeClass: 'badge-orange' },
+  nicht_gebucht:  { label: 'Kein Essen',         badgeClass: 'badge-red'    },
+  nur_gebucht:    { label: 'Nur gebucht',        badgeClass: 'badge-blue'   },
+  nicht_vorhanden:{ label: 'Nicht vorhanden',    badgeClass: 'badge-grey'   },
 };
 
 const AngebotePage = ({ blocks }) => {
@@ -4020,7 +4020,6 @@ const AngebotePage = ({ blocks }) => {
   const [showEditForm, setShowEditForm] = useState(null);
   const [createForm, setCreateForm] = useState({ name: '', ferienblock_id: '', beschreibung: '' });
   const [filterBlock, setFilterBlock] = useState('');
-  // Kinder hinzufügen
   const [kinderSuche, setKinderSuche] = useState('');
   const [kinderListe, setKinderListe] = useState([]);
   const [kinderGefiltert, setKinderGefiltert] = useState([]);
@@ -4130,266 +4129,267 @@ const AngebotePage = ({ blocks }) => {
     }
   };
 
-  const fmtDatum = (d) => {
+  const fmtD = (d) => {
     if (!d) return '—';
     const dt = new Date(d);
     return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}.${dt.getFullYear()}`;
   };
 
+  const fmtShort = (d) => {
+    const dt = new Date(d);
+    return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}`;
+  };
+
   return (
-    <div style={{ display: 'flex', gap: '1.5rem', height: '100%', minHeight: 0 }}>
+    <div>
+      <div className="page-header">
+        <h1>Angebote</h1>
+        <p>Gruppen erstellen und Buchungsstatus der Kinder prüfen</p>
+      </div>
 
-      {/* ── Linke Spalte: Angebotsliste ── */}
-      <div style={{ width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div className="card" style={{ padding: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Angebote</h2>
-            <button className="btn btn-primary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.85rem' }} onClick={() => setShowCreateForm(true)}>
-              + Neu
-            </button>
-          </div>
+      <div className="two-col" style={{ alignItems: 'flex-start' }}>
 
-          <select
-            className="input"
-            style={{ marginBottom: '0.5rem' }}
-            value={filterBlock}
-            onChange={e => handleFilterBlock(e.target.value)}
-          >
-            <option value="">Alle Ferienblöcke</option>
-            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
+        {/* ── Linke Spalte: Angebotsliste ── */}
+        <div>
+          <div className="card">
+            <div className="card-title">
+              <span>Angebote</span>
+              <button className="btn btn-primary btn-sm" onClick={() => { setShowCreateForm(v => !v); }}>
+                {showCreateForm ? 'Abbrechen' : '+ Neu'}
+              </button>
+            </div>
 
-          {loadingList ? <Spinner /> : (
-            angebote.length === 0
-              ? <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Keine Angebote vorhanden</p>
+            <select className="ferienblock-select" style={{ width: '100%', marginBottom: '1rem' }}
+              value={filterBlock} onChange={e => handleFilterBlock(e.target.value)}>
+              <option value="">Alle Ferienblöcke</option>
+              {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+
+            {loadingList ? <Spinner /> : angebote.length === 0
+              ? <div className="empty-state" style={{ padding: '1.5rem' }}>
+                  <div className="icon">🎯</div>
+                  <p>Noch keine Angebote</p>
+                </div>
               : angebote.map(a => (
-                <div
-                  key={a.id}
+                <div key={a.id} className={`kind-row${selectedAngebot?.id === a.id ? ' active' : ''}`}
                   onClick={() => handleSelectAngebot(a)}
-                  style={{
-                    padding: '0.6rem 0.75rem',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    background: selectedAngebot?.id === a.id ? 'var(--accent)' : 'var(--bg-hover)',
-                    color: selectedAngebot?.id === a.id ? '#fff' : 'inherit',
-                    marginBottom: '0.4rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{a.name}</div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{a.block_name}</div>
+                  style={{ background: selectedAngebot?.id === a.id ? 'var(--primary-light)' : undefined }}>
+                  <div className="kind-row-info">
+                    <div className="kind-row-name" style={{ color: selectedAngebot?.id === a.id ? 'var(--primary)' : undefined }}>
+                      {a.name}
+                    </div>
+                    <div className="kind-row-meta">{a.block_name}</div>
                   </div>
-                  <span style={{
-                    background: selectedAngebot?.id === a.id ? 'rgba(255,255,255,0.25)' : 'var(--badge-bg)',
-                    borderRadius: '12px',
-                    padding: '1px 8px',
-                    fontSize: '0.75rem'
-                  }}>{a.kinder_count} Kinder</span>
+                  <span className="badge badge-blue">{a.kinder_count} Kinder</span>
                 </div>
               ))
+            }
+          </div>
+
+          {/* Erstellen-Formular */}
+          {showCreateForm && (
+            <div className="card">
+              <div className="card-title">Neues Angebot</div>
+              <div className="form-group">
+                <label className="form-group">Name</label>
+                <input className="form-input" placeholder="z.B. Fußball, Schwimmen …" value={createForm.name}
+                  onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-group">Ferienblock</label>
+                <select className="ferienblock-select" style={{ width: '100%' }} value={createForm.ferienblock_id}
+                  onChange={e => setCreateForm(f => ({ ...f, ferienblock_id: e.target.value }))}>
+                  <option value="">Ferienblock wählen</option>
+                  {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-group">Beschreibung (optional)</label>
+                <textarea className="textarea" placeholder="Kurze Beschreibung …" value={createForm.beschreibung}
+                  onChange={e => setCreateForm(f => ({ ...f, beschreibung: e.target.value }))}
+                  style={{ minHeight: '60px' }} />
+              </div>
+              <div className="toolbar">
+                <button className="btn btn-primary btn-sm" onClick={handleCreate}>Erstellen</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowCreateForm(false)}>Abbrechen</button>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Erstellen-Formular */}
-        {showCreateForm && (
-          <div className="card" style={{ padding: '1rem' }}>
-            <h3 style={{ margin: '0 0 0.75rem' }}>Neues Angebot</h3>
-            <input className="input" placeholder="Name (z.B. Fußball)" value={createForm.name}
-              onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} style={{ marginBottom: '0.5rem' }} />
-            <select className="input" value={createForm.ferienblock_id}
-              onChange={e => setCreateForm(f => ({ ...f, ferienblock_id: e.target.value }))} style={{ marginBottom: '0.5rem' }}>
-              <option value="">Ferienblock wählen</option>
-              {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-            <textarea className="input" placeholder="Beschreibung (optional)" value={createForm.beschreibung}
-              onChange={e => setCreateForm(f => ({ ...f, beschreibung: e.target.value }))}
-              style={{ marginBottom: '0.75rem', minHeight: '60px', resize: 'vertical' }} />
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button className="btn btn-primary" onClick={handleCreate}>Erstellen</button>
-              <button className="btn btn-ghost" onClick={() => setShowCreateForm(false)}>Abbrechen</button>
+        {/* ── Rechte Spalte: Detail ── */}
+        <div>
+          {!selectedAngebot ? (
+            <div className="empty-state card">
+              <div className="icon">👈</div>
+              <p>Angebot aus der Liste auswählen</p>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Rechte Spalte: Detail ── */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {!selectedAngebot && (
-          <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            Angebot aus der Liste auswählen oder neu erstellen
-          </div>
-        )}
-
-        {selectedAngebot && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-            {/* Header */}
-            <div className="card" style={{ padding: '1rem 1.25rem' }}>
-              {showEditForm?.id === selectedAngebot.id ? (
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                  <input className="input" value={showEditForm.name} onChange={e => setShowEditForm(f => ({ ...f, name: e.target.value }))}
-                    style={{ flex: '1', minWidth: '140px' }} placeholder="Name" />
-                  <input className="input" value={showEditForm.beschreibung || ''} onChange={e => setShowEditForm(f => ({ ...f, beschreibung: e.target.value }))}
-                    style={{ flex: '2', minWidth: '160px' }} placeholder="Beschreibung" />
-                  <button className="btn btn-primary" onClick={handleEdit}>Speichern</button>
-                  <button className="btn btn-ghost" onClick={() => setShowEditForm(null)}>Abbrechen</button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h2 style={{ margin: '0 0 0.2rem' }}>{selectedAngebot.name}</h2>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      {selectedAngebot.block_name} &nbsp;·&nbsp;
-                      {fmtDatum(selectedAngebot.startdatum)} – {fmtDatum(selectedAngebot.enddatum)}
-                    </div>
-                    {selectedAngebot.beschreibung && <div style={{ fontSize: '0.85rem', marginTop: '0.3rem' }}>{selectedAngebot.beschreibung}</div>}
+          ) : (
+            <>
+              {/* Header-Card */}
+              <div className="card">
+                {showEditForm?.id === selectedAngebot.id ? (
+                  <div className="toolbar" style={{ flexWrap: 'wrap' }}>
+                    <input className="form-input" value={showEditForm.name} placeholder="Name"
+                      onChange={e => setShowEditForm(f => ({ ...f, name: e.target.value }))}
+                      style={{ flex: '1', minWidth: '130px' }} />
+                    <input className="form-input" value={showEditForm.beschreibung || ''} placeholder="Beschreibung"
+                      onChange={e => setShowEditForm(f => ({ ...f, beschreibung: e.target.value }))}
+                      style={{ flex: '2', minWidth: '150px' }} />
+                    <button className="btn btn-primary btn-sm" onClick={handleEdit}>Speichern</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setShowEditForm(null)}>Abbrechen</button>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-ghost" style={{ fontSize: '0.8rem' }}
-                      onClick={() => setShowEditForm({ id: selectedAngebot.id, name: selectedAngebot.name, beschreibung: selectedAngebot.beschreibung || '' })}>
-                      Bearbeiten
-                    </button>
-                    <button className="btn btn-danger" style={{ fontSize: '0.8rem', width: 'auto' }}
-                      onClick={() => handleDelete(selectedAngebot.id, selectedAngebot.name)}>
-                      Löschen
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {loadingDetail ? <Spinner /> : detailData && (
-              <>
-                {/* Zusammenfassung */}
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  {Object.entries(STATUS_LABEL).map(([key, { label, color }]) => (
-                    <div key={key} className="card" style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />
-                      <span style={{ fontSize: '0.8rem' }}>{label}:</span>
-                      <strong style={{ fontSize: '0.9rem' }}>{detailData.summary[key]}</strong>
+                ) : (
+                  <div className="akte-block-head">
+                    <div>
+                      <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.2rem' }}>{selectedAngebot.name}</h2>
+                      <div className="meta">
+                        {selectedAngebot.block_name} &nbsp;·&nbsp; {fmtD(selectedAngebot.startdatum)} – {fmtD(selectedAngebot.enddatum)}
+                      </div>
+                      {selectedAngebot.beschreibung && (
+                        <div style={{ marginTop: '0.3rem', fontSize: '0.88rem', color: 'var(--text2)' }}>{selectedAngebot.beschreibung}</div>
+                      )}
                     </div>
-                  ))}
-                </div>
+                    <div className="akte-block-badges">
+                      <button className="btn btn-ghost btn-sm"
+                        onClick={() => setShowEditForm({ id: selectedAngebot.id, name: selectedAngebot.name, beschreibung: selectedAngebot.beschreibung || '' })}>
+                        Bearbeiten
+                      </button>
+                      <button className="btn btn-danger btn-sm" style={{ width: 'auto' }}
+                        onClick={() => handleDelete(selectedAngebot.id, selectedAngebot.name)}>
+                        Löschen
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-                {/* Kind hinzufügen */}
-                <div className="card" style={{ padding: '1rem' }}>
-                  <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>Kind hinzufügen</h3>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      className="input"
-                      placeholder="Name oder Klasse suchen..."
-                      value={kinderSuche}
-                      onChange={e => setKinderSuche(e.target.value)}
-                    />
-                    {kinderGefiltert.length > 0 && (
-                      <div style={{
-                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-                        background: 'var(--card-bg)', border: '1px solid var(--border)',
-                        borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxHeight: '220px', overflowY: 'auto'
-                      }}>
-                        {kinderGefiltert.map(k => (
-                          <div key={k.id}
-                            style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
-                            onMouseDown={() => handleAddKind(k)}
-                          >
-                            <span>{k.nachname}, {k.vorname}</span>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{k.klasse || '—'}</span>
-                          </div>
-                        ))}
+              {loadingDetail ? <Spinner /> : detailData && (
+                <>
+                  {/* Stat-Grid Zusammenfassung */}
+                  <div className="stat-grid">
+                    {Object.entries(STATUS_CFG).map(([key, cfg]) => (
+                      <div key={key} className="stat-card">
+                        <div className="stat-label">{cfg.label}</div>
+                        <div className={`stat-value ${key === 'vollstaendig' ? 'accent-green' : key === 'nicht_gebucht' ? 'accent-red' : key === 'teilweise' ? 'accent-orange' : ''}`}
+                          style={{ fontSize: '1.5rem' }}>
+                          {detailData.summary[key]}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Kind hinzufügen */}
+                  <div className="card">
+                    <div className="card-title">Kind hinzufügen</div>
+                    <div className="search-wrap">
+                      <span className="search-icon">🔍</span>
+                      <input className="form-input" placeholder="Name oder Klasse suchen…"
+                        value={kinderSuche} onChange={e => setKinderSuche(e.target.value)}
+                        style={{ paddingLeft: '2.2rem' }} />
+                      {kinderGefiltert.length > 0 && (
+                        <div style={{
+                          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                          background: 'var(--surface)', border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)',
+                          maxHeight: '220px', overflowY: 'auto'
+                        }}>
+                          {kinderGefiltert.map(k => (
+                            <div key={k.id} className="kind-row" onMouseDown={() => handleAddKind(k)}>
+                              <div className="kind-row-info">
+                                <div className="kind-row-name">{k.nachname}, {k.vorname}</div>
+                              </div>
+                              <span className="badge badge-grey">{k.klasse || '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Kindertabelle */}
+                  <div className="card">
+                    <div className="card-title">
+                      Kinder
+                      <span className="count-badge">{detailData.kinder.length}</span>
+                    </div>
+                    {detailData.kinder.length === 0 ? (
+                      <div className="empty-state" style={{ padding: '1.5rem' }}>
+                        <div className="icon">👶</div>
+                        <p>Noch keine Kinder zugeordnet</p>
+                      </div>
+                    ) : (
+                      <div className="table-wrap">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Klasse</th>
+                              <th style={{ textAlign: 'center' }}>Liste A</th>
+                              <th style={{ textAlign: 'center' }}>Liste B</th>
+                              <th>Status</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {detailData.kinder.map(k => {
+                              const cfg = STATUS_CFG[k.status] || { label: k.status, badgeClass: 'badge-grey' };
+                              return (
+                                <tr key={k.id}>
+                                  <td style={{ fontWeight: 600 }}>{k.nachname}, {k.vorname}</td>
+                                  <td style={{ color: 'var(--text2)' }}>{k.klasse || '—'}</td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    {k.tage_liste_a.length > 0
+                                      ? <span className="badge badge-green" title={k.tage_liste_a.join(', ')}>{k.tage_liste_a.length} Tage</span>
+                                      : <span className="badge badge-red">—</span>
+                                    }
+                                  </td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    {k.tage_liste_b.length > 0
+                                      ? <span className="badge badge-green" title={k.tage_liste_b.join(', ')}>{k.tage_liste_b.length} Tage</span>
+                                      : <span className="badge badge-red">—</span>
+                                    }
+                                  </td>
+                                  <td>
+                                    <span className={`badge ${cfg.badgeClass}`}>{cfg.label}</span>
+                                    {k.nur_in_a.length > 0 && (
+                                      <div className="days-grid" style={{ marginTop: '4px' }}>
+                                        {k.nur_in_a.map(d => (
+                                          <span key={d} className="day-chip missing" title="Angemeldet, kein Essen">
+                                            <span className="day-icon">⚠</span>{fmtShort(d)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {k.nur_in_b.length > 0 && (
+                                      <div className="days-grid" style={{ marginTop: '4px' }}>
+                                        {k.nur_in_b.map(d => (
+                                          <span key={d} className="day-chip extra" title="Gebucht, nicht angemeldet">
+                                            <span className="day-icon">ℹ</span>{fmtShort(d)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}>
+                                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}
+                                      onClick={() => handleRemoveKind(k)}>
+                                      Entfernen
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Kindertabelle */}
-                <div className="card" style={{ padding: '1rem' }}>
-                  <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.95rem' }}>
-                    Kinder ({detailData.kinder.length})
-                  </h3>
-                  {detailData.kinder.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Noch keine Kinder zugeordnet</p>
-                  ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem' }}>Name</th>
-                            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem' }}>Klasse</th>
-                            <th style={{ textAlign: 'center', padding: '0.4rem 0.5rem' }}>Liste A</th>
-                            <th style={{ textAlign: 'center', padding: '0.4rem 0.5rem' }}>Liste B</th>
-                            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem' }}>Status</th>
-                            <th style={{ padding: '0.4rem 0.5rem' }}></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {detailData.kinder.map(k => {
-                            const s = STATUS_LABEL[k.status] || { label: k.status, color: '#94a3b8' };
-                            return (
-                              <tr key={k.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                <td style={{ padding: '0.5rem 0.5rem', fontWeight: 500 }}>
-                                  {k.nachname}, {k.vorname}
-                                </td>
-                                <td style={{ padding: '0.5rem 0.5rem', color: 'var(--text-muted)' }}>{k.klasse || '—'}</td>
-                                <td style={{ padding: '0.5rem 0.5rem', textAlign: 'center' }}>
-                                  <span title={k.tage_liste_a.join(', ') || 'keine Einträge'}>
-                                    {k.tage_liste_a.length > 0
-                                      ? <span style={{ color: '#22c55e', fontWeight: 600 }}>{k.tage_liste_a.length} Tage</span>
-                                      : <span style={{ color: '#ef4444' }}>—</span>
-                                    }
-                                  </span>
-                                </td>
-                                <td style={{ padding: '0.5rem 0.5rem', textAlign: 'center' }}>
-                                  <span title={k.tage_liste_b.join(', ') || 'keine Einträge'}>
-                                    {k.tage_liste_b.length > 0
-                                      ? <span style={{ color: '#22c55e', fontWeight: 600 }}>{k.tage_liste_b.length} Tage</span>
-                                      : <span style={{ color: '#ef4444' }}>—</span>
-                                    }
-                                  </span>
-                                </td>
-                                <td style={{ padding: '0.5rem 0.5rem' }}>
-                                  <span style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                                    fontSize: '0.78rem', fontWeight: 500
-                                  }}>
-                                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0, display: 'inline-block' }} />
-                                    {s.label}
-                                  </span>
-                                  {k.nur_in_a.length > 0 && (
-                                    <div style={{ fontSize: '0.72rem', color: '#f59e0b', marginTop: '2px' }}>
-                                      Ohne Essen: {k.nur_in_a.map(d => {
-                                        const dt = new Date(d); return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}`;
-                                      }).join(', ')}
-                                    </div>
-                                  )}
-                                  {k.nur_in_b.length > 0 && (
-                                    <div style={{ fontSize: '0.72rem', color: '#8b5cf6', marginTop: '2px' }}>
-                                      Nur gebucht: {k.nur_in_b.map(d => {
-                                        const dt = new Date(d); return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}`;
-                                      }).join(', ')}
-                                    </div>
-                                  )}
-                                </td>
-                                <td style={{ padding: '0.5rem 0.5rem', textAlign: 'right' }}>
-                                  <button className="btn btn-ghost" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', color: '#ef4444' }}
-                                    onClick={() => handleRemoveKind(k)}>
-                                    Entfernen
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
