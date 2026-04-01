@@ -130,6 +130,22 @@ exports.handler = async (event) => {
       results.push('⚠ Angebote-Tabellen: ' + e.message);
     }
 
+    // ── Migration 5: Angebot-Tage ──
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS angebot_tage (
+          id SERIAL PRIMARY KEY,
+          angebot_id INTEGER REFERENCES angebote(id) ON DELETE CASCADE,
+          datum DATE NOT NULL,
+          UNIQUE(angebot_id, datum)
+        );
+        CREATE INDEX IF NOT EXISTS idx_angebot_tage_angebot ON angebot_tage(angebot_id);
+      `);
+      results.push('✓ Tabelle "angebot_tage" erstellt');
+    } catch (e) {
+      results.push('⚠ Angebot-Tage: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

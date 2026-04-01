@@ -1,8 +1,8 @@
 // Angebote-Verwaltung
 // GET                          -> alle Angebote (optional ?ferienblock_id=X)
-// GET ?id=X                    -> Einzelnes Angebot mit Kindern + Buchungsstatus
-// POST action:create           -> Angebot erstellen
-// POST action:edit             -> Angebot bearbeiten
+// GET ?id=X                    -> Einzelnes Angebot mit Tagen, Kindern + Buchungsstatus
+// POST action:create           -> Angebot erstellen (inkl. tage:[])
+// POST action:edit             -> Angebot bearbeiten (inkl. tage:[])
 // POST action:delete           -> Angebot löschen
 // POST action:add_kind         -> Kind zum Angebot hinzufügen
 // POST action:remove_kind      -> Kind aus Angebot entfernen
@@ -35,6 +35,17 @@ const validateToken = async (client, event) => {
   return result.rows.length > 0 ? result.rows[0].user_id : null;
 };
 
+// Tage für ein Angebot komplett ersetzen
+const saveTage = async (client, angebotId, tage) => {
+  await client.query('DELETE FROM angebot_tage WHERE angebot_id = $1', [angebotId]);
+  if (!Array.isArray(tage) || tage.length === 0) return;
+  const values = tage.map((d, i) => `($1, $${i + 2})`).join(', ');
+  await client.query(
+    `INSERT INTO angebot_tage (angebot_id, datum) VALUES ${values} ON CONFLICT DO NOTHING`,
+    [angebotId, ...tage]
+  );
+};
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -61,7 +72,7 @@ exports.handler = async (event) => {
     // ═══════════════════════════════════════════════════════════
     if (event.httpMethod === 'GET') {
 
-      // ── Einzelnes Angebot mit Kindern + Buchungsstatus ──
+      // ── Einzelnes Angebot mit Tagen, Kindern + Buchungsstatus ──
       if (params.id) {
         const angebotId = parseInt(params.id, 10);
         if (isNaN(angebotId)) return respond(400, { error: 'Ungültige ID' });
@@ -77,6 +88,13 @@ exports.handler = async (event) => {
         const angebot = angebotRes.rows[0];
         const fbId = angebot.ferienblock_id;
 
+        // Tage dieses Angebots laden
+        const tageRes = await client.query(
+          'SELECT datum FROM angebot_tage WHERE angebot_id = $1 ORDER BY datum',
+          [angebotId]
+        );
+        const angebotTage = tageRes.rows.map(r => new Date(r.datum).toISOString().slice(0, 10));
+
         // Kinder des Angebots laden
         const kinderRes = await client.query(`
           SELECT k.id, k.nachname, k.vorname, k.klasse, k.notizen
@@ -86,49 +104,54 @@ exports.handler = async (event) => {
           ORDER BY k.nachname, k.vorname
         `, [angebotId]);
 
-        // Pro Kind: in Liste A + Liste B für diesen Ferienblock prüfen
+        // Pro Kind: Buchungsstatus NUR für die Angebots-Tage prüfen
         const kinderMitStatus = await Promise.all(kinderRes.rows.map(async (kind) => {
-          // Liste A: Anmeldungen (alle Tage)
+
+          // Liste A: nur Angebots-Tage
           const listeARes = await client.query(`
             SELECT datum FROM liste_a
             WHERE ferienblock_id = $1
+              AND datum = ANY($2::date[])
               AND (
-                (LOWER(nachname) = LOWER($2) AND LOWER(vorname) = LOWER($3))
-                OR (LOWER(nachname) = LOWER($3) AND LOWER(vorname) = LOWER($2))
+                (LOWER(nachname) = LOWER($3) AND LOWER(vorname) = LOWER($4))
+                OR (LOWER(nachname) = LOWER($4) AND LOWER(vorname) = LOWER($3))
               )
             ORDER BY datum
-          `, [fbId, kind.nachname, kind.vorname]);
+          `, [fbId, angebotTage, kind.nachname, kind.vorname]);
 
-          // Liste B: Buchungen (alle Tage)
+          // Liste B: nur Angebots-Tage
           const listeBRes = await client.query(`
             SELECT datum, menu FROM liste_b
             WHERE ferienblock_id = $1
+              AND datum = ANY($2::date[])
               AND (
-                (LOWER(nachname) = LOWER($2) AND LOWER(vorname) = LOWER($3))
-                OR (LOWER(nachname) = LOWER($3) AND LOWER(vorname) = LOWER($2))
+                (LOWER(nachname) = LOWER($3) AND LOWER(vorname) = LOWER($4))
+                OR (LOWER(nachname) = LOWER($4) AND LOWER(vorname) = LOWER($3))
               )
             ORDER BY datum
-          `, [fbId, kind.nachname, kind.vorname]);
+          `, [fbId, angebotTage, kind.nachname, kind.vorname]);
 
-          const tageA = listeARes.rows.map(r => r.datum ? new Date(r.datum).toISOString().slice(0, 10) : null).filter(Boolean);
-          const tageB = listeBRes.rows.map(r => r.datum ? new Date(r.datum).toISOString().slice(0, 10) : null).filter(Boolean);
+          const tageA = listeARes.rows.map(r => new Date(r.datum).toISOString().slice(0, 10));
+          const tageB = listeBRes.rows.map(r => new Date(r.datum).toISOString().slice(0, 10));
 
-          // Tage die in A aber nicht in B sind
+          // Angebots-Tage wo Kind in A aber nicht in B steht
           const nurInA = tageA.filter(d => !tageB.includes(d));
-          // Tage die in B aber nicht in A sind
+          // Angebots-Tage wo Kind in B aber nicht in A steht
           const nurInB = tageB.filter(d => !tageA.includes(d));
+          // Angebots-Tage wo Kind gar nicht vorkommt
+          const fehlend = angebotTage.filter(d => !tageA.includes(d) && !tageB.includes(d));
 
           let status;
           if (tageA.length === 0 && tageB.length === 0) {
-            status = 'nicht_vorhanden'; // weder angemeldet noch gebucht
+            status = 'nicht_vorhanden';
           } else if (tageA.length === 0) {
-            status = 'nur_gebucht'; // gebucht aber nicht angemeldet
+            status = 'nur_gebucht';
           } else if (tageB.length === 0) {
-            status = 'nicht_gebucht'; // angemeldet aber kein Essen gebucht
+            status = 'nicht_gebucht';
           } else if (nurInA.length === 0 && nurInB.length === 0) {
-            status = 'vollstaendig'; // alles stimmt überein
+            status = 'vollstaendig';
           } else {
-            status = 'teilweise'; // teilweise Übereinstimmung
+            status = 'teilweise';
           }
 
           return {
@@ -137,11 +160,11 @@ exports.handler = async (event) => {
             tage_liste_b: tageB,
             nur_in_a: nurInA,
             nur_in_b: nurInB,
+            fehlend,
             status
           };
         }));
 
-        // Zusammenfassung
         const summary = {
           gesamt: kinderMitStatus.length,
           vollstaendig: kinderMitStatus.filter(k => k.status === 'vollstaendig').length,
@@ -152,7 +175,7 @@ exports.handler = async (event) => {
         };
 
         return respond(200, {
-          angebot,
+          angebot: { ...angebot, tage: angebotTage },
           kinder: kinderMitStatus,
           summary
         });
@@ -163,7 +186,8 @@ exports.handler = async (event) => {
 
       let query = `
         SELECT a.*, f.name as block_name, f.startdatum, f.enddatum,
-          (SELECT COUNT(*) FROM angebot_kinder ak WHERE ak.angebot_id = a.id) as kinder_count
+          (SELECT COUNT(*) FROM angebot_kinder ak WHERE ak.angebot_id = a.id) as kinder_count,
+          (SELECT COUNT(*) FROM angebot_tage at2 WHERE at2.angebot_id = a.id) as tage_count
         FROM angebote a
         JOIN ferienblock f ON a.ferienblock_id = f.id
       `;
@@ -188,19 +212,23 @@ exports.handler = async (event) => {
 
       // ── Angebot erstellen ──
       if (body.action === 'create') {
-        const { name, ferienblock_id, beschreibung } = body;
+        const { name, ferienblock_id, beschreibung, tage } = body;
         if (!name || !ferienblock_id) return respond(400, { error: 'name und ferienblock_id erforderlich' });
 
         const result = await client.query(
           'INSERT INTO angebote (name, ferienblock_id, beschreibung) VALUES ($1, $2, $3) RETURNING *',
           [name.trim(), parseInt(ferienblock_id, 10), beschreibung?.trim() || null]
         );
-        return respond(200, { success: true, angebot: result.rows[0] });
+        const angebot = result.rows[0];
+        if (Array.isArray(tage) && tage.length > 0) {
+          await saveTage(client, angebot.id, tage);
+        }
+        return respond(200, { success: true, angebot });
       }
 
       // ── Angebot bearbeiten ──
       if (body.action === 'edit') {
-        const { id, name, beschreibung } = body;
+        const { id, name, beschreibung, tage } = body;
         if (!id) return respond(400, { error: 'id erforderlich' });
 
         const result = await client.query(
@@ -208,6 +236,9 @@ exports.handler = async (event) => {
           [name?.trim() || null, beschreibung?.trim() || null, parseInt(id, 10)]
         );
         if (result.rows.length === 0) return respond(404, { error: 'Angebot nicht gefunden' });
+        if (Array.isArray(tage)) {
+          await saveTage(client, parseInt(id, 10), tage);
+        }
         return respond(200, { success: true, angebot: result.rows[0] });
       }
 

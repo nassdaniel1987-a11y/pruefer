@@ -4003,11 +4003,23 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 
 // ─── ANGEBOTE PAGE ───────────────────────────────────
 const STATUS_CFG = {
-  vollstaendig:   { label: 'Vollständig',       badgeClass: 'badge-green'  },
-  teilweise:      { label: 'Teilweise',          badgeClass: 'badge-orange' },
-  nicht_gebucht:  { label: 'Kein Essen',         badgeClass: 'badge-red'    },
-  nur_gebucht:    { label: 'Nur gebucht',        badgeClass: 'badge-blue'   },
-  nicht_vorhanden:{ label: 'Nicht vorhanden',    badgeClass: 'badge-grey'   },
+  vollstaendig:    { label: 'Vollständig',     badgeClass: 'badge-green'  },
+  teilweise:       { label: 'Teilweise',        badgeClass: 'badge-orange' },
+  nicht_gebucht:   { label: 'Kein Essen',       badgeClass: 'badge-red'    },
+  nur_gebucht:     { label: 'Nur gebucht',      badgeClass: 'badge-blue'   },
+  nicht_vorhanden: { label: 'Nicht vorhanden',  badgeClass: 'badge-grey'   },
+};
+
+// Hilfsfunktion: alle Tage zwischen start und end als YYYY-MM-DD Array
+const tageBetween = (start, end) => {
+  const days = [];
+  const cur = new Date(start);
+  const last = new Date(end);
+  while (cur <= last) {
+    days.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
 };
 
 const AngebotePage = ({ blocks }) => {
@@ -4018,7 +4030,7 @@ const AngebotePage = ({ blocks }) => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(null);
-  const [createForm, setCreateForm] = useState({ name: '', ferienblock_id: '', beschreibung: '' });
+  const [createForm, setCreateForm] = useState({ name: '', ferienblock_id: '', beschreibung: '', tage: [] });
   const [filterBlock, setFilterBlock] = useState('');
   const [kinderSuche, setKinderSuche] = useState('');
   const [kinderListe, setKinderListe] = useState([]);
@@ -4026,8 +4038,7 @@ const AngebotePage = ({ blocks }) => {
 
   const loadAngebote = async (fbId = filterBlock) => {
     setLoadingList(true);
-    const params = fbId ? { ferienblock_id: fbId } : {};
-    const res = await API.get('angebote', params);
+    const res = await API.get('angebote', fbId ? { ferienblock_id: fbId } : {});
     setAngebote(Array.isArray(res) ? res : []);
     setLoadingList(false);
   };
@@ -4070,6 +4081,15 @@ const AngebotePage = ({ blocks }) => {
     setSelectedAngebot(a);
     loadDetail(a.id);
     setKinderSuche('');
+    setShowEditForm(null);
+  };
+
+  // Datum in createForm/editForm toggeln
+  const toggleTag = (datum, form, setForm) => {
+    setForm(f => ({
+      ...f,
+      tage: f.tage.includes(datum) ? f.tage.filter(d => d !== datum) : [...f.tage, datum].sort()
+    }));
   };
 
   const handleCreate = async () => {
@@ -4077,18 +4097,26 @@ const AngebotePage = ({ blocks }) => {
       toast.error('Name und Ferienblock sind Pflichtfelder');
       return;
     }
+    if (createForm.tage.length === 0) {
+      toast.error('Bitte mindestens einen Tag auswählen');
+      return;
+    }
     const res = await API.post('angebote', { action: 'create', ...createForm });
     if (res.success) {
       toast.success('Angebot erstellt');
       setShowCreateForm(false);
-      setCreateForm({ name: '', ferienblock_id: '', beschreibung: '' });
+      setCreateForm({ name: '', ferienblock_id: '', beschreibung: '', tage: [] });
       await loadAngebote();
     }
   };
 
   const handleEdit = async () => {
     if (!showEditForm) return;
-    const res = await API.post('angebote', { action: 'edit', id: showEditForm.id, name: showEditForm.name, beschreibung: showEditForm.beschreibung });
+    if (showEditForm.tage.length === 0) {
+      toast.error('Bitte mindestens einen Tag auswählen');
+      return;
+    }
+    const res = await API.post('angebote', { action: 'edit', id: showEditForm.id, name: showEditForm.name, beschreibung: showEditForm.beschreibung, tage: showEditForm.tage });
     if (res.success) {
       toast.success('Angebot aktualisiert');
       setShowEditForm(null);
@@ -4134,27 +4162,58 @@ const AngebotePage = ({ blocks }) => {
     const dt = new Date(d);
     return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}.${dt.getFullYear()}`;
   };
-
   const fmtShort = (d) => {
     const dt = new Date(d);
     return `${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}`;
+  };
+
+  // Tage-Auswahl Komponente (wiederverwendbar für create + edit)
+  const TageAuswahl = ({ blockId, selectedTage, onChange }) => {
+    const block = blocks.find(b => String(b.id) === String(blockId));
+    if (!block) return <p style={{ color: 'var(--text2)', fontSize: '0.85rem' }}>Erst Ferienblock wählen</p>;
+    const alle = tageBetween(block.startdatum, block.enddatum);
+    return (
+      <div>
+        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem' }}>
+          <button type="button" className="btn btn-ghost btn-sm"
+            onClick={() => onChange(alle)}>Alle</button>
+          <button type="button" className="btn btn-ghost btn-sm"
+            onClick={() => onChange([])}>Keine</button>
+        </div>
+        <div className="days-grid">
+          {alle.map(d => {
+            const dt = new Date(d);
+            const wt = ['So','Mo','Di','Mi','Do','Fr','Sa'][dt.getDay()];
+            const aktiv = selectedTage.includes(d);
+            return (
+              <span key={d}
+                onClick={() => onChange(selectedTage.includes(d) ? selectedTage.filter(x => x !== d) : [...selectedTage, d].sort())}
+                className={`day-chip ${aktiv ? 'matched' : ''}`}
+                style={{ cursor: 'pointer', opacity: aktiv ? 1 : 0.45, userSelect: 'none' }}>
+                {wt} {fmtShort(d)}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
     <div>
       <div className="page-header">
         <h1>Angebote</h1>
-        <p>Gruppen erstellen und Buchungsstatus der Kinder prüfen</p>
+        <p>Gruppen mit bestimmten Tagen erstellen und Buchungsstatus der Kinder prüfen</p>
       </div>
 
       <div className="two-col" style={{ alignItems: 'flex-start' }}>
 
-        {/* ── Linke Spalte: Angebotsliste ── */}
+        {/* ── Linke Spalte: Liste + Formular ── */}
         <div>
           <div className="card">
             <div className="card-title">
               <span>Angebote</span>
-              <button className="btn btn-primary btn-sm" onClick={() => { setShowCreateForm(v => !v); }}>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowCreateForm(v => !v)}>
                 {showCreateForm ? 'Abbrechen' : '+ Neu'}
               </button>
             </div>
@@ -4171,7 +4230,7 @@ const AngebotePage = ({ blocks }) => {
                   <p>Noch keine Angebote</p>
                 </div>
               : angebote.map(a => (
-                <div key={a.id} className={`kind-row${selectedAngebot?.id === a.id ? ' active' : ''}`}
+                <div key={a.id} className="kind-row"
                   onClick={() => handleSelectAngebot(a)}
                   style={{ background: selectedAngebot?.id === a.id ? 'var(--primary-light)' : undefined }}>
                   <div className="kind-row-info">
@@ -4180,7 +4239,10 @@ const AngebotePage = ({ blocks }) => {
                     </div>
                     <div className="kind-row-meta">{a.block_name}</div>
                   </div>
-                  <span className="badge badge-blue">{a.kinder_count} Kinder</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                    <span className="badge badge-blue">{a.kinder_count} Kinder</span>
+                    <span className="badge badge-grey">{a.tage_count} Tage</span>
+                  </div>
                 </div>
               ))
             }
@@ -4191,23 +4253,28 @@ const AngebotePage = ({ blocks }) => {
             <div className="card">
               <div className="card-title">Neues Angebot</div>
               <div className="form-group">
-                <label className="form-group">Name</label>
+                <label>Name</label>
                 <input className="form-input" placeholder="z.B. Fußball, Schwimmen …" value={createForm.name}
                   onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div className="form-group">
-                <label className="form-group">Ferienblock</label>
+                <label>Ferienblock</label>
                 <select className="ferienblock-select" style={{ width: '100%' }} value={createForm.ferienblock_id}
-                  onChange={e => setCreateForm(f => ({ ...f, ferienblock_id: e.target.value }))}>
+                  onChange={e => setCreateForm(f => ({ ...f, ferienblock_id: e.target.value, tage: [] }))}>
                   <option value="">Ferienblock wählen</option>
                   {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-group">Beschreibung (optional)</label>
+                <label>Tage auswählen <span className="badge badge-blue">{createForm.tage.length} gewählt</span></label>
+                <TageAuswahl blockId={createForm.ferienblock_id} selectedTage={createForm.tage}
+                  onChange={tage => setCreateForm(f => ({ ...f, tage }))} />
+              </div>
+              <div className="form-group">
+                <label>Beschreibung (optional)</label>
                 <textarea className="textarea" placeholder="Kurze Beschreibung …" value={createForm.beschreibung}
                   onChange={e => setCreateForm(f => ({ ...f, beschreibung: e.target.value }))}
-                  style={{ minHeight: '60px' }} />
+                  style={{ minHeight: '50px' }} />
               </div>
               <div className="toolbar">
                 <button className="btn btn-primary btn-sm" onClick={handleCreate}>Erstellen</button>
@@ -4229,30 +4296,54 @@ const AngebotePage = ({ blocks }) => {
               {/* Header-Card */}
               <div className="card">
                 {showEditForm?.id === selectedAngebot.id ? (
-                  <div className="toolbar" style={{ flexWrap: 'wrap' }}>
-                    <input className="form-input" value={showEditForm.name} placeholder="Name"
-                      onChange={e => setShowEditForm(f => ({ ...f, name: e.target.value }))}
-                      style={{ flex: '1', minWidth: '130px' }} />
-                    <input className="form-input" value={showEditForm.beschreibung || ''} placeholder="Beschreibung"
-                      onChange={e => setShowEditForm(f => ({ ...f, beschreibung: e.target.value }))}
-                      style={{ flex: '2', minWidth: '150px' }} />
-                    <button className="btn btn-primary btn-sm" onClick={handleEdit}>Speichern</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setShowEditForm(null)}>Abbrechen</button>
+                  <div>
+                    <div className="toolbar" style={{ flexWrap: 'wrap', marginBottom: '1rem' }}>
+                      <input className="form-input" value={showEditForm.name} placeholder="Name"
+                        onChange={e => setShowEditForm(f => ({ ...f, name: e.target.value }))}
+                        style={{ flex: '1', minWidth: '130px' }} />
+                      <input className="form-input" value={showEditForm.beschreibung || ''} placeholder="Beschreibung"
+                        onChange={e => setShowEditForm(f => ({ ...f, beschreibung: e.target.value }))}
+                        style={{ flex: '2', minWidth: '150px' }} />
+                    </div>
+                    <div className="form-group">
+                      <label>Tage <span className="badge badge-blue">{showEditForm.tage.length} gewählt</span></label>
+                      <TageAuswahl blockId={selectedAngebot.ferienblock_id} selectedTage={showEditForm.tage}
+                        onChange={tage => setShowEditForm(f => ({ ...f, tage }))} />
+                    </div>
+                    <div className="toolbar">
+                      <button className="btn btn-primary btn-sm" onClick={handleEdit}>Speichern</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setShowEditForm(null)}>Abbrechen</button>
+                    </div>
                   </div>
                 ) : (
                   <div className="akte-block-head">
                     <div>
-                      <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.2rem' }}>{selectedAngebot.name}</h2>
-                      <div className="meta">
+                      <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.25rem' }}>{selectedAngebot.name}</h2>
+                      <div className="meta" style={{ marginBottom: '0.5rem' }}>
                         {selectedAngebot.block_name} &nbsp;·&nbsp; {fmtD(selectedAngebot.startdatum)} – {fmtD(selectedAngebot.enddatum)}
                       </div>
+                      {/* Tage-Chips anzeigen */}
+                      {detailData?.angebot?.tage?.length > 0 && (
+                        <div className="days-grid">
+                          {detailData.angebot.tage.map(d => {
+                            const dt = new Date(d);
+                            const wt = ['So','Mo','Di','Mi','Do','Fr','Sa'][dt.getDay()];
+                            return <span key={d} className="day-chip matched">{wt} {fmtShort(d)}</span>;
+                          })}
+                        </div>
+                      )}
                       {selectedAngebot.beschreibung && (
-                        <div style={{ marginTop: '0.3rem', fontSize: '0.88rem', color: 'var(--text2)' }}>{selectedAngebot.beschreibung}</div>
+                        <div style={{ marginTop: '0.4rem', fontSize: '0.88rem', color: 'var(--text2)' }}>{selectedAngebot.beschreibung}</div>
                       )}
                     </div>
                     <div className="akte-block-badges">
                       <button className="btn btn-ghost btn-sm"
-                        onClick={() => setShowEditForm({ id: selectedAngebot.id, name: selectedAngebot.name, beschreibung: selectedAngebot.beschreibung || '' })}>
+                        onClick={() => setShowEditForm({
+                          id: selectedAngebot.id,
+                          name: selectedAngebot.name,
+                          beschreibung: selectedAngebot.beschreibung || '',
+                          tage: detailData?.angebot?.tage || []
+                        })}>
                         Bearbeiten
                       </button>
                       <button className="btn btn-danger btn-sm" style={{ width: 'auto' }}
@@ -4266,7 +4357,7 @@ const AngebotePage = ({ blocks }) => {
 
               {loadingDetail ? <Spinner /> : detailData && (
                 <>
-                  {/* Stat-Grid Zusammenfassung */}
+                  {/* Stat-Grid */}
                   <div className="stat-grid">
                     {Object.entries(STATUS_CFG).map(([key, cfg]) => (
                       <div key={key} className="stat-card">
@@ -4326,8 +4417,8 @@ const AngebotePage = ({ blocks }) => {
                               <th>Name</th>
                               <th>Klasse</th>
                               <th style={{ textAlign: 'center' }}>Liste A</th>
-                              <th style={{ textAlign: 'center' }}>Liste B</th>
-                              <th>Status</th>
+                              <th style={{ textAlign: 'center' }}>Liste B (Essen)</th>
+                              <th>Status / fehlende Tage</th>
                               <th></th>
                             </tr>
                           </thead>
@@ -4340,13 +4431,13 @@ const AngebotePage = ({ blocks }) => {
                                   <td style={{ color: 'var(--text2)' }}>{k.klasse || '—'}</td>
                                   <td style={{ textAlign: 'center' }}>
                                     {k.tage_liste_a.length > 0
-                                      ? <span className="badge badge-green" title={k.tage_liste_a.join(', ')}>{k.tage_liste_a.length} Tage</span>
+                                      ? <span className="badge badge-green" title={k.tage_liste_a.map(fmtShort).join(', ')}>{k.tage_liste_a.length} Tage</span>
                                       : <span className="badge badge-red">—</span>
                                     }
                                   </td>
                                   <td style={{ textAlign: 'center' }}>
                                     {k.tage_liste_b.length > 0
-                                      ? <span className="badge badge-green" title={k.tage_liste_b.join(', ')}>{k.tage_liste_b.length} Tage</span>
+                                      ? <span className="badge badge-green" title={k.tage_liste_b.map(fmtShort).join(', ')}>{k.tage_liste_b.length} Tage</span>
                                       : <span className="badge badge-red">—</span>
                                     }
                                   </td>
@@ -4355,7 +4446,7 @@ const AngebotePage = ({ blocks }) => {
                                     {k.nur_in_a.length > 0 && (
                                       <div className="days-grid" style={{ marginTop: '4px' }}>
                                         {k.nur_in_a.map(d => (
-                                          <span key={d} className="day-chip missing" title="Angemeldet, kein Essen">
+                                          <span key={d} className="day-chip missing" title="Angemeldet, kein Essen gebucht">
                                             <span className="day-icon">⚠</span>{fmtShort(d)}
                                           </span>
                                         ))}
@@ -4364,7 +4455,7 @@ const AngebotePage = ({ blocks }) => {
                                     {k.nur_in_b.length > 0 && (
                                       <div className="days-grid" style={{ marginTop: '4px' }}>
                                         {k.nur_in_b.map(d => (
-                                          <span key={d} className="day-chip extra" title="Gebucht, nicht angemeldet">
+                                          <span key={d} className="day-chip extra" title="Essen gebucht, nicht angemeldet">
                                             <span className="day-icon">ℹ</span>{fmtShort(d)}
                                           </span>
                                         ))}
