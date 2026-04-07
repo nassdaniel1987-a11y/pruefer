@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#5d5c71",
+                    "outline-variant": "#c8c5d0",
+                    "on-tertiary": "#ffffff",
+                    "primary-fixed": "#e2dfff",
+                    "surface-container-highest": "#e5e1e6",
+                    "inverse-surface": "#313034",
+                    "primary-container": "#7372a5",
+                    "error": "#ba1a1a",
+                    "background": "#fcf8fd",
+                    "surface-tint": "#5a598b",
+                    "on-background": "#1c1b1f",
+                    "tertiary-fixed": "#f9e191",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#6e5d1b",
+                    "on-primary-container": "#020026",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#c3c1f9",
+                    "surface-container-high": "#ebe7ec",
+                    "secondary-fixed-dim": "#c6c4dd",
+                    "on-tertiary-container": "#4c3e00",
+                    "on-error": "#ffffff",
+                    "on-surface": "#1c1b1f",
+                    "surface-variant": "#e5e1e6",
+                    "on-surface-variant": "#47464f",
+                    "surface-container-low": "#f6f2f7",
+                    "surface-dim": "#dcd9dd",
+                    "surface": "#fcf8fd",
+                    "on-secondary-container": "#626076",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#c3c1f9",
+                    "on-primary-fixed": "#161543",
+                    "primary": "#5a598b",
+                    "on-secondary-fixed-variant": "#464559",
+                    "on-primary-fixed-variant": "#424271",
+                    "secondary-container": "#e0ddf6",
+                    "on-tertiary-fixed-variant": "#554603",
+                    "inverse-on-surface": "#f3eff4",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#e3e0f9",
+                    "tertiary-fixed-dim": "#dcc578",
+                    "on-tertiary-fixed": "#221b00",
+                    "surface-bright": "#fcf8fd",
+                    "surface-container": "#f0edf1",
+                    "on-secondary-fixed": "#1a1a2c",
+                    "tertiary-container": "#bfaa60",
+                    "outline": "#787680"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Plus Jakarta Sans"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-line-card {
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased flex min-h-screen">
+<!-- SideNavBar (Shared Component) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-[#f6f2f7] dark:bg-[#1c1b1f] flex flex-col py-8 z-50">
+<div class="px-6 mb-10">
+<h1 class="text-lg font-extrabold text-[#5a598b] dark:text-[#e0ddf6] tracking-tighter">Prüfer</h1>
+<p class="text-[10px] uppercase tracking-widest text-[#7372A5] font-bold">Architectural Auditor</p>
+</div>
+<nav class="flex-1 space-y-1">
+<div class="group flex items-center gap-4 py-3 px-6 cursor-pointer text-[#49454f] dark:text-[#c8c5d0] hover:text-[#5a598b] dark:hover:text-[#e0ddf6] transition-all font-['Plus_Jakarta_Sans'] text-sm font-medium tracking-wide">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</div>
+<div class="group flex items-center gap-4 py-3 px-6 cursor-pointer text-[#49454f] dark:text-[#c8c5d0] hover:text-[#5a598b] dark:hover:text-[#e0ddf6] transition-all font-['Plus_Jakarta_Sans'] text-sm font-medium tracking-wide">
+<span class="material-symbols-outlined">fact_check</span>
+<span>Audits</span>
+</div>
+<div class="group flex items-center gap-4 py-3 px-6 cursor-pointer text-[#49454f] dark:text-[#c8c5d0] hover:text-[#5a598b] dark:hover:text-[#e0ddf6] transition-all font-['Plus_Jakarta_Sans'] text-sm font-medium tracking-wide">
+<span class="material-symbols-outlined">analytics</span>
+<span>Berichte</span>
+</div>
+<div class="group flex items-center gap-4 py-3 px-6 cursor-pointer text-[#49454f] dark:text-[#c8c5d0] hover:text-[#5a598b] dark:hover:text-[#e0ddf6] transition-all font-['Plus_Jakarta_Sans'] text-sm font-medium tracking-wide">
+<span class="material-symbols-outlined">group</span>
+<span>Team</span>
+</div>
+<!-- Active State: Einstellungen -->
+<div class="group flex items-center gap-4 py-3 px-6 cursor-pointer font-bold border-r-4 border-[#7372A5] bg-[#ebe7ec]/50 text-[#1c1b1f] dark:text-[#ffffff] font-['Plus_Jakarta_Sans'] text-sm tracking-wide">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span>Einstellungen</span>
+</div>
+</nav>
+<div class="px-6 mt-auto">
+<div class="flex items-center gap-3 p-3 bg-surface-container-highest/30 rounded-lg">
+<img alt="Prüfer Logo" class="w-8 h-8 rounded-full" data-alt="professional corporate headshot of a senior auditor in a minimalist office setting with soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfrGWzO9fgcWpv4jNWDsg7yMdOo_2drRNcj1U796oSKOeOdBwqrFT5LlpixXt2KwrhDsPk_U86_is1pc0X8pVIoT78T01gbVrcNmgFoi9qUpSWGQkvacn1K1DZbVsnfMRlRRxnXenrYB1q9oPGWXMiTn2hmSTnJYC3iA5tt08T_XXDTZE4K13edQqeP7cPYF1X-JPQ7g3WGGcFtcF5da_1EUFnSrp1MLhOY37FivmLJvJ6eNSuw99uVqx4VNyHuawI-8FKrSTa1Q"/>
+<div>
+<p class="text-xs font-bold text-on-surface">Admin User</p>
+<p class="text-[10px] text-secondary">Zertifizierter Prüfer</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 p-12 max-w-7xl">
+<!-- Header Anchor -->
+<header class="mb-12">
+<h2 class="text-4xl font-extrabold tracking-tight text-primary mb-2">Einstellungen</h2>
+<p class="text-secondary font-medium">Verwalten Sie Ihre Systemkonfiguration und Profileinstellungen.</p>
+</header>
+<!-- Settings Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Column: Primary Sections -->
+<div class="lg:col-span-7 space-y-8">
+<!-- Section 1: Profil -->
+<section class="no-line-card rounded-xl p-8 shadow-[0_24px_32px_-8px_rgba(28,27,31,0.06)] bg-surface-container-lowest">
+<div class="flex items-center gap-4 mb-8">
+<div class="p-3 bg-primary-fixed rounded-lg text-primary">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-on-surface">Profil</h3>
+<p class="text-sm text-secondary">Verwalten Sie Ihre persönlichen Zugangsdaten</p>
+</div>
+</div>
+<div class="space-y-6">
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] uppercase tracking-widest font-bold text-primary">Benutzername</label>
+<div class="py-3 px-1 text-on-surface font-semibold border-b border-outline-variant/30">
+                                m.mustermann_auditor
+                            </div>
+</div>
+<div class="pt-4 border-t border-surface-container-low mt-4">
+<h4 class="text-sm font-bold text-on-surface mb-6">Passwort ändern</h4>
+<div class="grid grid-cols-1 gap-5">
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] uppercase tracking-widest font-bold text-secondary">Aktuelles Passwort</label>
+<input class="bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-4 py-3 rounded-t-lg transition-colors" placeholder="••••••••" type="password"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] uppercase tracking-widest font-bold text-secondary">Neues Passwort</label>
+<input class="bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-4 py-3 rounded-t-lg transition-colors" placeholder="••••••••" type="password"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-[10px] uppercase tracking-widest font-bold text-secondary">Bestätigen</label>
+<input class="bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-4 py-3 rounded-t-lg transition-colors" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<div class="pt-4 flex justify-end">
+<button class="px-8 py-3 bg-gradient-to-r from-primary to-primary-container text-white font-bold rounded-lg hover:shadow-lg transition-all active:scale-[0.98]">
+                                        Speichern
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Datenbank -->
+<section class="no-line-card rounded-xl p-8 shadow-[0_24px_32px_-8px_rgba(28,27,31,0.06)] bg-surface-container-lowest">
+<div class="flex items-center gap-4 mb-8">
+<div class="p-3 bg-tertiary-fixed rounded-lg text-tertiary">
+<span class="material-symbols-outlined">database</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-on-surface">Datenbank</h3>
+<p class="text-sm text-secondary">Sicherung und Datenmanagement</p>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-xl p-6 mb-8 flex items-center justify-between">
+<div>
+<p class="text-[10px] uppercase tracking-widest font-bold text-secondary mb-1">Letztes Backup</p>
+<p class="text-on-surface font-semibold">24.05.2024 - 14:30</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-container-lowest border border-outline-variant/20 rounded-lg text-xs font-bold text-primary hover:bg-white transition-colors">Backup wiederherstellen</button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-container transition-colors">Backup erstellen</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-2 p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl transition-all group">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">file_export</span>
+<span class="text-sm font-bold text-on-surface">Alle Daten exportieren</span>
+</button>
+<button class="flex items-center justify-center gap-2 p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl transition-all group">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">file_upload</span>
+<span class="text-sm font-bold text-on-surface">Daten importieren</span>
+</button>
+</div>
+</section>
+</div>
+<!-- Right Column: Secondary Sections -->
+<div class="lg:col-span-5 space-y-8">
+<!-- Section 2: Darstellung -->
+<section class="no-line-card rounded-xl p-8 shadow-[0_24px_32px_-8px_rgba(28,27,31,0.06)] bg-surface-container-lowest">
+<div class="flex items-center gap-4 mb-8">
+<div class="p-3 bg-secondary-fixed rounded-lg text-secondary">
+<span class="material-symbols-outlined">palette</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-on-surface">Darstellung</h3>
+<p class="text-sm text-secondary">Passen Sie das Interface an</p>
+</div>
+</div>
+<div class="space-y-8">
+<div>
+<label class="text-[10px] uppercase tracking-widest font-bold text-secondary block mb-4">Modus</label>
+<div class="grid grid-cols-2 gap-4">
+<div class="cursor-pointer border-2 border-primary bg-surface-container-low p-4 rounded-xl flex flex-col gap-3 group">
+<div class="h-16 w-full bg-surface-bright rounded border border-outline-variant/10 shadow-sm overflow-hidden flex flex-col gap-1.5 p-2">
+<div class="h-2 w-1/2 bg-primary/20 rounded"></div>
+<div class="h-2 w-3/4 bg-on-surface-variant/10 rounded"></div>
+<div class="h-2 w-full bg-on-surface-variant/5 rounded"></div>
+</div>
+<p class="text-xs font-bold text-center text-primary">Light Mode</p>
+</div>
+<div class="cursor-pointer border-2 border-transparent bg-inverse-surface p-4 rounded-xl flex flex-col gap-3 group hover:border-outline-variant/30">
+<div class="h-16 w-full bg-[#1c1b1f] rounded border border-white/5 shadow-sm overflow-hidden flex flex-col gap-1.5 p-2">
+<div class="h-2 w-1/2 bg-[#e2dfff]/20 rounded"></div>
+<div class="h-2 w-3/4 bg-white/10 rounded"></div>
+<div class="h-2 w-full bg-white/5 rounded"></div>
+</div>
+<p class="text-xs font-bold text-center text-white/60 group-hover:text-white">Dark Mode</p>
+</div>
+</div>
+</div>
+<div>
+<label class="text-[10px] uppercase tracking-widest font-bold text-secondary block mb-4">Akzentfarbe</label>
+<div class="flex items-center gap-4 p-4 bg-surface-container-low rounded-xl">
+<div class="w-10 h-10 rounded-full bg-[#7372A5] ring-4 ring-[#7372A5]/20"></div>
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface">Prüfer Indigo</p>
+<p class="text-xs text-secondary">#7372A5</p>
+</div>
+<button class="text-primary font-bold text-xs uppercase tracking-tighter hover:underline">Ändern</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: System -->
+<section class="no-line-card rounded-xl p-8 shadow-[0_24px_32px_-8px_rgba(28,27,31,0.06)] bg-surface-container-lowest">
+<div class="flex items-center gap-4 mb-8">
+<div class="p-3 bg-surface-container-high rounded-lg text-on-surface">
+<span class="material-symbols-outlined">settings_suggest</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-on-surface">System</h3>
+<p class="text-sm text-secondary">Software-Status und Wartung</p>
+</div>
+</div>
+<div class="space-y-4 mb-8">
+<div class="flex items-center justify-between py-3 border-b border-surface-container-low">
+<span class="text-sm text-secondary font-medium">Version</span>
+<span class="text-sm font-bold text-on-surface">v2.4.1</span>
+</div>
+<div class="flex items-center justify-between py-3 border-b border-surface-container-low">
+<span class="text-sm text-secondary font-medium">Migrationsstatus</span>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-green-500 rounded-full"></div>
+<span class="text-sm font-bold text-on-surface">Aktuell</span>
+</div>
+</div>
+</div>
+<div class="space-y-3">
+<button class="w-full py-4 px-6 bg-surface-container-low hover:bg-error-container hover:text-on-error-container transition-all rounded-xl text-sm font-bold text-secondary flex items-center justify-between group">
+<span>Datenbank initialisieren</span>
+<span class="material-symbols-outlined text-[18px] opacity-0 group-hover:opacity-100 transition-opacity">warning</span>
+</button>
+<button class="w-full py-4 px-6 bg-surface-container-low hover:bg-secondary-container hover:text-on-secondary-container transition-all rounded-xl text-sm font-bold text-secondary flex items-center justify-between">
+<span>Migrationen ausführen</span>
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</div>
+<div class="mt-8 p-4 bg-error-container/30 rounded-lg border border-error-container/50">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-error text-[20px]">info</span>
+<p class="text-[11px] text-on-error-container leading-relaxed">
+<span class="font-bold">Achtung:</span> Systemaktionen können nicht rückgängig gemacht werden. Bitte führen Sie vor der Initialisierung ein Backup durch.
+                            </p>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</body></html>

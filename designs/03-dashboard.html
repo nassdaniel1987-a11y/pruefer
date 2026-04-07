@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prüfer - Verwaltungssystem</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#e3e0f9",
+                        "error-container": "#ffdad6",
+                        "background": "#fcf8fd",
+                        "tertiary-fixed": "#f9e191",
+                        "on-tertiary-container": "#4c3e00",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e5e1e6",
+                        "on-secondary": "#ffffff",
+                        "surface": "#fcf8fd",
+                        "outline-variant": "#c8c5d0",
+                        "on-secondary-fixed-variant": "#464559",
+                        "on-secondary-fixed": "#1a1a2c",
+                        "surface-variant": "#e5e1e6",
+                        "inverse-on-surface": "#f3eff4",
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-low": "#f6f2f7",
+                        "primary-container": "#7372a5",
+                        "on-primary-container": "#020026",
+                        "on-primary-fixed-variant": "#424271",
+                        "outline": "#787680",
+                        "on-surface-variant": "#47464f",
+                        "surface-tint": "#5a598b",
+                        "inverse-primary": "#c3c1f9",
+                        "tertiary-fixed-dim": "#dcc578",
+                        "surface-bright": "#fcf8fd",
+                        "on-secondary-container": "#626076",
+                        "surface-container": "#f0edf1",
+                        "primary-fixed-dim": "#c3c1f9",
+                        "primary": "#5a598b",
+                        "on-tertiary-fixed": "#221b00",
+                        "secondary": "#5d5c71",
+                        "secondary-fixed-dim": "#c6c4dd",
+                        "tertiary-container": "#bfaa60",
+                        "surface-dim": "#dcd9dd",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#554603",
+                        "tertiary": "#6e5d1b",
+                        "on-primary-fixed": "#161543",
+                        "inverse-surface": "#313034",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#1c1b1f",
+                        "on-background": "#1c1b1f",
+                        "secondary-container": "#e0ddf6",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#ebe7ec",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-full flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-[240px] bg-indigo-950 flex flex-col p-4 space-y-2 z-50">
+<div class="mb-8 px-2">
+<h1 class="text-2xl font-bold tracking-tight text-white">Prüfer</h1>
+<p class="text-[10px] text-indigo-300/60 uppercase tracking-[0.2em] font-semibold">Verwaltungssystem</p>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Active: Dashboard -->
+<a class="flex items-center gap-3 px-3 py-2.5 bg-indigo-800 text-white font-semibold rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span>Ferienblöcke</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="child_care">child_care</span>
+<span>Kinder</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="local_offer">local_offer</span>
+<span>Angebote</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="sync_alt">sync_alt</span>
+<span>Abgleich</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="today">today</span>
+<span>Tagesansicht</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>Klassen</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Finanzen</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>Verlauf</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Einstellungen</span>
+</a>
+</nav>
+<div class="pt-4 mt-auto border-t border-indigo-900/50">
+<a class="flex items-center gap-3 px-3 py-2.5 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 transition-all" href="#">
+<div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center overflow-hidden">
+<img alt="Admin Profile Avatar" class="w-full h-full object-cover" data-alt="Professional male administrator portrait in corporate attire, clean background, high end photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCNbej5Nl60zqSFGm9mv-fImcEIrHzJDyypL3636a-SaQp-wlnfLrwYHd16dFw2_RS9YXh_VeUec4gfdmNvafArVTx8m0ujEpYOfqn_eIOaFsiyHADXJsoT90Ynd4TmclNKJtXQX3gYwOoHW_UC_jw0UflW2lx0-lpRtEOGDTOtS-CTNiPw0jzqGw-_wdMgTKgs05gtO0-GwsYAG0bq7njFAclO94ExB0WBLQYTgYUL6VhNCLIKLv4prckgK43YwifDRMymgg8rQ"/>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-white">Admin</span>
+<span class="text-[10px] text-indigo-400">Verwaltung</span>
+</div>
+<span class="material-symbols-outlined ml-auto text-sm" data-icon="account_circle">account_circle</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[240px] flex flex-col h-full overflow-hidden">
+<!-- TopNavBar -->
+<header class="sticky top-0 z-40 bg-transparent flex justify-between items-center px-8 py-4">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative max-w-md w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Suche nach Kindern oder Blöcken..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors relative">
+<span class="material-symbols-outlined text-indigo-900" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant/30 mx-2"></div>
+<h2 class="text-sm font-bold text-indigo-900">Dashboard</h2>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto px-8 pb-12 space-y-8 no-scrollbar">
+<!-- Hero Welcome Section -->
+<section class="mt-4">
+<div class="relative p-8 rounded-3xl bg-gradient-to-br from-primary to-primary-container text-white overflow-hidden">
+<div class="relative z-10">
+<h3 class="text-3xl font-extrabold tracking-tight mb-2">Guten Tag, Herr Müller.</h3>
+<p class="text-white/80 max-w-md font-medium">Alle Systeme laufen stabil. Heute stehen 2 Abgleiche zur Prüfung an.</p>
+</div>
+<span class="material-symbols-outlined absolute -right-8 -bottom-8 text-[180px] text-white/5 opacity-20 rotate-12" data-icon="shield">shield</span>
+</div>
+</section>
+<!-- Stat Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low group cursor-default">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="calendar_today">calendar_today</span>
+</div>
+<span class="text-[10px] font-bold text-primary px-2 py-1 bg-primary/10 rounded-full">LIVE</span>
+</div>
+<p class="text-sm font-medium text-on-surface-variant">Aktive Ferienblöcke</p>
+<h4 class="text-3xl font-extrabold text-on-surface mt-1">3</h4>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low group cursor-default">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-xl bg-tertiary-container/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-3xl" data-icon="diversity_3">diversity_3</span>
+</div>
+</div>
+<p class="text-sm font-medium text-on-surface-variant">Kinder gesamt</p>
+<h4 class="text-3xl font-extrabold text-on-surface mt-1">247</h4>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low group cursor-default border-b-2 border-transparent hover:border-tertiary/20">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-xl bg-tertiary-fixed-dim/20 flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined text-3xl" data-icon="sync_problem">sync_problem</span>
+</div>
+</div>
+<p class="text-sm font-medium text-on-surface-variant">Offene Abgleiche</p>
+<h4 class="text-3xl font-extrabold text-on-surface mt-1">2</h4>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low group cursor-default">
+<div class="flex justify-between items-start mb-4">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+</div>
+<p class="text-sm font-medium text-on-surface-variant">Umsatz gesamt</p>
+<h4 class="text-3xl font-extrabold text-on-surface mt-1">€12.450</h4>
+</div>
+</section>
+<!-- Main Layout Grid (Content Split) -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+<!-- Center Section: Current Blocks -->
+<div class="xl:col-span-2 space-y-6">
+<div class="flex justify-between items-end px-2">
+<div>
+<h3 class="text-xl font-extrabold text-indigo-900">Aktuelle Ferienblöcke</h3>
+<p class="text-sm text-on-surface-variant">Status der laufenden und geplanten Buchungszeiträume</p>
+</div>
+<button class="text-primary text-sm font-bold hover:underline">Alle ansehen</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Block 1: Aktiv -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h5 class="text-lg font-bold text-on-surface">Herbstferien 2024</h5>
+<p class="text-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">calendar_month</span> 07. Okt - 18. Okt
+                                    </p>
+</div>
+<span class="bg-tertiary-container/20 text-on-tertiary-container px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Aktiv</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Kapazität</span>
+<span>180/200</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 90%;"></div>
+</div>
+</div>
+</div>
+<!-- Block 2: Geplant -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h5 class="text-lg font-bold text-on-surface">Winterferien 2024</h5>
+<p class="text-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">calendar_month</span> 23. Dez - 03. Jan
+                                    </p>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Geplant</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Anmeldungen</span>
+<span>42/150</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container text-on-secondary-container" style="width: 28%; background-color: #7372a5;"></div>
+</div>
+</div>
+</div>
+<!-- Block 3: Aktiv -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h5 class="text-lg font-bold text-on-surface">Osterferien 2025</h5>
+<p class="text-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">calendar_month</span> 14. Apr - 25. Apr
+                                    </p>
+</div>
+<span class="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Bereitstellung</span>
+</div>
+<div class="space-y-2 opacity-50">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Vorplanung</span>
+<span>0/200</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-outline-variant" style="width: 0%;"></div>
+</div>
+</div>
+</div>
+<!-- Add New Block Trigger -->
+<div class="border-2 border-dashed border-outline-variant/30 p-6 rounded-2xl flex flex-col items-center justify-center gap-2 group cursor-pointer hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-4xl text-outline-variant group-hover:text-primary transition-colors">add_circle</span>
+<span class="text-sm font-bold text-on-surface-variant">Neuen Block erstellen</span>
+</div>
+</div>
+</div>
+<!-- Right Section: Activities -->
+<div class="space-y-6">
+<div class="px-2">
+<h3 class="text-xl font-extrabold text-indigo-900">Letzte Aktivitäten</h3>
+<p class="text-sm text-on-surface-variant">Letzte Systemereignisse</p>
+</div>
+<div class="bg-surface-container-low/50 rounded-3xl p-6 relative">
+<!-- Timeline Vertical Line -->
+<div class="absolute left-10 top-8 bottom-8 w-[2px] bg-outline-variant/20"></div>
+<div class="space-y-8 relative">
+<!-- Item 1 -->
+<div class="flex gap-6 items-start relative group">
+<div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center z-10 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface leading-snug">Abgleich für Winterferien abgeschlossen</p>
+<p class="text-xs text-on-surface-variant mt-1 font-medium">vor 10 Min.</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-6 items-start relative group">
+<div class="w-8 h-8 rounded-full bg-tertiary text-white flex items-center justify-center z-10 shadow-lg shadow-tertiary/20">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">group_add</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface leading-snug">12 neue Kinder importiert</p>
+<p class="text-xs text-on-surface-variant mt-1 font-medium">vor 1 Std.</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex gap-6 items-start relative group">
+<div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center z-10 shadow-lg shadow-secondary/20">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">upload_file</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface leading-snug">Liste B für Osterferien hochgeladen</p>
+<p class="text-xs text-on-surface-variant mt-1 font-medium">vor 3 Std.</p>
+</div>
+</div>
+<!-- Item 4 (Older) -->
+<div class="flex gap-6 items-start relative group">
+<div class="w-8 h-8 rounded-full bg-outline-variant/50 text-white flex items-center justify-center z-10">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">mail</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface leading-snug opacity-70">Eltern-Infomail Herbstferien versendet</p>
+<p class="text-xs text-on-surface-variant mt-1 font-medium">vor 5 Std.</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-8 py-3 bg-surface-container-highest rounded-xl text-xs font-extrabold uppercase tracking-widest text-on-surface-variant hover:bg-outline-variant/20 transition-colors">
+                            Vollständiges Protokoll
+                        </button>
+</div>
+</div>
+</div>
+<!-- Audit Overview Asymmetric Card -->
+<section class="mt-8 bg-surface-container-lowest rounded-[2rem] overflow-hidden grid md:grid-cols-5 gap-0 shadow-sm border border-outline-variant/10">
+<div class="md:col-span-2 p-10 bg-indigo-50 flex flex-col justify-center">
+<h3 class="text-2xl font-extrabold text-indigo-900 mb-4 leading-tight">Systemintegrität &amp; Prüfung</h3>
+<p class="text-indigo-900/70 text-sm font-medium mb-8">Letzte vollständige Systemprüfung am 24.09.2024. Alle Datenabgleiche sind innerhalb der Toleranzgrenzen.</p>
+<div class="flex gap-4">
+<button class="px-6 py-3 bg-primary text-white rounded-xl text-sm font-bold shadow-xl shadow-primary/20 hover:-translate-y-0.5 transition-transform">Bericht exportieren</button>
+<button class="px-6 py-3 bg-white text-primary rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors">Verwalten</button>
+</div>
+</div>
+<div class="md:col-span-3 p-10 relative overflow-hidden flex items-center justify-center">
+<div class="grid grid-cols-3 gap-8 w-full max-w-lg relative z-10">
+<div class="text-center">
+<div class="text-4xl font-black text-primary mb-1">99%</div>
+<div class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Datenintegrität</div>
+</div>
+<div class="text-center">
+<div class="text-4xl font-black text-tertiary mb-1">2.4k</div>
+<div class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Transaktionen</div>
+</div>
+<div class="text-center">
+<div class="text-4xl font-black text-secondary mb-1">0</div>
+<div class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Krit. Fehler</div>
+</div>
+</div>
+<!-- Aesthetic Watermark Decor -->
+<span class="material-symbols-outlined absolute -right-12 -top-12 text-[300px] text-indigo-900 opacity-[0.03] select-none pointer-events-none" data-icon="verified_user">verified_user</span>
+</div>
+</section>
+</div>
+</main>
+</body></html>

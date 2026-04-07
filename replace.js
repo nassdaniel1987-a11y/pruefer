@@ -1,0 +1,599 @@
+const fs = require('fs');
+
+const extractAndReplace = (code, compName, newReturnBody) => {
+  const start = code.indexOf('const ' + compName + ' = ');
+  if (start === -1) throw new Error('Could not find ' + compName);
+  
+  const firstReturn = code.indexOf('return (', start);
+  const nextCompMatch = code.substring(firstReturn).match(/\n\n(\/\/ ───|\/\/ [A-Z]|const [A-Z])/);
+  let endSearchArea = code.length;
+  if(nextCompMatch) {
+    endSearchArea = firstReturn + nextCompMatch.index;
+  }
+  
+  // find the last "};" in this area
+  const lastCurlySemi = code.lastIndexOf('};\n', endSearchArea);
+  let endComp = lastCurlySemi !== -1 ? lastCurlySemi : endSearchArea;
+
+  const before = code.substring(0, firstReturn);
+  const after = code.substring(endComp);
+  return before + newReturnBody + "\n" + after;
+};
+
+// ========================================================
+// 1. TAGESANSICHT
+// ========================================================
+const tagesansichtReturn = `return (
+    <div className="space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Audit-Zeitplan & Übersicht</span>
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Tagesansicht</h2>
+        </div>
+        <div className="flex items-center bg-surface-container-lowest px-4 py-1.5 rounded-xl border border-outline-variant/20 gap-4">
+          <select className="bg-transparent text-sm border-none focus:ring-0 outline-none font-bold text-on-surface py-2" value={blockId} onChange={e => setBlockId(e.target.value)}>
+            <option value="">– Block wählen –</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
+      
+      {!loading && dayStats.length === 0 && blockId && (
+        <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-3">event_busy</span>
+          <p className="text-lg font-bold text-on-surface">Keine Daten für diesen Block vorhanden.</p>
+        </div>
+      )}
+
+      {!loading && dayStats.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Linke Spalte: Tagesübersicht (angelehnt an die Timeline aus 08-tagesansicht) */}
+          <div className="lg:col-span-4 space-y-4">
+            <h3 className="text-lg font-extrabold text-primary tracking-tight mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined">calendar_month</span>
+              Tage im Überblick
+            </h3>
+            
+            <div className="relative space-y-4 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-outline-variant/20 before:to-transparent">
+              {dayStats.map(d => {
+                const isActive = selectedDate === d.date;
+                return (
+                  <div key={d.date} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group select-none cursor-pointer" onClick={() => setSelectedDate(isActive ? null : d.date)}>
+                    <div \`className="flex items-center justify-center w-10 h-10 rounded-full border-4 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm transition-colors \${isActive ? 'bg-primary border-primary-container z-10' : 'bg-surface-container-lowest border-surface-container group-hover:border-primary-fixed z-10'}\`}>
+                      <span className={\`text-xs font-bold \${isActive ? 'text-white' : 'text-on-surface-variant group-hover:text-primary'}\`}>{weekday(d.date).substring(0,2)}</span>
+                    </div>
+                    
+                    <div className={\`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-surface-container-lowest p-4 rounded-xl shadow-sm border transition-all \${isActive ? 'border-primary border-l-4 shadow-md scale-[1.02]' : 'border-outline-variant/10 hover:border-primary/30'}\`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm font-bold text-on-surface">{fmtDate(d.date)}</span>
+                        {hasAbgleich && d.missingInB > 0 && <span className="flex w-2 h-2 rounded-full bg-error"></span>}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold uppercase text-on-surface-variant flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>{d.angemeldet} A</span>
+                        <span className="text-[10px] font-bold uppercase text-on-surface-variant flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{d.gebucht} B</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Rechte Spalte: Detailpanel */}
+          <div className="lg:col-span-8">
+            <div className="sticky top-24">
+              {selectedDate && dayDetail ? (
+                <div className="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/15 shadow-xl">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 bg-primary-container rounded-xl text-white shadow-sm">
+                      <span className="material-symbols-outlined text-2xl">group</span>
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-extrabold text-on-surface">{weekday(selectedDate)}, {fmtDate(selectedDate)}</h3>
+                      <p className="text-sm text-on-surface-variant font-medium">{dayDetail.length} Kinder an diesem Tag verzeichnet</p>
+                    </div>
+                  </div>
+
+                  {hasAbgleich && (
+                    <div className="grid grid-cols-3 gap-4 mb-8">
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                        <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">OK (Abgleich)</p>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-emerald-600">{dayDetail.filter(k => k.inA && k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                      </div>
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                        <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Fehlt in B</p>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-error">{dayDetail.filter(k => k.inA && !k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                      </div>
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">Nur in B</p>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-amber-600">{dayDetail.filter(k => !k.inA && k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                      </div>
+                    </div>
+                  )}
+
+                  <h4 className="text-xs font-bold text-primary uppercase tracking-widest border-b border-outline-variant/20 pb-2 mb-4">Besonderheiten & Zuordnungen</h4>
+                  <div className="overflow-x-auto rounded-xl border border-outline-variant/10 w-full">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-surface-container-low border-b border-outline-variant/10">
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/5">
+                        {sortedDetail.map((k, i) => (
+                           <tr key={i} className={\`hover:bg-surface-container-low/50 transition-colors group \${hasAbgleich && k.inA && !k.inB ? 'bg-error-container/20' : hasAbgleich && !k.inA && k.inB ? 'bg-amber-100/30' : ''}\`}>
+                             <td className="px-4 py-3 text-sm font-bold text-on-surface">{k.nachname}</td>
+                             <td className="px-4 py-3 text-sm font-medium text-on-surface-variant flex items-center gap-2">
+                               {k.vorname}
+                               {k.klasse && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-outline font-bold">Kl. {k.klasse}</span>}
+                             </td>
+                             <td className="px-4 py-3 text-center">
+                               {hasAbgleich ? (
+                                 <div className="flex justify-center flex-wrap gap-1">
+                                   {k.inA && k.inB && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px]">check</span>OK</span>}
+                                   {k.inA && !k.inB && <span className="bg-error font-bold text-white text-[10px] px-2 py-0.5 rounded-full">Fehlt (B)</span>}
+                                   {!k.inA && k.inB && <span className="bg-amber-500 font-bold text-white text-[10px] px-2 py-0.5 rounded-full">Nur (B)</span>}
+                                 </div>
+                               ) : (
+                                  <div className="flex gap-1 justify-center">
+                                    {k.inA && <span className="font-bold text-blue-600 bg-blue-100 text-[10px] px-2 py-0.5 rounded-md">Liste A</span>}
+                                    {k.inB && <span className="font-bold text-emerald-600 bg-emerald-100 text-[10px] px-2 py-0.5 rounded-md">Liste B</span>}
+                                  </div>
+                               )}
+                             </td>
+                           </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full min-h-[400px] border-2 border-dashed border-outline-variant/30 rounded-2xl flex flex-col items-center justify-center p-12 text-center bg-surface-container-lowest/50">
+                  <div className="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mb-4">
+                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/50">ads_click</span>
+                  </div>
+                  <p className="text-xl font-extrabold text-on-surface mb-2">Tag auswählen</p>
+                  <p className="text-sm text-on-surface-variant max-w-xs">Wähle links einen Tag aus der Zeitachse, um die Details zu Mittagessen, Anwesenheit und Fehlzeiten anzuzeigen.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+`;
+
+// ========================================================
+// 2. KINDERVERZEICHNIS
+// ========================================================
+const kinderReturn = `return (
+    <div className="pb-20 space-y-8">
+      {/* Top Header Section */}
+      <div>
+        <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface tracking-tight font-headline">Kinder-Verzeichnis</h2>
+        <p className="text-on-surface-variant/70 text-sm mt-1">Verwaltung der aktiven Datensätze und Buchungsstatus.</p>
+      </div>
+
+      {blocks.length > 0 && (
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-outline text-sm">filter_list</span>
+          <select className="bg-surface-container-lowest text-sm border-none rounded-xl focus:ring-2 focus:ring-primary outline-none px-4 py-2 font-bold text-on-surface shadow-sm max-w-sm" value={filterBlock} onChange={e => setFilterBlock(e.target.value)}>
+            <option value="">Alle Ferienblöcke (Gesamt-Statistik)</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </div>
+      )}
+
+      {/* Stats Bento Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex justify-between items-start">
+          <div>
+            <p className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">{filterBlock ? 'Angemeldet (A)' : 'Kinder gesamt'}</p>
+            <h3 className="text-3xl font-extrabold text-primary">{loading ? '…' : filterBlock ? kinder.filter(k => parseInt(k.anmeldungen_count) > 0).length : kinder.length}</h3>
+          </div>
+          <span className="material-symbols-outlined text-primary-container bg-primary-fixed/30 p-3 rounded-xl text-2xl">groups</span>
+        </div>
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex justify-between items-start">
+          <div>
+            <p className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">{filterBlock ? 'Mit Buchung (B)' : 'Mind. eine Buchung'}</p>
+            <h3 className="text-3xl font-extrabold text-emerald-600">{loading ? '…' : mitBuchung}</h3>
+          </div>
+          <span className="material-symbols-outlined text-emerald-600 bg-emerald-100 p-3 rounded-xl text-2xl">check_circle</span>
+        </div>
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex justify-between items-start relative overflow-hidden">
+          {ohneBuchung > 0 && <div className="absolute top-0 right-0 w-2 h-full bg-error"></div>}
+          <div>
+            <p className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Ohne Buchung</p>
+            <h3 className={\`text-3xl font-extrabold \${ohneBuchung > 0 ? 'text-error' : 'text-on-surface-variant/30'}\`}>{loading ? '…' : ohneBuchung}</h3>
+          </div>
+          <span className={\`material-symbols-outlined p-3 rounded-xl text-2xl \${ohneBuchung > 0 ? 'text-error bg-error/10' : 'text-on-surface-variant/20 bg-surface-container-high'}\`}>warning</span>
+        </div>
+      </div>
+
+      <div className="flex gap-4 flex-col lg:flex-row items-start">
+        {/* Left Column: Data Table Container */}
+        <div className="flex-1 w-full space-y-4">
+          <div className="flex items-center flex-wrap gap-2 mb-2 bg-surface-container-low p-2 rounded-2xl border border-outline-variant/20">
+            <div className="flex-1 flex items-center bg-surface-container-lowest rounded-xl pl-3 pr-2 py-1.5 focus-within:ring-2 ring-primary/30 min-w-[200px]">
+              <span className="material-symbols-outlined text-outline text-sm mr-2">search</span>
+              <input className="w-full bg-transparent border-none focus:ring-0 px-0 outline-none text-sm placeholder:text-outline" placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            
+            {/* Quick Actions Buttons */}
+            <div className="flex items-center gap-1">
+              <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors" title="Import" onClick={() => setShowImport(!showImport)}>
+                <span className="material-symbols-outlined text-[16px]">{showImport ? 'close' : 'upload_file'}</span> <span className="hidden sm:inline">{showImport ? 'Schließen' : 'Import'}</span>
+              </button>
+              <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors disabled:opacity-50" title="Sync" disabled={syncing} onClick={syncFromLists}>
+                <span className="material-symbols-outlined text-[16px]">{syncing ? 'hourglass_empty' : 'sync'}</span> <span className="hidden sm:inline">Sync</span>
+              </button>
+              {kinder.length > 1 && (
+                <button className={\`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-outline-variant/30 \${showDuplicates ? 'bg-primary text-white' : 'bg-white text-on-surface hover:bg-surface-container-high'} transition-colors\`} onClick={() => setShowDuplicates(!showDuplicates)}>
+                  <span className="material-symbols-outlined text-[16px]">content_copy</span> <span className="hidden sm:inline">Duplikate</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Import Panel overlay if active */}
+          {showImport && (
+            <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border-l-4 border-l-primary mb-4">
+              {/* Import UI logic translated cleanly */}
+              <div className="text-sm font-bold text-on-surface flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-base text-primary">upload_file</span>
+                Kinder-Stammliste importieren
+              </div>
+              <p className="text-xs text-on-surface-variant mb-4">
+                Excel-Datei hochladen und Spalten zuordnen. Duplikate werden automatisch übersprungen.
+              </p>
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all mb-4" />
+              
+              {importHeaders.length > 0 && (
+                <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                     <div>
+                       <label className="text-[10px] font-bold uppercase text-primary/80 mb-1 block">Nachname *</label>
+                       <select className="w-full text-xs rounded-lg border-none" value={importCols.nachname} onChange={e => setImportCols({ ...importCols, nachname: e.target.value })}><option value="">-</option>{importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}</select>
+                     </div>
+                     <div>
+                       <label className="text-[10px] font-bold uppercase text-primary/80 mb-1 block">Vorname *</label>
+                       <select className="w-full text-xs rounded-lg border-none" value={importCols.vorname} onChange={e => setImportCols({ ...importCols, vorname: e.target.value })}><option value="">-</option>{importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}</select>
+                     </div>
+                     <div>
+                       <label className="text-[10px] font-bold uppercase text-primary/80 mb-1 block">Klasse (opt)</label>
+                       <select className="w-full text-xs rounded-lg border-none" value={importCols.klasse} onChange={e => setImportCols({ ...importCols, klasse: e.target.value })}><option value="">-</option>{importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}</select>
+                     </div>
+                     <div>
+                       <label className="text-[10px] font-bold uppercase text-primary/80 mb-1 block">Name kombiniert</label>
+                       <select className="w-full text-xs rounded-lg border-none" value={importCols.name} onChange={e => setImportCols({ ...importCols, name: e.target.value, nachname:'', vorname:'' })}><option value="">-</option>{importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}</select>
+                     </div>
+                  </div>
+                  <button className="px-5 py-2 text-sm font-bold bg-primary text-on-primary rounded-xl shadow-sm hover:opacity-90 disabled:opacity-50" disabled={importing} onClick={executeImport}>
+                    {importing ? 'Importiere...' : \`\${importData.length} Kinder importieren\`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {showDuplicates && duplicates.length > 0 && (
+            <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border-2 border-amber-500/50 mb-4">
+              <div className="text-sm font-bold text-amber-600 flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined">warning</span> {duplicates.length} mögliche Duplikate
+              </div>
+              <div className="space-y-4">
+                {duplicates.map((g, i) => {
+                  const allEntries = [{ kind: g.kind, reason: 'Haupt-Eintrag' }, ...g.matches.map(m => ({ kind: m.kind, reason: m.reason }))];
+                  return (
+                    <div key={i} className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/10">
+                      <div className="text-[10px] font-black uppercase text-on-surface-variant mb-2">Gruppe {i + 1}</div>
+                      {allEntries.map((e, j) => (
+                        <div key={j} className="flex items-center gap-3 py-2 flex-wrap border-b border-dashed border-outline-variant/10 last:border-0">
+                          <strong className="text-sm w-48 truncate">{e.kind.vorname} {e.kind.nachname}</strong>
+                          <span className="text-xs bg-surface-container-high px-2 py-0.5 rounded">A: {parseInt(e.kind.anmeldungen_count)||0} | B: {parseInt(e.kind.buchungen_count)||0}</span>
+                          <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{e.reason}</span>
+                          <div className="ml-auto flex gap-1">
+                            {j>0 && <button className="px-2 py-1 bg-primary text-white text-[10px] font-bold rounded-lg" onClick={() => mergeKind(Math.min(g.kind.id, e.kind.id), Math.max(g.kind.id, e.kind.id))}>Merge</button>}
+                            <button className="px-2 py-1 bg-error text-white text-[10px] font-bold rounded-lg" onClick={() => deleteKind(e.kind.id)}>Löschen</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden text-sm">
+            {loading ? (
+               <div className="p-12 text-center"><Spinner /></div>
+            ) : (
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="bg-surface-container-high/30 border-b border-outline-variant/10">
+                    <th className="px-5 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('nachname')}>Name {sIcon('nachname')}</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('klasse')}>Klasse {sIcon('klasse')}</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-center cursor-pointer select-none" onClick={() => toggleSort('bloecke')}>Ferienblöcke {sIcon('bloecke')}</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-center">Buchungen</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-right">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/10">
+                  {filtered.map(k => {
+                    const isSelected = String(selectedKindId) === String(k.id);
+                    return (
+                    <tr key={k.id} className={\`hover:bg-surface-container-low transition-colors group cursor-pointer \${isSelected ? 'bg-primary/5' : ''}\`} onClick={() => setSelectedKindId(k.id)}>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar vorname={k.vorname} nachname={k.nachname} size="sm" />
+                          <span className={\`font-bold \${isSelected ? 'text-primary' : 'text-on-surface'}\`}>{k.nachname}, {k.vorname}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 font-medium text-on-surface-variant">{k.klasse || '—'}</td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="bg-secondary-container text-on-secondary-container px-2 py-1 rounded-md text-xs font-bold">{parseInt(k.block_count_a) || 0}</span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold">
+                           <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">A:{parseInt(k.anmeldungen_count)||0}</span>
+                           <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">B:{parseInt(k.buchungen_count)||0}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="material-symbols-outlined p-1.5 text-outline hover:text-primary hover:bg-surface-container-high rounded-lg text-lg" onClick={(e) => { e.stopPropagation(); startEdit(k); }}>edit</button>
+                          <button className="material-symbols-outlined p-1.5 text-outline hover:text-error hover:bg-error-container rounded-lg text-lg" onClick={(e) => { e.stopPropagation(); deleteKind(k.id); }}>delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  )})}
+                  {filtered.length === 0 && (
+                    <tr><td colSpan="5" className="p-8 text-center text-on-surface-variant font-medium">Keine Kinder gefunden.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            )}
+            <div className="px-6 py-4 bg-surface-container-low/30 border-t border-outline-variant/10 text-xs text-on-surface-variant font-medium text-center">
+               Zeige {filtered.length} Ergebnisse
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Detail Panel Drawer */}
+        <div className="w-full lg:w-96 shrink-0 lg:sticky lg:top-24">
+          {selectedKindId && akte ? (
+            <div className="bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden flex flex-col h-[calc(100vh-8rem)]">
+              {/* Profile Card Header */}
+              <div className="relative h-28 bg-gradient-to-br from-primary-container to-primary shrink-0">
+                <div className="absolute -bottom-8 left-6">
+                  <div className="border-4 border-surface-container-lowest rounded-2xl shadow-lg bg-surface-container-lowest">
+                    <Avatar vorname={akte.kind.vorname} nachname={akte.kind.nachname} size="lg" />
+                  </div>
+                </div>
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => startEdit(akte.kind)}>
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                  <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => setSelectedKindId(null)}>
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-12 px-6 pb-6 flex-1 overflow-y-auto space-y-8">
+                <div>
+                  <h3 className="text-2xl font-extrabold text-on-surface tracking-tight">{akte.kind.nachname}, {akte.kind.vorname}</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    {akte.kind.klasse && <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Klasse {akte.kind.klasse}</span>}
+                    <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+                    <span className="text-xs text-on-surface-variant font-medium">ID: #{akte.kind.id}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-surface-container-low rounded-xl p-3 text-center border border-outline-variant/5">
+                    <div className="text-xl font-bold text-primary">{akte.summary.total_anmeldungen}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Anmeldungen</div>
+                  </div>
+                  <div className="bg-surface-container-low rounded-xl p-3 text-center border border-outline-variant/5">
+                    <div className="text-xl font-bold text-emerald-600">{akte.summary.total_buchungen}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Buchungen</div>
+                  </div>
+                </div>
+
+                {akte.kind.notizen && (
+                  <div className="bg-amber-500/10 border-l-4 border-l-amber-500 p-3 rounded-r-xl">
+                    <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Notizen</p>
+                    <p className="text-sm text-amber-900">{akte.kind.notizen}</p>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-bold text-outline uppercase tracking-widest border-b border-outline-variant/10 pb-2">Verlauf / Enrollment</h4>
+                  {akte.blocks.length === 0 ? (
+                    <p className="text-xs text-on-surface-variant">Keine Einträge in den Listen vorhanden.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {akte.blocks.map(b => (
+                        <div key={b.ferienblock_id} className="p-3 bg-surface-container-low/50 rounded-xl border border-outline-variant/5">
+                          <div className="flex items-start gap-3 mb-2">
+                            <div className={\`mt-1 w-2 h-2 rounded-full shrink-0 \${b.match_status==='exact'||b.match_status==='fuzzy_accepted' ? 'bg-emerald-500' : 'bg-primary-container'}\`}></div>
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-on-surface leading-tight">{b.block_name}</p>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</p>
+                            </div>
+                            {b.klasse && <span className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-outline-variant/20">Kl. {b.klasse}</span>}
+                          </div>
+                          
+                          <div className="pl-5 grid grid-cols-2 gap-2 mt-2">
+                             <div className="bg-white rounded-lg p-2 text-center shadow-sm">
+                                <div className="text-[10px] font-bold text-primary">{b.anmeldungen.length} Tage (A)</div>
+                             </div>
+                             <div className="bg-white rounded-lg p-2 text-center shadow-sm">
+                                <div className="text-[10px] font-bold text-emerald-600">{b.buchungen.length} Tage (B)</div>
+                             </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full min-h-[400px] border-2 border-dashed border-outline-variant/30 rounded-2xl flex flex-col items-center justify-center p-10 text-center bg-surface-container-lowest/50">
+               <span className="material-symbols-outlined text-5xl text-outline-variant/50 mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>person_search</span>
+               <p className="text-sm font-bold text-on-surface">Akte auswählen</p>
+               <p className="text-xs text-on-surface-variant mt-1">Klicke auf ein Kind in der Liste, um das vollständige Profil und den Enrollment-Verlauf zu sehen.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Edit Modal (Tailwind Modernized) */}
+      {editKind && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setEditKind(null)}>
+          <div className="bg-surface-container-lowest rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-outline-variant/20" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-2"><span className="material-symbols-outlined text-primary">edit</span> Kind bearbeiten</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">Vorname</label>
+                  <input className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm" value={editForm.vorname} onChange={e => setEditForm({ ...editForm, vorname: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">Nachname</label>
+                  <input className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm" value={editForm.nachname} onChange={e => setEditForm({ ...editForm, nachname: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">Klasse (optional)</label>
+                <input className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} placeholder="Klasse eintragen" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">System-Notizen</label>
+                <textarea className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm min-h-[80px]" value={editForm.notizen} onChange={e => setEditForm({ ...editForm, notizen: e.target.value })} placeholder="Zusätzliche Infos, Allergien etc." />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-8">
+              <button className="px-5 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors" onClick={() => setEditKind(null)}>Abbrechen</button>
+              <button className="px-6 py-2.5 text-sm font-bold bg-primary text-on-primary border border-primary-container/20 rounded-xl shadow-sm hover:opacity-90 hover:scale-[1.02] transition-all" onClick={saveEdit}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+`;
+
+// ========================================================
+// 3. KLASSENPAGE
+// ========================================================
+const klassenReturn = `return (
+    <div className="pb-20 space-y-8 max-w-6xl mx-auto">
+      <div>
+        <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Verwaltung</span>
+        <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Klassen & Einteilung</h2>
+        <p className="text-sm text-on-surface-variant mt-1">Übersicht aller Klassen, Hortgruppen und unzugeordneten Kinder.</p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <select className="bg-surface-container-lowest text-sm border border-outline-variant/20 rounded-xl focus:ring-2 focus:ring-primary outline-none px-4 py-2.5 font-bold text-on-surface shadow-sm cursor-pointer" value={blockId} onChange={e => setBlockId(e.target.value)}>
+          <option value="">Block wählen</option>
+          {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+        {blockId && !loading && (
+          <button className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2" onClick={handleGenerateKlassen}>
+            <span className="material-symbols-outlined text-[18px]">build</span> Klassen aus Block generieren
+          </button>
+        )}
+      </div>
+
+      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
+
+      {!loading && stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Klassen gesamt</div>
+            <div className="text-2xl font-extrabold text-primary">{stats.totalKlassen}</div>
+          </div>
+          <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Kinder in Klassen</div>
+            <div className="text-2xl font-extrabold text-emerald-600">{stats.kinderZugeordnet}</div>
+          </div>
+          <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Keine Klasse (Leer)</div>
+            <div className={\`text-2xl font-extrabold \${stats.kinderOhne > 0 ? 'text-amber-500' : 'text-on-surface-variant/40'}\`}>{stats.kinderOhne}</div>
+          </div>
+          <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Invalide (z.B. Test)</div>
+            <div className={\`text-2xl font-extrabold \${stats.invalidKlassen > 0 ? 'text-error' : 'text-on-surface-variant/40'}\`}>{stats.invalidKlassen}</div>
+          </div>
+        </div>
+      )}
+
+      {!loading && !blockId && (
+        <div className="bg-surface-container-lowest rounded-2xl p-12 text-center border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center">
+          <span className="material-symbols-outlined text-6xl text-on-surface-variant/30 mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>grid_view</span>
+          <p className="text-xl font-bold text-on-surface mb-2">Block für Klassenauswertung wählen</p>
+          <p className="text-sm text-on-surface-variant/80 max-w-sm">Bitte wähle oben einen Ferienblock, um die Klassenzuteilung der dort registrierten Kinder zu analysieren.</p>
+        </div>
+      )}
+
+      {!loading && blockId && klassen.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {klassen.map(kl => {
+            const isEmpty = !kl.name || kl.name.trim() === '';
+            const isInvalid = !isEmpty && kl.name.toLowerCase().includes('abgemeldet') || kl.name.toLowerCase().includes('test');
+            // Card Styles
+            let cardClasses = 'bg-surface-container-lowest border-outline-variant/10';
+            let headerClasses = 'bg-primary-container text-white';
+            if (isEmpty) {
+               cardClasses = 'bg-amber-50 border-amber-200';
+               headerClasses = 'bg-amber-500 text-white';
+            } else if (isInvalid) {
+               cardClasses = 'bg-error-container/20 border-error-container/50';
+               headerClasses = 'bg-error text-white';
+            }
+
+            return (
+              <div key={kl.name || 'unbekannt'} className={\`rounded-2xl shadow-sm border overflow-hidden flex flex-col \${cardClasses}\`}>
+                <div className={\`px-5 py-3 \${headerClasses} flex justify-between items-center\`}>
+                  <h3 className="font-bold text-lg">{isEmpty ? 'Keine Klasse angegeben' : kl.name}</h3>
+                  <span className="bg-white/20 text-white px-2 py-0.5 rounded text-xs font-bold">{kl.kinder.length} Kinder</span>
+                </div>
+                <div className="p-4 flex-1">
+                  <div className="overflow-y-auto max-h-[300px] pr-2 space-y-2">
+                    {kl.kinder.map(k => (
+                      <div key={k.id} className="flex border-b border-outline-variant/5 pb-2 last:border-0 rounded-lg p-2 hover:bg-black/5 items-center gap-3 transition-colors">
+                        <Avatar vorname={k.vorname} nachname={k.nachname} size="sm" />
+                        <span className="text-sm font-medium text-on-surface">{k.vorname} {k.nachname}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+`;
+
+let appJsx = fs.readFileSync('c:/Prüfer/src/App.jsx', 'utf8');
+
+appJsx = extractAndReplace(appJsx, 'TagesansichtPage', tagesansichtReturn);
+appJsx = extractAndReplace(appJsx, 'KinderVerzeichnis', kinderReturn);
+appJsx = extractAndReplace(appJsx, 'KlassenPage', klassenReturn);
+
+fs.writeFileSync('c:/Prüfer/src/App.jsx', appJsx, 'utf8');
+console.log('REPLACEMENTS SUCCESSFUL');

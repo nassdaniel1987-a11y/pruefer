@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+
+<html class="light" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prüfer - Klassenübersicht</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5d5c71",
+                        "surface-container-high": "#ebe7ec",
+                        "secondary-fixed": "#e3e0f9",
+                        "on-surface": "#1c1b1f",
+                        "primary": "#5a598b",
+                        "background": "#fcf8fd",
+                        "inverse-surface": "#313034",
+                        "surface-tint": "#5a598b",
+                        "surface-variant": "#e5e1e6",
+                        "on-background": "#1c1b1f",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#161543",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#020026",
+                        "primary-container": "#7372a5",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#dcc578",
+                        "outline": "#787680",
+                        "on-tertiary-fixed-variant": "#554603",
+                        "on-tertiary-container": "#4c3e00",
+                        "on-primary-fixed-variant": "#424271",
+                        "tertiary-fixed": "#f9e191",
+                        "surface-container": "#f0edf1",
+                        "surface-bright": "#fcf8fd",
+                        "primary-fixed": "#e2dfff",
+                        "on-secondary-fixed-variant": "#464559",
+                        "surface-container-low": "#f6f2f7",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#1a1a2c",
+                        "surface-dim": "#dcd9dd",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#221b00",
+                        "tertiary-container": "#bfaa60",
+                        "surface-container-highest": "#e5e1e6",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#6e5d1b",
+                        "secondary-fixed-dim": "#c6c4dd",
+                        "outline-variant": "#c8c5d0",
+                        "inverse-primary": "#c3c1f9",
+                        "secondary-container": "#e0ddf6",
+                        "inverse-on-surface": "#f3eff4",
+                        "surface": "#fcf8fd",
+                        "on-surface-variant": "#47464f",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#626076",
+                        "primary-fixed-dim": "#c3c1f9",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased">
+<!-- SideNavBar (Authority: JSON & Design System) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-[#f6f2f7] dark:bg-slate-900 flex flex-col py-6 px-4 z-50">
+<div class="mb-10 px-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-[#5a598b] dark:text-[#7372a5] leading-tight">Prüfer Academy</h1>
+<p class="text-[10px] font-medium uppercase tracking-[0.05em] text-slate-500">Academic Audit</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Nav Item: Overview -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 font-medium font-plus-jakarta text-label-md uppercase tracking-[0.05em] hover:text-[#7372a5] transition-all translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<!-- Nav Item: Klassen (ACTIVE) -->
+<a class="flex items-center gap-3 px-4 py-3 text-[#5a598b] dark:text-white font-bold bg-white dark:bg-slate-800 rounded-lg shadow-sm font-plus-jakarta text-label-md uppercase tracking-[0.05em]" href="#">
+<span class="material-symbols-outlined" data-icon="school" style="font-variation-settings: 'FILL' 1;">school</span>
+<span>Klassen</span>
+</a>
+<!-- Nav Item: Students -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 font-medium font-plus-jakarta text-label-md uppercase tracking-[0.05em] hover:text-[#7372a5] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Students</span>
+</a>
+<!-- Nav Item: Schedule -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 font-medium font-plus-jakarta text-label-md uppercase tracking-[0.05em] hover:text-[#7372a5] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span>Schedule</span>
+</a>
+<!-- Nav Item: Archive -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 font-medium font-plus-jakarta text-label-md uppercase tracking-[0.05em] hover:text-[#7372a5] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Archive</span>
+</a>
+</nav>
+<div class="mt-auto space-y-2 border-t border-outline-variant/10 pt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 font-medium text-label-md uppercase tracking-[0.05em] hover:text-[#7372a5]" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 font-medium text-label-md uppercase tracking-[0.05em] hover:text-error" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</aside>
+<main class="ml-64 min-h-screen">
+<!-- TopNavBar (Authority: JSON & Design System) -->
+<header class="flex justify-between items-center px-8 w-full sticky top-0 z-40 h-16 bg-[#fcf8fd] dark:bg-slate-950">
+<div class="flex items-center gap-8">
+<h2 class="text-xl font-bold text-[#5a598b] dark:text-[#7372a5] tracking-tight">Klassenübersicht</h2>
+<!-- Search Bar (on_right logic in shell, positioned within header) -->
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-body-md focus:ring-2 focus:ring-primary-container/20 placeholder:text-slate-400" placeholder="Suche nach Klassen oder Lehrern..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Filter Dropdown -->
+<div class="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-lg text-body-md font-medium text-on-surface-variant cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span>Filter nach Ferienblock</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant/20">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden ml-2 ring-2 ring-primary/10">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="professional headshot of a school administrator in a clean modern office environment with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2Y4kUu1EUv8BPufm9HZnINhCsrtAIqfx98wVKcXWjSXFPmHZtinWsFOBXJxDhmSQKmSdrp-v0OU1gRSvE79nmBtVb9Cwut_4Pm96W3-ThT_ZHiqygeOKIC3vdzTsC63cd6zjTWpUGSYs-xeNwPTlfLh-tB7WUvESpT7iPtMHL6d6Q4F1SzL9MtGy7PYn4hDG8VKju9-nSMAGgzMvaCDLsLzhCAQ11AapieNBaA2oFXvPX1lU_0UXT87-XhKDOtktc9CQLrezFjQ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<div class="p-8 max-w-[1600px] mx-auto space-y-10">
+<!-- Anchor Element: Welcome / Stats Row -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="md:col-span-1 bg-primary-container p-6 rounded-xl text-white relative overflow-hidden">
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-10 pointer-events-none">school</span>
+<p class="text-white/80 font-medium text-label-md uppercase tracking-wider mb-1">Aktive Klassen</p>
+<h3 class="text-4xl font-extrabold">07</h3>
+<p class="mt-4 text-sm text-white/70">Gesamtanzahl Schüler: 164</p>
+</div>
+<!-- Decorative / Informative spacers -->
+<div class="md:col-span-3 grid grid-cols-3 gap-6">
+<div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-center">
+<span class="text-tertiary font-bold text-2xl">84%</span>
+<span class="text-on-surface-variant text-sm font-medium">Belegung Herbst</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-center">
+<span class="text-primary font-bold text-2xl">92%</span>
+<span class="text-on-surface-variant text-sm font-medium">Belegung Winter</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-center border-l-4 border-tertiary-container">
+<span class="text-on-surface font-bold text-sm uppercase tracking-tight">Nächster Block</span>
+<span class="text-on-surface-variant text-xl">Osternferien</span>
+</div>
+</div>
+</section>
+<!-- Class Cards Bento Grid -->
+<section class="space-y-6">
+<div class="flex justify-between items-end">
+<h3 class="text-2xl font-bold text-[#5a598b] tracking-tight">Klassenübersicht</h3>
+<span class="text-on-surface-variant text-sm font-medium">Stand: April 2024</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Class Card 1a -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:translate-y-[-4px] group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-black text-on-surface group-hover:text-primary transition-colors">Klasse 1a</h4>
+<p class="text-on-surface-variant text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">person</span> Fr. Wagner
+                                </p>
+</div>
+<span class="bg-surface-container-low px-3 py-1 rounded-full text-xs font-bold text-primary">22 Kinder</span>
+</div>
+<div class="space-y-3">
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+<span>Belegung</span>
+<span>75%</span>
+</div>
+<div class="flex h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="bg-tertiary-container w-[75%]"></div>
+<div class="bg-primary-container/20 w-[25%]"></div>
+</div>
+</div>
+<div class="flex gap-1">
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center" title="Herbst: 18">
+<div class="w-1.5 bg-primary-container h-[80%] rounded-full"></div>
+</div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center" title="Winter: 20">
+<div class="w-1.5 bg-primary-container h-[90%] rounded-full"></div>
+</div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center" title="Ostern: 15">
+<div class="w-1.5 bg-primary-container h-[65%] rounded-full"></div>
+</div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center" title="Sommer: 22">
+<div class="w-1.5 bg-primary-container h-[100%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Class Card 1b -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:translate-y-[-4px] group">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-black text-on-surface group-hover:text-primary transition-colors">Klasse 1b</h4>
+<p class="text-on-surface-variant text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">person</span> Hr. Schmidt
+                                </p>
+</div>
+<span class="bg-surface-container-low px-3 py-1 rounded-full text-xs font-bold text-primary">20 Kinder</span>
+</div>
+<div class="space-y-3">
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+<span>Belegung</span>
+<span>60%</span>
+</div>
+<div class="flex h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="bg-tertiary-container w-[60%]"></div>
+</div>
+</div>
+<div class="flex gap-1">
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[40%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[55%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[85%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[70%] rounded-full"></div></div>
+</div>
+</div>
+</div>
+<!-- Class Card 2a -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:translate-y-[-4px] group border-l-4 border-primary">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-black text-on-surface group-hover:text-primary transition-colors">Klasse 2a</h4>
+<p class="text-on-surface-variant text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">person</span> Fr. Becker
+                                </p>
+</div>
+<span class="bg-primary-container px-3 py-1 rounded-full text-xs font-bold text-white">25 Kinder</span>
+</div>
+<div class="space-y-3">
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+<span>Belegung</span>
+<span>98%</span>
+</div>
+<div class="flex h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="bg-error w-[98%]"></div>
+</div>
+</div>
+<div class="flex gap-1">
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[95%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[100%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[92%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[98%] rounded-full"></div></div>
+</div>
+</div>
+</div>
+<!-- Class Card 2b (SELECTED STATE MOCKED) -->
+<div class="bg-surface-container-lowest p-6 rounded-xl ring-2 ring-primary transition-all hover:translate-y-[-4px] group relative shadow-lg">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Ausgewählt</div>
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-black text-on-surface">Klasse 2b</h4>
+<p class="text-on-surface-variant text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">person</span> Hr. Lehmann
+                                </p>
+</div>
+<span class="bg-surface-container-low px-3 py-1 rounded-full text-xs font-bold text-primary">24 Kinder</span>
+</div>
+<div class="space-y-3">
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+<span>Belegung</span>
+<span>82%</span>
+</div>
+<div class="flex h-1.5 w-full bg-surface-container-low rounded-full overflow-hidden">
+<div class="bg-tertiary-container w-[82%]"></div>
+</div>
+</div>
+<div class="flex gap-1">
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[75%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[88%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[60%] rounded-full"></div></div>
+<div class="h-8 flex-1 bg-surface-container-low rounded-sm flex items-center justify-center"><div class="w-1.5 bg-primary-container h-[95%] rounded-full"></div></div>
+</div>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:translate-y-[-4px] group">
+<div class="flex justify-between items-start mb-6">
+<div><h4 class="text-2xl font-black text-on-surface">Klasse 3a</h4><p class="text-on-surface-variant text-sm">Fr. Meyer</p></div>
+<span class="bg-surface-container-low px-3 py-1 rounded-full text-xs font-bold text-primary">26 Kinder</span>
+</div>
+<div class="flex gap-1 h-12 items-end">
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[40%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[60%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[55%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[80%]"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:translate-y-[-4px] group">
+<div class="flex justify-between items-start mb-6">
+<div><h4 class="text-2xl font-black text-on-surface">Klasse 3b</h4><p class="text-on-surface-variant text-sm">Hr. Fischer</p></div>
+<span class="bg-surface-container-low px-3 py-1 rounded-full text-xs font-bold text-primary">23 Kinder</span>
+</div>
+<div class="flex gap-1 h-12 items-end">
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[70%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[75%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[80%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[65%]"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:translate-y-[-4px] group">
+<div class="flex justify-between items-start mb-6">
+<div><h4 class="text-2xl font-black text-on-surface">Klasse 4a</h4><p class="text-on-surface-variant text-sm">Fr. Klein</p></div>
+<span class="bg-surface-container-low px-3 py-1 rounded-full text-xs font-bold text-primary">24 Kinder</span>
+</div>
+<div class="flex gap-1 h-12 items-end">
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[90%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[95%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[100%]"></div>
+<div class="bg-surface-container-low flex-1 rounded-t-md h-[10%]"></div>
+</div>
+</div>
+<!-- Empty Add Card -->
+<div class="bg-surface-container-low p-6 rounded-xl border-2 border-dashed border-outline-variant flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-4xl text-outline-variant">add_circle</span>
+<span class="text-sm font-bold text-outline-variant uppercase tracking-widest">Neue Klasse</span>
+</div>
+</div>
+</section>
+<!-- Student List for Selected Class (No-Line Table Pattern) -->
+<section class="space-y-6">
+<div class="flex justify-between items-center bg-surface-container-low p-4 rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
+<span class="text-xl font-bold text-primary">2b</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-on-surface">Schülerliste: Klasse 2b</h3>
+<p class="text-sm text-on-surface-variant font-medium">Klassenlehrer: Hr. Lehmann</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="bg-white text-primary text-sm font-bold px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition-colors">Export PDF</button>
+<button class="bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm hover:bg-primary/90 transition-colors">Schüler hinzufügen</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500">Name</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500">Status</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500 text-center">Ferienblöcke</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500">Verpflegung</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-[0.1em] text-slate-500 text-right">Aktion</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-secondary-container rounded-full flex items-center justify-center text-[10px] font-bold text-on-secondary-container">AL</div>
+<span class="text-sm font-semibold text-on-surface">Lukas, Amelie</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-tertiary-container text-on-tertiary-container uppercase tracking-tighter">Angemeldet</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;" title="Herbst">eco</span>
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;" title="Winter">ac_unit</span>
+<span class="material-symbols-outlined text-outline-variant/30 text-lg" title="Ostern">nest_eco_leaf</span>
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;" title="Sommer">sunny</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-medium text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary-container">restaurant</span> Normal
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-outline-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-secondary-container rounded-full flex items-center justify-center text-[10px] font-bold text-on-secondary-container">MB</div>
+<span class="text-sm font-semibold text-on-surface">Bauer, Max</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-tertiary-container text-on-tertiary-container uppercase tracking-tighter">Angemeldet</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<span class="material-symbols-outlined text-outline-variant/30 text-lg">eco</span>
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">ac_unit</span>
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">nest_eco_leaf</span>
+<span class="material-symbols-outlined text-outline-variant/30 text-lg">sunny</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-bold text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">compost</span> Vegetarisch
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-outline-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-secondary-container rounded-full flex items-center justify-center text-[10px] font-bold text-on-secondary-container">SH</div>
+<span class="text-sm font-semibold text-on-surface">Hofmann, Sarah</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-error-container text-on-error-container uppercase tracking-tighter">Fehlend</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<span class="material-symbols-outlined text-outline-variant/30 text-lg">eco</span>
+<span class="material-symbols-outlined text-outline-variant/30 text-lg">ac_unit</span>
+<span class="material-symbols-outlined text-outline-variant/30 text-lg">nest_eco_leaf</span>
+<span class="material-symbols-outlined text-outline-variant/30 text-lg">sunny</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-bold text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">warning</span> Allergien
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-outline-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-secondary-container rounded-full flex items-center justify-center text-[10px] font-bold text-on-secondary-container">JZ</div>
+<span class="text-sm font-semibold text-on-surface">Zimmermann, Jonas</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-tertiary-container text-on-tertiary-container uppercase tracking-tighter">Angemeldet</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">ac_unit</span>
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">nest_eco_leaf</span>
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">sunny</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs font-medium text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-tertiary-container">restaurant</span> Normal
+                                    </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-outline-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="p-4 bg-surface-container-low/30 border-t border-surface-container-low flex justify-between items-center text-xs text-on-surface-variant font-medium">
+<span>Zeige 4 von 24 Schülern</span>
+<div class="flex items-center gap-4">
+<span class="cursor-pointer hover:text-primary">Zurück</span>
+<div class="flex gap-1">
+<span class="w-6 h-6 bg-primary text-white flex items-center justify-center rounded">1</span>
+<span class="w-6 h-6 flex items-center justify-center rounded hover:bg-surface-container-low">2</span>
+<span class="w-6 h-6 flex items-center justify-center rounded hover:bg-surface-container-low">3</span>
+</div>
+<span class="cursor-pointer hover:text-primary">Weiter</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

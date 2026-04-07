@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+
+<html class="light" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e5e1e6",
+                        "on-secondary-fixed": "#1a1a2c",
+                        "on-tertiary-container": "#4c3e00",
+                        "surface-variant": "#e5e1e6",
+                        "on-tertiary-fixed": "#221b00",
+                        "on-secondary-fixed-variant": "#464559",
+                        "background": "#fcf8fd",
+                        "primary-fixed-dim": "#c3c1f9",
+                        "surface-container-low": "#f6f2f7",
+                        "on-error": "#ffffff",
+                        "secondary": "#5d5c71",
+                        "primary-container": "#7372a5",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#161543",
+                        "inverse-on-surface": "#f3eff4",
+                        "error-container": "#ffdad6",
+                        "primary": "#5a598b",
+                        "surface-bright": "#fcf8fd",
+                        "inverse-surface": "#313034",
+                        "surface-container": "#f0edf1",
+                        "primary-fixed": "#e2dfff",
+                        "tertiary-fixed": "#f9e191",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#47464f",
+                        "tertiary-fixed-dim": "#dcc578",
+                        "on-tertiary-fixed-variant": "#554603",
+                        "outline-variant": "#c8c5d0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#626076",
+                        "tertiary-container": "#bfaa60",
+                        "outline": "#787680",
+                        "secondary-fixed-dim": "#c6c4dd",
+                        "tertiary": "#6e5d1b",
+                        "error": "#ba1a1a",
+                        "on-surface": "#1c1b1f",
+                        "secondary-fixed": "#e3e0f9",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1c1b1f",
+                        "inverse-primary": "#c3c1f9",
+                        "on-primary-fixed-variant": "#424271",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#e0ddf6",
+                        "on-primary-container": "#020026",
+                        "surface-dim": "#dcd9dd",
+                        "surface-tint": "#5a598b",
+                        "surface-container-high": "#ebe7ec",
+                        "surface": "#fcf8fd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- SideNavBar Component -->
+<aside class="bg-[#7372A5] dark:bg-[#1c1b1f] h-screen w-64 fixed left-0 top-0 shadow-2xl flex flex-col py-6 z-20">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-md">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<h1 class="text-xl font-bold text-white tracking-tight">Prüfer</h1>
+<p class="text-[10px] text-white/60 font-medium tracking-[0.2em] uppercase">Precision Audit</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors duration-200 font-plus-jakarta text-sm font-medium tracking-wide rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Active State: Abgleich -->
+<a class="flex items-center gap-3 px-4 py-3 bg-white/10 text-white font-bold border-r-4 border-white font-plus-jakarta text-sm tracking-wide rounded-l-lg" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Abgleich</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors duration-200 font-plus-jakarta text-sm font-medium tracking-wide rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span>Berichte</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors duration-200 font-plus-jakarta text-sm font-medium tracking-wide rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span>Dokumentation</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors duration-200 font-plus-jakarta text-sm font-medium tracking-wide rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Einstellungen</span>
+</a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full bg-white text-primary font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all duration-300 scale-95 active:scale-90">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+                Neuer Abgleich
+            </button>
+</div>
+</aside>
+<!-- TopAppBar Component -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-10 bg-[#fcf8fd] dark:bg-[#1c1b1f] flex justify-between items-center px-8 h-16 transition-all duration-300">
+<div class="flex items-center gap-4">
+<span class="text-[#5a598b] font-semibold font-plus-jakarta text-lg">Abgleich-Tool</span>
+<div class="h-4 w-px bg-outline-variant/30"></div>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-sm">search</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-1.5 text-sm focus:ring-2 focus:ring-primary/20 w-64" placeholder="Transaktion suchen..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="text-[#1c1b1f]/60 hover:bg-[#f6f2f7] p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-[#1c1b1f]/60 hover:bg-[#f6f2f7] p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+<img alt="Auditor Profile" class="w-8 h-8 rounded-full border-2 border-primary-container" data-alt="Professional man in a suit with a kind expression, neutral office background, sharp corporate portrait photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZ85DFedgMcS_VTROj749nvMgXxI2s0Al7l_og7chm1gSeqa0tLtbhymR0o6H8UyocAtb1fS0642ctl2SaGrqH4DT1bKGYk9OJxjFS_Va-9wIWjAASD2DrgHyhrOogKxy_jmvVQoQzwY4BrqibY-UFdKppZpVMGUdyz9ZBluLLcZSFyD6Lg7Q1tNTQOB-TGPioT3eH0SlpNtTNdkZ2zRpl2PeHP7rIij9H7MjK-XUzDqkZXtb_kzhs7CVnQSXndxyEYi6mJ1gd1A"/>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="ml-64 pt-24 pb-12 px-8 min-h-screen">
+<!-- Wizard Stepper -->
+<div class="max-w-4xl mx-auto mb-12">
+<div class="flex items-center justify-between relative">
+<div class="absolute top-5 left-0 w-full h-0.5 bg-surface-container-highest -z-10"></div>
+<!-- Step 1 -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-xs font-bold text-primary tracking-wide uppercase">Daten laden</span>
+</div>
+<!-- Step 2 (Active) -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-10 h-10 bg-primary-container text-white rounded-full flex items-center justify-center shadow-xl ring-4 ring-primary-container/20">
+<span class="text-sm font-bold">2</span>
+</div>
+<span class="text-xs font-bold text-on-surface tracking-wide uppercase">Abgleich prüfen</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-2">
+<div class="w-10 h-10 bg-surface-container-highest text-outline rounded-full flex items-center justify-center">
+<span class="text-sm font-bold">3</span>
+</div>
+<span class="text-xs font-medium text-outline tracking-wide uppercase">Abschließen</span>
+</div>
+</div>
+</div>
+<!-- Stats Summary Bar -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+<div class="bg-surface-container-lowest p-5 rounded-xl flex items-center gap-4 transition-all hover:bg-surface-container-low group">
+<div class="w-12 h-12 bg-tertiary-container/10 text-tertiary rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div>
+<p class="text-2xl font-bold text-on-surface">45</p>
+<p class="text-[11px] font-bold text-outline tracking-wide uppercase">Exakte Matches</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl flex items-center gap-4 transition-all hover:bg-surface-container-low group">
+<div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div>
+<p class="text-2xl font-bold text-on-surface">12</p>
+<p class="text-[11px] font-bold text-outline tracking-wide uppercase">Unsichere</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl flex items-center gap-4 transition-all hover:bg-surface-container-low group">
+<div class="w-12 h-12 bg-secondary-container text-secondary rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">input</span>
+</div>
+<div>
+<p class="text-2xl font-bold text-on-surface">5</p>
+<p class="text-[11px] font-bold text-outline tracking-wide uppercase">Nur in Liste A</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl flex items-center gap-4 transition-all hover:bg-surface-container-low group">
+<div class="w-12 h-12 bg-secondary-container text-secondary rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">output</span>
+</div>
+<div>
+<p class="text-2xl font-bold text-on-surface">3</p>
+<p class="text-[11px] font-bold text-outline tracking-wide uppercase">Nur in Liste B</p>
+</div>
+</div>
+</section>
+<!-- Filters -->
+<div class="flex items-center justify-between mb-6 bg-surface-container-low p-4 rounded-xl">
+<div class="flex items-center gap-4">
+<div class="flex flex-col gap-1">
+<label class="text-[10px] font-bold text-outline uppercase ml-1">Score Bereich</label>
+<select class="bg-surface-container-lowest border-none rounded-lg text-sm px-4 py-2 ring-1 ring-outline-variant/15 focus:ring-primary/40 min-w-[180px]">
+<option>Alle Scores</option>
+<option>Hoch (90-100%)</option>
+<option>Mittel (60-89%)</option>
+<option>Niedrig (0-59%)</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-[10px] font-bold text-outline uppercase ml-1">Status</label>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg">Alle</button>
+<button class="px-4 py-2 bg-surface-container-lowest text-on-surface text-xs font-bold rounded-lg ring-1 ring-outline-variant/15 hover:bg-white">Offen</button>
+<button class="px-4 py-2 bg-surface-container-lowest text-on-surface text-xs font-bold rounded-lg ring-1 ring-outline-variant/15 hover:bg-white">Geprüft</button>
+</div>
+</div>
+</div>
+<button class="flex items-center gap-2 text-primary font-bold text-sm hover:underline">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                Erweiterte Filter
+            </button>
+</div>
+<!-- Match Cards List -->
+<div class="space-y-4">
+<!-- Match Card 1: High Confidence -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5 border-l-4 border-tertiary-container flex items-center justify-between relative group">
+<div class="flex-1 grid grid-cols-[1fr,auto,1fr] items-center gap-12">
+<!-- Liste A -->
+<div class="space-y-1">
+<span class="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste A: ERP System</span>
+<h3 class="text-lg font-bold text-on-surface">TechSolutions GmbH</h3>
+<div class="flex gap-3 text-xs text-outline font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">category</span> Hardware</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">calendar_today</span> 12.05.2023</span>
+</div>
+</div>
+<!-- Center Connection -->
+<div class="flex flex-col items-center">
+<div class="h-px w-24 bg-gradient-to-r from-primary/10 via-tertiary-container to-primary/10 mb-2"></div>
+<div class="bg-tertiary-container text-on-tertiary-container font-bold text-sm px-4 py-1.5 rounded-full shadow-sm">
+                            98% Match
+                        </div>
+</div>
+<!-- Liste B -->
+<div class="space-y-1 text-right">
+<span class="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste B: Bank-Export</span>
+<h3 class="text-lg font-bold text-on-surface">TechSolutions GMBH</h3>
+<div class="flex gap-3 text-xs text-outline font-medium justify-end">
+<span class="flex items-center gap-1">Zahlungseingang <span class="material-symbols-outlined text-xs">payments</span></span>
+<span class="flex items-center gap-1">Ref: #8892 <span class="material-symbols-outlined text-xs">tag</span></span>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="ml-12 flex items-center gap-3">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-error border-2 border-error/10 hover:bg-error/5 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+<button class="bg-primary text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-primary/20 transition-all">
+                        Akzeptieren
+                    </button>
+</div>
+</div>
+<!-- Match Card 2: Medium Confidence -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5 border-l-4 border-amber-400 flex items-center justify-between relative group">
+<div class="flex-1 grid grid-cols-[1fr,auto,1fr] items-center gap-12">
+<!-- Liste A -->
+<div class="space-y-1">
+<span class="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste A: ERP System</span>
+<h3 class="text-lg font-bold text-on-surface">Dr. Müller Consulting</h3>
+<div class="flex gap-3 text-xs text-outline font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">category</span> Dienstleistung</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">calendar_today</span> 14.05.2023</span>
+</div>
+</div>
+<!-- Center Connection -->
+<div class="flex flex-col items-center">
+<div class="h-px w-24 bg-gradient-to-r from-primary/10 via-amber-400 to-primary/10 mb-2"></div>
+<div class="bg-amber-100 text-amber-800 font-bold text-sm px-4 py-1.5 rounded-full shadow-sm">
+                            72% Match
+                        </div>
+</div>
+<!-- Liste B -->
+<div class="space-y-1 text-right">
+<span class="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste B: Bank-Export</span>
+<h3 class="text-lg font-bold text-on-surface">Mueller Cons. Inc.</h3>
+<div class="flex gap-3 text-xs text-outline font-medium justify-end">
+<span class="flex items-center gap-1">Überweisung <span class="material-symbols-outlined text-xs">payments</span></span>
+<span class="flex items-center gap-1">Ref: #1022 <span class="material-symbols-outlined text-xs">tag</span></span>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="ml-12 flex items-center gap-3">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-error border-2 border-error/10 hover:bg-error/5 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+<button class="bg-primary text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-primary/20 transition-all">
+                        Akzeptieren
+                    </button>
+</div>
+</div>
+<!-- Match Card 3: Low Confidence -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5 border-l-4 border-error flex items-center justify-between relative group opacity-90">
+<div class="flex-1 grid grid-cols-[1fr,auto,1fr] items-center gap-12">
+<!-- Liste A -->
+<div class="space-y-1">
+<span class="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste A: ERP System</span>
+<h3 class="text-lg font-bold text-on-surface">Global Logistics AG</h3>
+<div class="flex gap-3 text-xs text-outline font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">category</span> Logistik</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">calendar_today</span> 10.05.2023</span>
+</div>
+</div>
+<!-- Center Connection -->
+<div class="flex flex-col items-center">
+<div class="h-px w-24 bg-gradient-to-r from-primary/10 via-error to-primary/10 mb-2"></div>
+<div class="bg-error-container text-on-error-container font-bold text-sm px-4 py-1.5 rounded-full shadow-sm">
+                            45% Match
+                        </div>
+</div>
+<!-- Liste B -->
+<div class="space-y-1 text-right">
+<span class="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste B: Bank-Export</span>
+<h3 class="text-lg font-bold text-on-surface">Logistik Zentrale Sued</h3>
+<div class="flex gap-3 text-xs text-outline font-medium justify-end">
+<span class="flex items-center gap-1">Lastschrift <span class="material-symbols-outlined text-xs">payments</span></span>
+<span class="flex items-center gap-1">Ref: #4401 <span class="material-symbols-outlined text-xs">tag</span></span>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="ml-12 flex items-center gap-3">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-error border-2 border-error/10 hover:bg-error/5 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+<button class="bg-primary text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-primary/20 transition-all">
+                        Akzeptieren
+                    </button>
+</div>
+</div>
+<!-- Match Card 4: High Confidence -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5 border-l-4 border-tertiary-container flex items-center justify-between relative group">
+<div class="flex-1 grid grid-cols-[1fr,auto,1fr] items-center gap-12">
+<!-- Liste A -->
+<div class="space-y-1">
+<span class="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste A: ERP System</span>
+<h3 class="text-lg font-bold text-on-surface">Werbeagentur Schmidt</h3>
+<div class="flex gap-3 text-xs text-outline font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">category</span> Marketing</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">calendar_today</span> 15.05.2023</span>
+</div>
+</div>
+<!-- Center Connection -->
+<div class="flex flex-col items-center">
+<div class="h-px w-24 bg-gradient-to-r from-primary/10 via-tertiary-container to-primary/10 mb-2"></div>
+<div class="bg-tertiary-container text-on-tertiary-container font-bold text-sm px-4 py-1.5 rounded-full shadow-sm">
+                            92% Match
+                        </div>
+</div>
+<!-- Liste B -->
+<div class="space-y-1 text-right">
+<span class="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste B: Bank-Export</span>
+<h3 class="text-lg font-bold text-on-surface">Schmidt Werbeagentur</h3>
+<div class="flex gap-3 text-xs text-outline font-medium justify-end">
+<span class="flex items-center gap-1">Zahlung <span class="material-symbols-outlined text-xs">payments</span></span>
+<span class="flex items-center gap-1">Ref: #5512 <span class="material-symbols-outlined text-xs">tag</span></span>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="ml-12 flex items-center gap-3">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-error border-2 border-error/10 hover:bg-error/5 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+<button class="bg-primary text-white font-bold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-primary/20 transition-all">
+                        Akzeptieren
+                    </button>
+</div>
+</div>
+</div>
+<!-- Pagination Footer -->
+<div class="mt-12 flex items-center justify-between border-t border-outline-variant/10 pt-8">
+<p class="text-sm text-outline font-medium">Anzeige von <span class="text-on-surface font-bold">1 - 4</span> von <span class="text-on-surface font-bold">65</span> potenziellen Matches</p>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-outline hover:bg-surface-container-low transition-colors border border-outline-variant/15">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center bg-primary text-white font-bold">1</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface font-bold hover:bg-surface-container-low transition-colors border border-outline-variant/15">2</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface font-bold hover:bg-surface-container-low transition-colors border border-outline-variant/15">3</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-outline hover:bg-surface-container-low transition-colors border border-outline-variant/15">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Floating Finish Button -->
+<div class="fixed bottom-8 right-8">
+<button class="bg-primary-container text-white font-bold px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 group">
+            Abschlussbericht erstellen
+            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</body></html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+
+<html lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prüfer Design System | Style Guide</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#f0edf1",
+                        "secondary-fixed-dim": "#c6c4dd",
+                        "inverse-primary": "#c3c1f9",
+                        "primary-fixed-dim": "#c3c1f9",
+                        "on-surface": "#1c1b1f",
+                        "on-secondary-container": "#626076",
+                        "surface": "#fcf8fd",
+                        "on-tertiary-container": "#4c3e00",
+                        "background": "#fcf8fd",
+                        "secondary": "#5d5c71",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#5a598b",
+                        "surface-bright": "#fcf8fd",
+                        "secondary-fixed": "#e3e0f9",
+                        "surface-container-high": "#ebe7ec",
+                        "inverse-surface": "#313034",
+                        "tertiary": "#6e5d1b",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#f9e191",
+                        "surface-tint": "#5a598b",
+                        "on-tertiary-fixed-variant": "#554603",
+                        "surface-dim": "#dcd9dd",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#dcc578",
+                        "on-secondary-fixed-variant": "#464559",
+                        "on-primary-fixed-variant": "#424271",
+                        "inverse-on-surface": "#f3eff4",
+                        "primary-fixed": "#e2dfff",
+                        "on-surface-variant": "#47464f",
+                        "surface-container-low": "#f6f2f7",
+                        "on-primary-fixed": "#161543",
+                        "on-background": "#1c1b1f",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e5e1e6",
+                        "tertiary-container": "#bfaa60",
+                        "on-secondary-fixed": "#1a1a2c",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e5e1e6",
+                        "secondary-container": "#e0ddf6",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#020026",
+                        "outline": "#787680",
+                        "on-tertiary-fixed": "#221b00",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#7372a5",
+                        "outline-variant": "#c8c5d0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); }
+        .no-line-card { background-color: #ffffff; transition: background-color 0.2s; }
+        .no-line-card:hover { background-color: #f6f2f7; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- Sidebar (SideNavBar implementation from JSON) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-slate-100 dark:bg-slate-900 flex flex-col py-6 px-4 z-50">
+<div class="mb-10 px-2 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="shield" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-indigo-900 dark:text-indigo-50 leading-tight">Prüfer Pro</h1>
+<p class="font-['Plus_Jakarta_Sans'] uppercase tracking-[0.05em] text-[10px] font-bold text-slate-500">Enterprise Audit</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<div class="group flex items-center p-3 my-1 rounded-lg bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-sm cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="grid_view">grid_view</span>
+<span class="font-['Plus_Jakarta_Sans'] uppercase tracking-[0.05em] text-[10px] font-bold">Overview</span>
+</div>
+<div class="group flex items-center p-3 my-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="gavel">gavel</span>
+<span class="font-['Plus_Jakarta_Sans'] uppercase tracking-[0.05em] text-[10px] font-bold">Compliance</span>
+</div>
+<div class="group flex items-center p-3 my-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="warning">warning</span>
+<span class="font-['Plus_Jakarta_Sans'] uppercase tracking-[0.05em] text-[10px] font-bold">Risk Assessment</span>
+</div>
+<div class="group flex items-center p-3 my-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="payments">payments</span>
+<span class="font-['Plus_Jakarta_Sans'] uppercase tracking-[0.05em] text-[10px] font-bold">Financials</span>
+</div>
+<div class="group flex items-center p-3 my-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="group">group</span>
+<span class="font-['Plus_Jakarta_Sans'] uppercase tracking-[0.05em] text-[10px] font-bold">Team</span>
+</div>
+</nav>
+<div class="mt-auto pt-6 space-y-1">
+<button class="w-full bg-primary-container text-white py-3 rounded-lg mb-6 flex items-center justify-center gap-2 font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span> New Audit
+            </button>
+<div class="group flex items-center p-3 my-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="help_outline">help_outline</span>
+<span class="font-['Plus_Jakarta_Sans'] uppercase tracking-[0.05em] text-[10px] font-bold">Help</span>
+</div>
+<div class="group flex items-center p-3 my-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="logout">logout</span>
+<span class="font-['Plus_Jakarta_Sans'] uppercase tracking-[0.05em] text-[10px] font-bold">Sign Out</span>
+</div>
+</div>
+</aside>
+<main class="ml-64 min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="w-full sticky top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl flex justify-between items-center h-16 px-8">
+<div class="flex items-center gap-8">
+<nav class="flex gap-6">
+<a class="text-indigo-700 dark:text-indigo-300 font-semibold border-b-2 border-indigo-600 font-['Plus_Jakarta_Sans'] text-sm tracking-tight py-5" href="#">Dashboard</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium font-['Plus_Jakarta_Sans'] text-sm tracking-tight py-5 hover:text-indigo-600 transition-colors" href="#">Audits</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium font-['Plus_Jakarta_Sans'] text-sm tracking-tight py-5 hover:text-indigo-600 transition-colors" href="#">Reports</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium font-['Plus_Jakarta_Sans'] text-sm tracking-tight py-5 hover:text-indigo-600 transition-colors" href="#">Archive</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer active:opacity-70">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer active:opacity-70">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden ml-2 border border-outline-variant/20">
+<img alt="Auditor Profile" data-alt="professional male portrait with confident expression clean white background studio lighting neutral clothing" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZnX0cSbGBPj7nllBsWWN-TqswYqFG7xxruNJBuKk8SySw51zcb9bkKStSttTKreXlYM1qpd1YTWGRhbVUD_8tJK2x4Zu1gUINuog5Kxjtw7itOv01zy2MuLVYNdhKHE0juu_h3EOeG4byZi2qVanYUw3-Az8JxXu_YrMEME-tZ5L4aCddAbdDpzKHDVypTCIFlPh9D5MQkp1mr0XFSpa2U9fCMw9X-nJEENkjl_KxSlWXfJ_LZZA1CChIC-GPOg8hJusaotYGSQ"/>
+</div>
+</div>
+</header>
+<div class="p-12 max-w-7xl mx-auto space-y-24">
+<!-- SECTION 1: BUTTONS -->
+<section id="buttons">
+<div class="flex items-baseline gap-4 mb-8">
+<h2 class="text-4xl font-extrabold text-primary tracking-tighter">Schaltflächen</h2>
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-widest opacity-60">Buttons</span>
+</div>
+<div class="bg-surface-container-low p-8 rounded-xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+<div class="space-y-6">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-4">Primary &amp; Secondary</h3>
+<div class="flex flex-col gap-3">
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-semibold shadow-sm hover:opacity-90 transition-all flex items-center justify-center">Speichern</button>
+<button class="border border-outline px-6 py-2.5 rounded-lg text-primary font-semibold hover:bg-surface-container transition-all">Abbrechen</button>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-4">Danger &amp; Success</h3>
+<div class="flex flex-col gap-3">
+<button class="bg-error text-on-error px-6 py-2.5 rounded-lg font-semibold hover:opacity-90 transition-all">Löschen</button>
+<button class="bg-tertiary text-on-tertiary px-6 py-2.5 rounded-lg font-semibold hover:opacity-90 transition-all">Akzeptieren</button>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-4">Sizes &amp; Ghost</h3>
+<div class="flex flex-wrap items-center gap-3">
+<button class="text-primary font-bold text-xs px-2 py-1 hover:bg-surface-container-high rounded transition-colors">GHOST</button>
+<button class="bg-primary-container text-white px-4 py-1.5 rounded-lg text-sm">Small</button>
+<button class="bg-primary-container text-white px-8 py-3.5 rounded-lg text-lg font-bold">Large</button>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-4">States</h3>
+<div class="flex flex-col gap-3">
+<button class="bg-outline-variant text-on-surface-variant/50 px-6 py-2.5 rounded-lg font-semibold cursor-not-allowed" disabled="">Disabled</button>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
+<span class="material-symbols-outlined animate-spin text-sm" data-icon="progress_activity">progress_activity</span> Loading
+                            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: BADGES -->
+<section id="badges">
+<div class="flex items-baseline gap-4 mb-8">
+<h2 class="text-4xl font-extrabold text-primary tracking-tighter">Statusanzeigen</h2>
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-widest opacity-60">Badges &amp; Scores</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-6">Status Labels</h3>
+<div class="flex flex-wrap gap-3">
+<span class="px-4 py-1 rounded-full bg-green-100 text-green-800 text-[10px] font-bold uppercase tracking-wider">Aktiv</span>
+<span class="px-4 py-1 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold uppercase tracking-wider">Geplant</span>
+<span class="px-4 py-1 rounded-full bg-slate-100 text-slate-800 text-[10px] font-bold uppercase tracking-wider">Abgeschlossen</span>
+<span class="px-4 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold uppercase tracking-wider">Offen</span>
+<span class="px-4 py-1 rounded-full bg-error-container text-on-error-container text-[10px] font-bold uppercase tracking-wider">Fehler</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-6">Risk Scores</h3>
+<div class="flex gap-6 items-end">
+<div class="text-center">
+<div class="w-16 h-16 rounded-full border-4 border-green-500 flex items-center justify-center text-green-700 font-black text-lg">95%</div>
+<span class="text-[10px] font-bold uppercase mt-2 block opacity-60">Safe</span>
+</div>
+<div class="text-center">
+<div class="w-16 h-16 rounded-full border-4 border-amber-500 flex items-center justify-center text-amber-700 font-black text-lg">72%</div>
+<span class="text-[10px] font-bold uppercase mt-2 block opacity-60">Caution</span>
+</div>
+<div class="text-center">
+<div class="w-16 h-16 rounded-full border-4 border-error flex items-center justify-center text-error font-black text-lg">45%</div>
+<span class="text-[10px] font-bold uppercase mt-2 block opacity-60">Critical</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm relative overflow-hidden">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-6">Notifications</h3>
+<div class="flex gap-8">
+<div class="relative">
+<span class="material-symbols-outlined text-4xl text-slate-400" data-icon="mail">mail</span>
+<span class="absolute -top-1 -right-1 w-5 h-5 bg-error text-white text-[10px] font-bold rounded-full flex items-center justify-center">12</span>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined text-4xl text-slate-400" data-icon="notifications">notifications</span>
+<span class="absolute -top-1 -right-1 w-5 h-5 bg-error text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
+</div>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-5">
+<span class="material-symbols-outlined text-8xl" data-icon="shield">shield</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 3: FORM ELEMENTS -->
+<section id="forms">
+<div class="flex items-baseline gap-4 mb-8">
+<h2 class="text-4xl font-extrabold text-primary tracking-tighter">Formularelemente</h2>
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-widest opacity-60">Inputs &amp; Controls</span>
+</div>
+<div class="bg-surface-container-low p-10 rounded-xl grid grid-cols-1 lg:grid-cols-2 gap-16">
+<div class="space-y-8">
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 ml-1">Benutzername</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:ring-0 focus:border-primary transition-all p-3 text-on-surface" placeholder="admin" type="text"/>
+</div>
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 ml-1">Passwort</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:ring-0 focus:border-primary transition-all p-3 text-on-surface" type="password" value="secret_password"/>
+<span class="material-symbols-outlined absolute right-3 top-3 text-outline cursor-pointer" data-icon="visibility">visibility</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 ml-1">Status auswählen</label>
+<select class="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:ring-0 focus:border-primary transition-all p-3 text-on-surface">
+<option>Alle</option>
+<option>Offen</option>
+<option>Geprüft</option>
+</select>
+</div>
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 ml-1">Prüfdatum</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:ring-0 focus:border-primary transition-all p-3 text-on-surface" placeholder="01.01.2024" type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-3 text-outline" data-icon="calendar_today">calendar_today</span>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-8">
+<div>
+<label class="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 ml-1">Suchen...</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest rounded-full border-0 border-b border-outline-variant/30 focus:ring-0 focus:border-primary transition-all px-12 py-3 text-on-surface" placeholder="Suche nach Berichten..." type="text"/>
+<span class="material-symbols-outlined absolute left-4 top-3 text-outline" data-icon="search">search</span>
+</div>
+</div>
+<div class="flex items-center gap-12 pt-4">
+<div class="flex items-center gap-3">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[10px] font-bold uppercase tracking-wider">Auto-Archiv</span>
+</div>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="text-primary focus:ring-0 border-outline-variant/50" name="r1" type="radio"/>
+<span class="text-[10px] font-bold uppercase tracking-wider">Option A</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="text-primary focus:ring-0 border-outline-variant/50" name="r1" type="radio"/>
+<span class="text-[10px] font-bold uppercase tracking-wider">Option B</span>
+</label>
+</div>
+</div>
+<div>
+<label class="block text-error text-[10px] font-bold uppercase tracking-widest mb-2 ml-1">E-Mail Adresse (Fehlerhaft)</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-error focus:ring-0 transition-all p-3 text-error" type="text" value="invalid-email"/>
+<p class="text-error text-[10px] mt-1 ml-1">Bitte geben Sie eine gültige E-Mail Adresse ein.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 4: CARDS (Bento Style) -->
+<section id="cards">
+<div class="flex items-baseline gap-4 mb-8">
+<h2 class="text-4xl font-extrabold text-primary tracking-tighter">Karten</h2>
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-widest opacity-60">Bento &amp; Layouts</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+<!-- Stat Card -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm flex flex-col justify-between h-48 group hover:bg-primary transition-all duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white transition-colors" data-icon="groups">groups</span>
+<div>
+<h4 class="text-4xl font-black text-on-surface group-hover:text-white">247</h4>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant group-hover:text-white/80">Kinder gesamt</p>
+</div>
+</div>
+<!-- Empty State Card -->
+<div class="border-2 border-dashed border-outline-variant/50 rounded-xl flex flex-col items-center justify-center h-48 group hover:border-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary mb-2" data-icon="add_circle">add_circle</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-outline-variant group-hover:text-primary">Neues Element hinzufügen</span>
+</div>
+<!-- Content Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden md:col-span-2 h-48 flex">
+<div class="w-1/3 h-full">
+<img alt="Data visualization dashboard" class="w-full h-full object-cover" data-alt="abstract architectural workspace with minimal desk setup high-end technology and clean geometric lines soft morning light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiHgeAyt_LFi7bOwnc6xr0ft-rHVItH5pATEL26DrroD0cRSIw-58k_9XCl3P5vhLZhWpqN5JlmZ0AkvrQYkT2nVa8Fkev1OqAe0SLHYL2torCtf5hUUs12xPBmmdxZwt4vw6Wo5UbtFlhYAz-mKidJv7He9OYO4I_g2sEAPbzZmn0ZNWmi1fujJvWyH7Jqd_G6uvptJqz-773aBbkKBv_-iuy1p5iyytSvHHczwRscEx7ZUxEadnKEtZE3GTvH2o9ZAy1DDj3Eg"/>
+</div>
+<div class="p-6 flex-1 flex flex-col justify-center">
+<h4 class="font-bold text-primary text-lg mb-2">Audit-Bericht Q4</h4>
+<p class="text-sm text-on-surface-variant line-clamp-2">Die Analyse der Compliance-Vorgaben für das vierte Quartal zeigt eine signifikante Verbesserung der Sicherheitsmetriken...</p>
+<button class="text-primary text-xs font-bold uppercase tracking-widest mt-4 flex items-center gap-1">Details ansehen <span class="material-symbols-outlined text-xs" data-icon="arrow_forward">arrow_forward</span></button>
+</div>
+</div>
+<!-- List Items -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm md:col-span-2 space-y-4">
+<h4 class="text-[10px] font-bold uppercase tracking-widest text-primary mb-4">Letzte Aktivitäten</h4>
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-white font-bold">JD</div>
+<div>
+<p class="font-bold text-sm">Janine Doe</p>
+<p class="text-xs text-on-surface-variant">Archivierte Revision #442</p>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant">Vor 12 Min.</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold">MK</div>
+<div>
+<p class="font-bold text-sm">Marcus Klein</p>
+<p class="text-xs text-on-surface-variant">Neuer Bericht erstellt</p>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant">Vor 4 Std.</span>
+</div>
+</div>
+<!-- Profile Card -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm lg:col-span-2 flex items-center gap-8">
+<img alt="Profile" class="w-24 h-24 rounded-2xl object-cover" data-alt="professional portrait of an executive in a bright modern office natural lighting soft blurred background and professional attire" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmchSA1uTey9PTbnEW_R-LE7yS3Bc_oybgGYa43LFROkAxyZGBsXr3T_ogZZVlyHs0gNq3mF5R5e9eG1-sBWeRkjjBjzDA1EzTV2L7RuW4enAFulVIEU0DXRRklrUrdV7aa3PU16ZotwpLI1J9UW-3mXo3IW8WejGcELgz2cVU-2xV3zfjRmWjrzjmQdI9wDy1bSWkP1kM9LLz8KtzlZyyz1j0_EVtIVgGz3wmum1hAkFb8tDQw8rRTnFx1Qj0DcGfE6Oi63MUiw"/>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="text-2xl font-black">Dr. Stefan Weber</h4>
+<p class="text-primary font-bold text-xs uppercase tracking-widest">Leitender Prüfer</p>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="mt-4 flex gap-4">
+<div class="flex-1 bg-surface-container-low p-2 rounded text-center">
+<p class="text-lg font-black">12</p>
+<p class="text-[8px] font-bold uppercase opacity-60">Offene Tasks</p>
+</div>
+<div class="flex-1 bg-surface-container-low p-2 rounded text-center">
+<p class="text-lg font-black text-green-600">98%</p>
+<p class="text-[8px] font-bold uppercase opacity-60">Präzision</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 5: TABLE -->
+<section id="tables">
+<div class="flex items-baseline gap-4 mb-8">
+<h2 class="text-4xl font-extrabold text-primary tracking-tighter">Tabellen</h2>
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-widest opacity-60">Data Grids</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant/10">
+<tr>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary">ID <span class="material-symbols-outlined text-xs align-middle" data-icon="expand_more">expand_more</span></th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary">Bezeichnung</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary">Status</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary">Datum</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary text-right">Aktionen</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4 font-mono text-xs">#99201</td>
+<td class="px-6 py-4 font-bold text-sm">Finanzprüfung Nord-Sektor</td>
+<td class="px-6 py-4"><span class="px-3 py-1 rounded-full bg-green-100 text-green-800 text-[8px] font-black uppercase">Fertig</span></td>
+<td class="px-6 py-4 text-xs text-on-surface-variant">12.02.2024</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 transition-opacity text-primary"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<tr class="bg-primary-container/10">
+<td class="px-6 py-4 font-mono text-xs">#99202</td>
+<td class="px-6 py-4 font-bold text-sm">Risikoanalyse System X</td>
+<td class="px-6 py-4"><span class="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[8px] font-black uppercase">Laufend</span></td>
+<td class="px-6 py-4 text-xs text-on-surface-variant">15.02.2024</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-6 py-4 font-mono text-xs">#99203</td>
+<td class="px-6 py-4 font-bold text-sm">Compliance-Audit ERP</td>
+<td class="px-6 py-4"><span class="px-3 py-1 rounded-full bg-error-container text-on-error-container text-[8px] font-black uppercase">Fehler</span></td>
+<td class="px-6 py-4 text-xs text-on-surface-variant">18.02.2024</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 transition-opacity text-primary"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- SECTION 6: MODAL & TOASTS -->
+<section id="dialogs">
+<div class="flex items-baseline gap-4 mb-8">
+<h2 class="text-4xl font-extrabold text-primary tracking-tighter">Dialoge</h2>
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-widest opacity-60">Modals &amp; Toasts</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+<!-- Modal Mockup -->
+<div class="bg-surface-container-low p-12 rounded-xl flex items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary to-transparent"></div>
+<div class="bg-surface-container-lowest rounded-2xl shadow-2xl p-8 max-w-sm relative z-10">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-full bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined" data-icon="delete_forever">delete_forever</span>
+</div>
+<h4 class="text-xl font-bold">Element löschen?</h4>
+</div>
+<p class="text-on-surface-variant text-sm mb-8 leading-relaxed">Möchten Sie dieses Audit wirklich unwiderruflich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>
+<div class="flex gap-4">
+<button class="flex-1 py-3 rounded-lg border border-outline-variant font-bold text-xs uppercase tracking-widest hover:bg-surface-container-low">Abbrechen</button>
+<button class="flex-1 py-3 rounded-lg bg-error text-white font-bold text-xs uppercase tracking-widest hover:opacity-90">Löschen</button>
+</div>
+</div>
+</div>
+<!-- Toasts -->
+<div class="space-y-4 flex flex-col justify-center">
+<div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-lg border-l-4 border-green-500 max-w-md">
+<span class="material-symbols-outlined text-green-500" data-icon="check_circle">check_circle</span>
+<div class="flex-1">
+<p class="text-sm font-bold">Erfolgreich gespeichert</p>
+<p class="text-[10px] text-on-surface-variant">Die Änderungen wurden übernommen.</p>
+</div>
+<button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-sm" data-icon="close">close</span></button>
+</div>
+<div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-lg border-l-4 border-error max-w-md">
+<span class="material-symbols-outlined text-error" data-icon="error">error</span>
+<div class="flex-1">
+<p class="text-sm font-bold">Fehler beim Upload</p>
+<p class="text-[10px] text-on-surface-variant">Die Datei ist zu groß (Max. 10MB).</p>
+</div>
+<button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-sm" data-icon="close">close</span></button>
+</div>
+<div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-lg border-l-4 border-amber-500 max-w-md">
+<span class="material-symbols-outlined text-amber-500" data-icon="warning">warning</span>
+<div class="flex-1">
+<p class="text-sm font-bold">Warnung: Lizenz läuft ab</p>
+<p class="text-[10px] text-on-surface-variant">Bitte verlängern Sie Ihr Abonnement.</p>
+</div>
+<button class="text-outline hover:text-on-surface"><span class="material-symbols-outlined text-sm" data-icon="close">close</span></button>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 7: NAVIGATION & MISC -->
+<section class="pb-24" id="misc">
+<div class="flex items-baseline gap-4 mb-8">
+<h2 class="text-4xl font-extrabold text-primary tracking-tighter">Sonstiges</h2>
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-widest opacity-60">Misc &amp; Patterns</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<div class="space-y-12">
+<!-- Breadcrumb -->
+<div>
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-4">Breadcrumb</h3>
+<nav class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+<a class="text-primary hover:underline" href="#">Home</a>
+<span class="material-symbols-outlined text-xs opacity-30" data-icon="chevron_right">chevron_right</span>
+<a class="text-primary hover:underline" href="#">Dashboard</a>
+<span class="material-symbols-outlined text-xs opacity-30" data-icon="chevron_right">chevron_right</span>
+<span class="text-on-surface-variant">Aktuell</span>
+</nav>
+</div>
+<!-- Wizard Steps -->
+<div>
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-6">Wizard Steps</h3>
+<div class="flex items-center">
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" data-icon="done">done</span>
+</div>
+<span class="text-[8px] font-bold uppercase tracking-tighter">Schritt 1</span>
+</div>
+<div class="h-[2px] flex-1 bg-primary mx-2 -mt-4"></div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-white border-2 border-primary text-primary flex items-center justify-center font-bold text-xs">2</div>
+<span class="text-[8px] font-bold uppercase tracking-tighter">Schritt 2</span>
+</div>
+<div class="h-[2px] flex-1 bg-outline-variant mx-2 -mt-4"></div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center font-bold text-xs">3</div>
+<span class="text-[8px] font-bold uppercase tracking-tighter">Schritt 3</span>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div>
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-4">Pagination</h3>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-surface-container-high"><span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span></button>
+<button class="w-10 h-10 rounded-lg bg-primary text-white font-bold flex items-center justify-center shadow-md">1</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-surface-container-high font-bold">2</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-surface-container-high font-bold">3</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-surface-container-high"><span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span></button>
+</div>
+</div>
+</div>
+<div class="space-y-12">
+<!-- Progress Bar -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary">Fortschritt</h3>
+<span class="text-sm font-black">65%</span>
+</div>
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<!-- Tooltip Mockup -->
+<div class="flex items-center gap-4">
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary">Tooltip</h3>
+<div class="relative group">
+<span class="material-symbols-outlined text-outline cursor-help" data-icon="info">info</span>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-inverse-surface text-inverse-on-surface text-[10px] p-3 rounded-lg shadow-xl">
+                                    Dies ist eine hilfreiche Erklärung für das Datenfeld.
+                                    <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-inverse-surface"></div>
+</div>
+</div>
+</div>
+<!-- Spinner & Avatar variants -->
+<div class="flex gap-12 items-center">
+<div>
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-4">Spinner</h3>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined animate-spin text-primary text-2xl" data-icon="progress_activity">progress_activity</span>
+<span class="material-symbols-outlined animate-spin text-tertiary" data-icon="sync" style="font-size: 48px;">sync</span>
+</div>
+</div>
+<div>
+<h3 class="font-bold text-xs uppercase tracking-widest text-primary mb-4">Avatars</h3>
+<div class="flex -space-x-3">
+<img alt="User 1" class="w-10 h-10 rounded-full border-2 border-surface object-cover" data-alt="close-up of young professional woman with natural look in bright office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhmI3v_3TkBUMfh1ZbhDRDDu1iZJjRYlMKyvcJG0K4wqfjh7pz6j_IOmXzmVt3gZb-s-O_P2uUfI9Gq_V-qA1htFy0GafDmfK8lpxhCrGZNRQ0pG1J4tcQRQXMu8REsuVMuRu6ug3e-tCcAHckvEGoBRjGwsMHsUnMzRRfoatwcpx12WV-hHsS5byMFCvuzSCcVgveuzqKCq12HS-bngkLfpl1HFStnCeC-yFDLC2juYbmQCC5IxH9kfgon-Bs8-2vJLA8NEbWng"/>
+<img alt="User 2" class="w-10 h-10 rounded-full border-2 border-surface object-cover" data-alt="portrait of a man with spectacles in soft warm lighting high-end aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZ0alu7SXD9UYEICFm71FiEigLQPH7r7sNHPPKF5q9u7ckwCQKOBMJ3ffA06LGPwY5HtFOQ0MCV-A9FQ62hBr9p4P8FgUpbHjmA3i-gyTGqCxyDFB-a6eoxTx5wF-lrnu3TaaBPxy5g1ohKa8Zu7TgrTz6UVCNdAuO2xklBxMgusY7mrBMl4-xQFGNFEwePpwKBeQ25SDGEWSbFKAIagb_Eu9KkCX9XpgkkWNM9yWmgIuVLQ3wzApGHU8Nno75DEmnY4uqdAHlHA"/>
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border-2 border-surface flex items-center justify-center text-[10px] font-black text-on-surface-variant">+4</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Logo Watermark Background (Design System Rule) -->
+<div class="fixed bottom-0 right-0 p-12 opacity-[0.03] pointer-events-none select-none z-0">
+<span class="material-symbols-outlined" data-icon="shield" style="font-size: 400px; font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+</body></html>

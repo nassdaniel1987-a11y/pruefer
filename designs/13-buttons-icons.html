@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="light" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#f9e191",
+                        "on-tertiary-container": "#4c3e00",
+                        "on-tertiary-fixed-variant": "#554603",
+                        "tertiary": "#6e5d1b",
+                        "surface-tint": "#5a598b",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#f0edf1",
+                        "on-primary-container": "#020026",
+                        "surface-container-low": "#f6f2f7",
+                        "primary-container": "#7372a5",
+                        "surface": "#fcf8fd",
+                        "tertiary-container": "#bfaa60",
+                        "primary-fixed": "#e2dfff",
+                        "background": "#fcf8fd",
+                        "primary": "#5a598b",
+                        "tertiary-fixed-dim": "#dcc578",
+                        "inverse-surface": "#313034",
+                        "on-primary-fixed": "#161543",
+                        "on-background": "#1c1b1f",
+                        "inverse-on-surface": "#f3eff4",
+                        "inverse-primary": "#c3c1f9",
+                        "on-error-container": "#93000a",
+                        "outline": "#787680",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed": "#1a1a2c",
+                        "on-surface": "#1c1b1f",
+                        "surface-dim": "#dcd9dd",
+                        "secondary-fixed": "#e3e0f9",
+                        "secondary": "#5d5c71",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed": "#221b00",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#626076",
+                        "on-secondary-fixed-variant": "#464559",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#47464f",
+                        "secondary-fixed-dim": "#c6c4dd",
+                        "outline-variant": "#c8c5d0",
+                        "on-primary": "#ffffff",
+                        "surface-bright": "#fcf8fd",
+                        "on-primary-fixed-variant": "#424271",
+                        "surface-container-highest": "#e5e1e6",
+                        "secondary-container": "#e0ddf6",
+                        "primary-fixed-dim": "#c3c1f9",
+                        "surface-variant": "#e5e1e6",
+                        "surface-container-high": "#ebe7ec"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- Top Navigation Anchor -->
+<header class="w-full top-0 sticky bg-[#fcf8fd] z-50">
+<div class="flex justify-between items-center px-8 h-16 w-full max-w-[1440px] mx-auto">
+<div class="text-xl font-bold text-[#5a598b] tracking-tight">Prüfer</div>
+<nav class="hidden md:flex gap-8 items-center h-full">
+<a class="text-sm tracking-tight font-medium text-[#1c1b1f] hover:bg-[#f6f2f7] px-3 py-2 rounded-lg transition-colors cursor-pointer">Dashboard</a>
+<a class="text-sm tracking-tight font-medium text-[#1c1b1f] hover:bg-[#f6f2f7] px-3 py-2 rounded-lg transition-colors cursor-pointer">Audits</a>
+<a class="text-sm tracking-tight font-medium text-[#1c1b1f] hover:bg-[#f6f2f7] px-3 py-2 rounded-lg transition-colors cursor-pointer">Templates</a>
+<a class="text-sm tracking-tight font-medium text-[#1c1b1f] hover:bg-[#f6f2f7] px-3 py-2 rounded-lg transition-colors cursor-pointer">Reports</a>
+</nav>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#7372a5] cursor-pointer p-2 hover:bg-[#f6f2f7] rounded-full transition-all">notifications</span>
+<span class="material-symbols-outlined text-[#7372a5] cursor-pointer p-2 hover:bg-[#f6f2f7] rounded-full transition-all">settings</span>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden">
+<img alt="Auditor Profile" class="w-full h-full object-cover" data-alt="Professional portrait of a corporate auditor in a bright modern office setting, soft professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0y7uKOr_g8xBOYqmewBrYzOuZ3NZWhOqTOf7SXP4wgFpLNisjsGJ1IsmsIJdv-7ZujKMPMeKjQUDinNONkJRdsrPPnRJLTRyxTfpZyV6AdK-t0VZk1ykbEfyoKXze838c_9_FUalz1ArFTHXB2wGCU3pQ0s2UoxQEUyuDBjwsw6AigovWOfveJBwYJEdf5gZypaZCaw_MwJ7AZcmeV1zE0vQsl3ajV9wE8yy1MQd_c7OaOOaXZ50rblVlzwDR4feBUos-4M5Ivg"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-6xl mx-auto py-12 px-8">
+<!-- Hero Title -->
+<div class="mb-16">
+<span class="text-[10px] uppercase tracking-[0.2em] font-bold text-primary mb-4 block">Design System Library</span>
+<h1 class="text-5xl font-extrabold text-primary tracking-tighter mb-4">Prüfer Component Showcase</h1>
+<p class="text-on-surface-variant max-w-2xl leading-relaxed">The architectural foundation for precision and examination. A comprehensive library of buttons and iconography designed for the Auditor's workflow.</p>
+</div>
+<div class="grid grid-cols-1 gap-12">
+<!-- Row 1: Primary Buttons -->
+<section class="bg-surface-container-lowest p-10 rounded-xl">
+<h2 class="text-xs font-bold uppercase tracking-widest text-outline mb-8">Row 1 — Primary Actions</h2>
+<div class="flex flex-wrap items-center gap-6">
+<button class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-semibold rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+                        Speichern
+                    </button>
+<button class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-semibold rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                        Neuer Ferienblock
+                    </button>
+<button class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-on-primary font-semibold rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+                        Abgleich starten
+                    </button>
+</div>
+</section>
+<!-- Row 2: Secondary Buttons -->
+<section class="bg-surface-container-low p-10 rounded-xl">
+<h2 class="text-xs font-bold uppercase tracking-widest text-outline mb-8">Row 2 — Secondary &amp; Utilities</h2>
+<div class="flex flex-wrap items-center gap-6">
+<button class="px-6 py-3 bg-transparent border border-outline-variant text-primary font-semibold rounded-lg hover:bg-surface-container-high transition-all">
+                        Abbrechen
+                    </button>
+<button class="px-6 py-3 bg-transparent border border-outline-variant text-primary font-semibold rounded-lg hover:bg-surface-container-high transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                        Exportieren
+                    </button>
+<button class="px-6 py-3 bg-transparent border border-outline-variant text-primary font-semibold rounded-lg hover:bg-surface-container-high transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                        Filter
+                    </button>
+</div>
+</section>
+<!-- Row 3: Danger Buttons -->
+<section class="bg-surface-container-lowest p-10 rounded-xl">
+<h2 class="text-xs font-bold uppercase tracking-widest text-outline mb-8 text-error">Row 3 — High Emphasis Risk</h2>
+<div class="flex flex-wrap items-center gap-6">
+<button class="px-6 py-3 bg-error text-on-error font-semibold rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+                        Löschen
+                    </button>
+<button class="px-6 py-3 bg-transparent border border-error text-error font-semibold rounded-lg hover:bg-error-container transition-all flex items-center gap-2">
+                        Alle entfernen
+                    </button>
+</div>
+</section>
+<!-- Row 4: Success Buttons -->
+<section class="bg-surface-container-low p-10 rounded-xl">
+<h2 class="text-xs font-bold uppercase tracking-widest text-outline mb-8">Row 4 — Confirmation &amp; Success</h2>
+<div class="flex flex-wrap items-center gap-6">
+<button class="px-6 py-3 bg-[#386a20] text-white font-semibold rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+                        Akzeptieren
+                    </button>
+<button class="px-6 py-3 bg-[#386a20] text-white font-semibold rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check</span>
+                        Bestätigen
+                    </button>
+</div>
+</section>
+<!-- Row 5: Icon Buttons -->
+<section class="bg-surface-container-lowest p-10 rounded-xl">
+<h2 class="text-xs font-bold uppercase tracking-widest text-outline mb-8">Row 5 — System Icon Set</h2>
+<div class="flex flex-wrap items-center gap-4">
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="edit pencil"><span class="material-symbols-outlined">edit</span></button>
+<button class="p-3 rounded-full hover:bg-error-container text-error transition-all" title="delete trash"><span class="material-symbols-outlined">delete</span></button>
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="add plus"><span class="material-symbols-outlined">add</span></button>
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="search magnifier"><span class="material-symbols-outlined">search</span></button>
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="filter funnel"><span class="material-symbols-outlined">filter_alt</span></button>
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="download"><span class="material-symbols-outlined">download</span></button>
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="upload"><span class="material-symbols-outlined">upload</span></button>
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="refresh"><span class="material-symbols-outlined">refresh</span></button>
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="close X"><span class="material-symbols-outlined">close</span></button>
+<button class="p-3 rounded-full hover:bg-secondary-container text-secondary transition-all" title="menu dots"><span class="material-symbols-outlined">more_vert</span></button>
+</div>
+</section>
+<!-- Row 6: Button Sizes -->
+<section class="bg-surface-container-low p-10 rounded-xl">
+<h2 class="text-xs font-bold uppercase tracking-widest text-outline mb-8">Row 6 — Button Scalability</h2>
+<div class="flex flex-wrap items-end gap-10">
+<div class="flex flex-col items-center gap-3">
+<button class="px-4 py-2 text-xs bg-primary text-on-primary rounded font-bold">Small</button>
+<span class="text-[10px] text-outline uppercase font-medium">Small (8px Radius)</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<button class="px-6 py-3 text-sm bg-primary text-on-primary rounded-lg font-bold">Medium</button>
+<span class="text-[10px] text-outline uppercase font-medium">Medium (Standard)</span>
+</div>
+<div class="flex flex-col items-center gap-3">
+<button class="px-10 py-4 text-lg bg-primary text-on-primary rounded-xl font-bold">Large</button>
+<span class="text-[10px] text-outline uppercase font-medium">Large (Enterprise)</span>
+</div>
+</div>
+</section>
+<!-- Row 7: Button States -->
+<section class="bg-surface-container-lowest p-10 rounded-xl">
+<h2 class="text-xs font-bold uppercase tracking-widest text-outline mb-8">Row 7 — Interaction States</h2>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-8">
+<div class="flex flex-col gap-3">
+<button class="w-full py-3 bg-primary text-on-primary font-bold rounded-lg">Default</button>
+<span class="text-[10px] text-center text-outline">Idle</span>
+</div>
+<div class="flex flex-col gap-3">
+<button class="w-full py-3 bg-primary-container text-white font-bold rounded-lg shadow-lg">Hover</button>
+<span class="text-[10px] text-center text-outline">Tonal Shift</span>
+</div>
+<div class="flex flex-col gap-3">
+<button class="w-full py-3 bg-primary text-on-primary font-bold rounded-lg scale-95 opacity-80">Active</button>
+<span class="text-[10px] text-center text-outline">Pressed</span>
+</div>
+<div class="flex flex-col gap-3">
+<button class="w-full py-3 bg-surface-dim text-on-surface-variant font-bold rounded-lg cursor-not-allowed opacity-50" disabled="">Disabled</button>
+<span class="text-[10px] text-center text-outline">Locked</span>
+</div>
+<div class="flex flex-col gap-3">
+<button class="w-full py-3 bg-primary text-on-primary font-bold rounded-lg flex items-center justify-center gap-2">
+<svg class="animate-spin h-5 w-5 text-white" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+                            Wait...
+                        </button>
+<span class="text-[10px] text-center text-outline">Processing</span>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Visual Polish: Shield Watermark -->
+<div class="fixed bottom-0 right-0 p-12 opacity-[0.03] pointer-events-none select-none">
+<span class="material-symbols-outlined text-[400px]" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+</body></html>

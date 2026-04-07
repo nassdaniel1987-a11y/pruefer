@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html class="light" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tagesansicht - Prüfer Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#424271",
+                        "on-secondary-fixed-variant": "#464559",
+                        "outline": "#787680",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#47464f",
+                        "surface-container-low": "#f6f2f7",
+                        "on-tertiary-fixed": "#221b00",
+                        "inverse-on-surface": "#f3eff4",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#161543",
+                        "on-error": "#ffffff",
+                        "surface": "#fcf8fd",
+                        "tertiary": "#6e5d1b",
+                        "surface-dim": "#dcd9dd",
+                        "on-surface": "#1c1b1f",
+                        "surface-container": "#f0edf1",
+                        "on-tertiary-fixed-variant": "#554603",
+                        "outline-variant": "#c8c5d0",
+                        "surface-tint": "#5a598b",
+                        "background": "#fcf8fd",
+                        "surface-bright": "#fcf8fd",
+                        "secondary-container": "#e0ddf6",
+                        "on-primary-container": "#020026",
+                        "secondary-fixed-dim": "#c6c4dd",
+                        "secondary": "#5d5c71",
+                        "primary-fixed": "#e2dfff",
+                        "primary": "#5a598b",
+                        "inverse-primary": "#c3c1f9",
+                        "tertiary-container": "#bfaa60",
+                        "tertiary-fixed": "#f9e191",
+                        "surface-container-high": "#ebe7ec",
+                        "primary-container": "#7372a5",
+                        "on-secondary-fixed": "#1a1a2c",
+                        "inverse-surface": "#313034",
+                        "on-tertiary-container": "#4c3e00",
+                        "surface-container-highest": "#e5e1e6",
+                        "on-background": "#1c1b1f",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#c3c1f9",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#626076",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#dcc578",
+                        "surface-variant": "#e5e1e6",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#e3e0f9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .tonal-shift { transition: background-color 0.3s ease; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 flex flex-col py-8 px-6 gap-y-4 bg-[#f6f2f7] dark:bg-slate-900 z-50">
+<div class="mb-8">
+<h1 class="text-lg font-bold text-[#5a598b] dark:text-[#7372a5] tracking-tight">Prüfer Management</h1>
+<p class="text-xs text-slate-500 font-medium">The Architectural Auditor</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:text-[#7372a5] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#7372a5] dark:text-[#a5a4d4] font-bold border-r-4 border-[#7372a5] dark:border-[#a5a4d4] bg-white/50 dark:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-medium">Tagesansicht</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:text-[#7372a5] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-medium">Prüfberichte</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:text-[#7372a5] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="domain">domain</span>
+<span class="font-medium">Mandanten</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 dark:text-slate-400 hover:text-[#7372a5] transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-medium">Einstellungen</span>
+</a>
+</nav>
+<button class="mt-4 mb-8 bg-primary-container text-on-primary text-sm font-bold py-3 px-4 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+            Neuer Prüfbericht
+        </button>
+<div class="mt-auto space-y-2 border-t border-[#c8c5d0]/15 pt-4">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-[#7372a5]" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="text-sm">Hilfe</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-[#7372a5]" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="text-sm">Abmelden</span>
+</a>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 z-40 bg-[#fcf8fd]/80 backdrop-blur-xl flex justify-between items-center px-8 border-b border-[#c8c5d0]/15">
+<div class="flex items-center gap-6">
+<h2 class="text-xl font-black text-[#5a598b]">Tagesansicht</h2>
+<div class="flex items-center bg-surface-container-low px-4 py-1.5 rounded-full gap-4">
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg leading-none" data-icon="chevron_left">chevron_left</span>
+</button>
+<span class="text-sm font-bold text-on-surface">06.04.2026</span>
+<button class="hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg leading-none" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-8">
+<nav class="hidden md:flex items-center gap-6 text-sm font-medium">
+<a class="text-[#5a598b] font-bold border-b-2 border-[#7372a5] pb-1" href="#">Heute</a>
+<a class="text-slate-500 hover:text-[#7372a5]" href="#">Wochenansicht</a>
+<a class="text-slate-500 hover:text-[#7372a5]" href="#">Kalender</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-surface-container-high rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary-fixed-dim flex items-center justify-center overflow-hidden border border-outline-variant/20">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="minimalist avatar of a professional architect wearing glasses and a navy sweater" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWw1j-CMmiXyIVJgvMPmSJQ53HQG3IdcxGExjv7-zhb9IZGKdhqXomtmSo4dvd-NslUYL8kGAC1k1liPAO8p70fDEXqL1_xOr33BFDmc9pOnghITYT6OPHnBgQXACA7n1PPfOssDhjNi8q-H2a6XeGTV6mLyAFiv4yZa_SP4QrYR-KJrJzNxVHxtg-8AU-yZE8Nbm73rXlp8_E-dmCTlkExerko2lUe_lI1dhbdHXs7QN-63zLtb5MVD4EjoCgCKK0u_sHCmVoFQ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 mt-16 p-8 grid grid-cols-12 gap-8">
+<!-- Left: Activity Timeline -->
+<div class="col-span-8 space-y-8">
+<header>
+<h3 class="text-display-sm font-extrabold text-primary tracking-tight mb-1">Audit-Zeitplan</h3>
+<p class="text-on-surface-variant text-sm">Übersicht der heutigen Aktivitäten und Anwesenheiten.</p>
+</header>
+<div class="relative space-y-12">
+<!-- Timeline vertical bar -->
+<div class="absolute left-[1.125rem] top-4 bottom-4 w-px bg-outline-variant/30"></div>
+<!-- Timeslot 1 -->
+<div class="relative flex gap-8">
+<div class="mt-1 bg-surface ring-4 ring-surface">
+<div class="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary-fixed"></div>
+</div>
+<div class="flex-1">
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10 shadow-sm transition-transform hover:scale-[1.005]">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-xs font-bold uppercase tracking-widest text-primary-container">08:00 — 09:00</span>
+<h4 class="text-lg font-bold text-on-surface mt-1">Frühstück</h4>
+</div>
+<div class="bg-surface-container-low px-4 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-icon="group">group</span>
+<span class="font-bold text-on-surface-variant">24 Kinder</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Lukas M.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Emma S.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-sm font-medium">Noah W.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Mia B.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<span class="text-sm font-medium">Liam J.</span>
+</div>
+<div class="flex items-center justify-center p-2 text-xs font-bold text-primary cursor-pointer hover:bg-surface-container-high rounded-lg transition-colors">
+                                    + 19 weitere
+                                </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeslot 2 -->
+<div class="relative flex gap-8">
+<div class="mt-1 bg-surface ring-4 ring-surface">
+<div class="w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary-fixed"></div>
+</div>
+<div class="flex-1">
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10 shadow-sm transition-transform hover:scale-[1.005]">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-xs font-bold uppercase tracking-widest text-primary-container">09:00 — 12:00</span>
+<h4 class="text-lg font-bold text-on-surface mt-1">Freispiel &amp; Projektarbeit</h4>
+</div>
+<div class="bg-surface-container-low px-4 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" data-icon="toys">toys</span>
+<span class="font-bold text-on-surface-variant">28 Kinder</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Sophia K.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Felix R.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Jonas H.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<span class="text-sm font-medium">Mila T.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-surface rounded-lg">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-sm font-medium">Elias O.</span>
+</div>
+<div class="flex items-center justify-center p-2 text-xs font-bold text-primary cursor-pointer hover:bg-surface-container-high rounded-lg transition-colors">
+                                    + 23 weitere
+                                </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeslot 3 (Active Highlight) -->
+<div class="relative flex gap-8">
+<div class="mt-1 bg-surface ring-4 ring-surface">
+<div class="w-2.5 h-2.5 rounded-full bg-primary-container ring-4 ring-secondary-container"></div>
+</div>
+<div class="flex-1">
+<div class="bg-primary/5 rounded-xl p-6 border-2 border-primary-container/30 shadow-md">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="inline-block bg-primary-container text-on-primary px-2 py-0.5 rounded text-[10px] font-black uppercase mb-2">Aktuell</span>
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold uppercase tracking-widest text-primary-container">12:00 — 13:00</span>
+</div>
+<h4 class="text-xl font-extrabold text-primary mt-1">Mittagessen</h4>
+</div>
+<div class="bg-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm border border-primary-container/10">
+<span class="material-symbols-outlined text-primary-container" data-icon="restaurant">restaurant</span>
+<span class="font-bold text-on-surface-variant">26 Kinder</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<div class="flex items-center gap-2 p-2 bg-white/60 rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Ben L.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-white/60 rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Marie G.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-white/60 rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Anton P.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-white/60 rounded-lg">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<span class="text-sm font-medium">Lina D.</span>
+</div>
+<div class="flex items-center gap-2 p-2 bg-white/60 rounded-lg">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-sm font-medium">Leo N.</span>
+</div>
+<div class="flex items-center justify-center p-2 text-xs font-bold text-primary cursor-pointer hover:bg-white rounded-lg transition-colors">
+                                    + 21 weitere
+                                </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Lunch Summary Panel -->
+<aside class="col-span-4 space-y-6">
+<div class="sticky top-24">
+<div class="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/15">
+<div class="flex items-center gap-3 mb-8">
+<div class="p-2 bg-primary-container rounded-lg text-white">
+<span class="material-symbols-outlined" data-icon="lunch_dining">lunch_dining</span>
+</div>
+<div>
+<h3 class="text-lg font-extrabold text-on-surface">Mittagsverpflegung</h3>
+<p class="text-xs text-on-surface-variant font-medium">Verteilung &amp; Diätetik</p>
+</div>
+</div>
+<!-- Menu Breakdown -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/5">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Menü 1</p>
+<div class="flex items-end gap-1">
+<span class="text-2xl font-black text-primary">18</span>
+<span class="text-xs font-medium text-slate-400 mb-1">Kinder</span>
+</div>
+<p class="text-[10px] text-slate-500 mt-2 italic">Pasta mit Tomatensoße</p>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/5">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Menü 2 (Vegetarisch)</p>
+<div class="flex items-end gap-1">
+<span class="text-2xl font-black text-[#5a598b]">8</span>
+<span class="text-xs font-medium text-slate-400 mb-1">Kinder</span>
+</div>
+<p class="text-[10px] text-slate-500 mt-2 italic">Gemüselasagne</p>
+</div>
+</div>
+<!-- Dietary List -->
+<div class="space-y-4">
+<h4 class="text-xs font-bold text-primary uppercase tracking-widest border-b border-outline-variant/20 pb-2">Besonderheiten &amp; Allergien</h4>
+<div class="space-y-3">
+<div class="flex items-center justify-between group">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Lukas Müller</span>
+<span class="text-[10px] text-error font-medium">Glutenunverträglichkeit</span>
+</div>
+<span class="text-[10px] font-bold px-2 py-1 bg-primary/10 text-primary rounded">Menü 2</span>
+</div>
+<div class="flex items-center justify-between group">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Emma Schmidt</span>
+<span class="text-[10px] text-tertiary font-medium">Laktosefrei</span>
+</div>
+<span class="text-[10px] font-bold px-2 py-1 bg-primary/10 text-primary rounded">Menü 1</span>
+</div>
+<div class="flex items-center justify-between group">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Mia Becker</span>
+<span class="text-[10px] text-error font-medium">Nussallergie (Schwer)</span>
+</div>
+<span class="text-[10px] font-bold px-2 py-1 bg-primary/10 text-primary rounded">Menü 1</span>
+</div>
+<div class="flex items-center justify-between group">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-on-surface">Jonas Horn</span>
+<span class="text-[10px] text-on-surface-variant font-medium italic">Kein Schweinefleisch</span>
+</div>
+<span class="text-[10px] font-bold px-2 py-1 bg-primary/10 text-primary rounded">Menü 2</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-8 py-3 px-4 bg-white border border-primary-container/20 text-primary font-bold text-xs rounded-xl hover:bg-primary-container hover:text-white transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="print">print</span>
+                        Küchenliste exportieren
+                    </button>
+</div>
+<!-- Subtle Brand Watermark -->
+<div class="mt-8 opacity-10 flex justify-center">
+<span class="material-symbols-outlined text-8xl" data-icon="security">security</span>
+</div>
+</div>
+</aside>
+</main>
+</body></html>

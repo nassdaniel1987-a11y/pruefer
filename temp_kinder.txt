@@ -1,0 +1,834 @@
+const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
+  const [kinder, setKinder] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [syncing, setSyncing] = useState(false);
+  const [filterBlock, setFilterBlock] = useState('');
+
+  // Akte-Detail
+  const [selectedKindId, setSelectedKindId] = useState(initialKindId || null);
+  const [akte, setAkte] = useState(null);
+  const [akteLoading, setAkteLoading] = useState(false);
+
+  // Import
+  const [showImport, setShowImport] = useState(false);
+  const [importData, setImportData] = useState(null);
+  const [importResult, setImportResult] = useState(null);
+  const [importing, setImporting] = useState(false);
+
+  // Edit-Modal
+  const [editKind, setEditKind] = useState(null);
+  const [editForm, setEditForm] = useState({ nachname: '', vorname: '', klasse: '', notizen: '' });
+
+  // Duplikat-Erkennung
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const duplicates = useMemo(() => {
+    if (!showDuplicates || kinder.length < 2) return [];
+    const groups = [];
+    const checked = new Set();
+    for (let i = 0; i < kinder.length; i++) {
+      if (checked.has(i)) continue;
+      const a = kinder[i];
+      const aName = (a.nachname + ' ' + a.vorname).toLowerCase();
+      const similar = [];
+      for (let j = i + 1; j < kinder.length; j++) {
+        if (checked.has(j)) continue;
+        const b = kinder[j];
+        // Exakter Treffer (case-insensitive)
+        const exact = a.nachname.toLowerCase() === b.nachname.toLowerCase() && a.vorname.toLowerCase() === b.vorname.toLowerCase();
+        // Vertauscht
+        const swapped = a.nachname.toLowerCase() === b.vorname.toLowerCase() && a.vorname.toLowerCase() === b.nachname.toLowerCase();
+        // Ähnlich (Levenshtein-artig: einfache Prüfung)
+        const bName = (b.nachname + ' ' + b.vorname).toLowerCase();
+        const { score } = calcScore(aName, bName);
+
+        const nameClose = aName.replace(/\s+/g, '') === bName.replace(/\s+/g, '') || aName.replace(/[^a-zäöüß]/g, '') === bName.replace(/[^a-zäöüß]/g, '');
+
+        let matchReason = null;
+        if (exact) matchReason = 'Exakt gleich';
+        else if (swapped) matchReason = 'Vor-/Nachname vertauscht';
+        else if (nameClose) matchReason = 'Sehr ähnlich (Lücken/Zeichen)';
+        else if (score >= 82) matchReason = `Tippfehler? (Score ${score}%)`;
+
+        if (matchReason) {
+          similar.push({ kind: b, reason: matchReason });
+          checked.add(j);
+        }
+      }
+      if (similar.length > 0) {
+        checked.add(i);
+        groups.push({ kind: a, matches: similar });
+      }
+    }
+    return groups;
+  }, [kinder, showDuplicates]);
+
+  // Sortierung
+  const [sortBy, setSortBy] = useState('nachname');
+  const [sortDir, setSortDir] = useState('asc');
+  const toggleSort = (col) => {
+    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(col); setSortDir('asc'); }
+  };
+  const sortIndicator = (col) => sortBy === col ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+
+  const loadKinder = async (fbId) => {
+    setLoading(true);
+    const params = {};
+    if (fbId) params.ferienblock_id = fbId;
+    const data = await API.get('kinder', params);
+    setKinder(Array.isArray(data) ? data : []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadKinder(filterBlock); }, [filterBlock]);
+
+  // Akte laden wenn Kind ausgewählt
+  useEffect(() => {
+    if (!selectedKindId) { setAkte(null); return; }
+    setAkteLoading(true);
+    API.get('kinder', { id: selectedKindId }).then(data => {
+      setAkte(data.kind ? data : null);
+      setAkteLoading(false);
+    });
+  }, [selectedKindId]);
+
+  // Aus Listen synchronisieren
+  const syncFromLists = async () => {
+    setSyncing(true);
+    const res = await API.post('kinder', { action: 'sync' });
+    setSyncing(false);
+    toast.success(res.message || 'Synchronisiert');
+    loadKinder(filterBlock);
+  };
+
+  // Excel importieren
+  // Import: Spalten-Zuordnung
+  const [importCols, setImportCols] = useState({ name: '', nachname: '', vorname: '', klasse: '' });
+  const [importHeaders, setImportHeaders] = useState([]);
+  const [importPreview, setImportPreview] = useState([]);
+
+  const handleImportFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const wb = XLSX.read(evt.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      if (rows.length < 2) { toast.error('Datei ist leer'); return; }
+
+      // Header erkennen (erste Zeile Text = Header, sonst auto)
+      const firstRow = rows[0];
+      const isHeader = firstRow.every(c => typeof c === 'string' && c.trim().length > 0);
+      let headers;
+      let dataRows;
+      if (isHeader) {
+        headers = firstRow.map(h => String(h).trim());
+        dataRows = rows.slice(1);
+      } else {
+        headers = firstRow.map((_, i) => `Spalte ${String.fromCharCode(65 + i)}`);
+        dataRows = rows;
+      }
+
+      setImportHeaders(headers);
+      setImportData(dataRows);
+      setImportPreview(dataRows.slice(0, 5));
+      setImportResult(null);
+
+      // Auto-Zuordnung
+      const hLow = headers.map(h => h.toLowerCase());
+      const autoName = hLow.findIndex(h => h === 'name' || h === 'kind' || h === 'schüler');
+      const autoNachname = hLow.findIndex(h => h.includes('nachname'));
+      const autoVorname = hLow.findIndex(h => h.includes('vorname'));
+      const autoKlasse = hLow.findIndex(h => h.includes('klasse') || h.includes('class'));
+
+      if (autoNachname >= 0 && autoVorname >= 0) {
+        // Separate Nachname + Vorname Spalten
+        setImportCols({ name: '', nachname: String(autoNachname), vorname: String(autoVorname), klasse: autoKlasse >= 0 ? String(autoKlasse) : '' });
+      } else if (autoName >= 0) {
+        // Kombiniertes "Name" Feld
+        setImportCols({ name: String(autoName), nachname: '', vorname: '', klasse: autoKlasse >= 0 ? String(autoKlasse) : '' });
+      } else {
+        setImportCols({ name: '', nachname: '', vorname: '', klasse: '' });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // Name splitten: "Marie Müller" → { vorname: "Marie", nachname: "Müller" }
+  // "Müller, Marie" → { nachname: "Müller", vorname: "Marie" }
+  const splitName = (fullName) => {
+    const s = fullName.trim();
+    if (!s) return { vorname: '', nachname: '' };
+    // Komma-Trennung: "Müller, Marie"
+    if (s.includes(',')) {
+      const parts = s.split(',').map(p => p.trim());
+      return { nachname: parts[0], vorname: parts.slice(1).join(' ') };
+    }
+    // Leerzeichen-Trennung: "Marie Müller" → Vorname = alles bis auf letztes Wort
+    const parts = s.split(/\s+/);
+    if (parts.length === 1) return { vorname: parts[0], nachname: '' };
+    const nachname = parts.pop();
+    return { vorname: parts.join(' '), nachname };
+  };
+
+  const getImportPreviewEntries = () => {
+    const rows = importPreview;
+    return rows.map(row => {
+      let vorname = '', nachname = '', klasse = '';
+      if (importCols.name !== '') {
+        const split = splitName(String(row[parseInt(importCols.name)] || ''));
+        vorname = split.vorname;
+        nachname = split.nachname;
+      } else {
+        nachname = importCols.nachname !== '' ? String(row[parseInt(importCols.nachname)] || '').trim() : '';
+        vorname = importCols.vorname !== '' ? String(row[parseInt(importCols.vorname)] || '').trim() : '';
+      }
+      klasse = importCols.klasse !== '' ? String(row[parseInt(importCols.klasse)] || '').trim() : '';
+      return { vorname, nachname, klasse };
+    });
+  };
+
+  const executeImport = async () => {
+    if (!importData || importData.length === 0) return;
+    if (importCols.name === '' && importCols.nachname === '' && importCols.vorname === '') {
+      toast.error('Bitte mindestens Name oder Nachname+Vorname zuordnen');
+      return;
+    }
+    setImporting(true);
+
+    const eintraege = [];
+    for (const row of importData) {
+      let vorname = '', nachname = '', klasse = '';
+      if (importCols.name !== '') {
+        const split = splitName(String(row[parseInt(importCols.name)] || ''));
+        vorname = split.vorname;
+        nachname = split.nachname;
+      } else {
+        nachname = importCols.nachname !== '' ? String(row[parseInt(importCols.nachname)] || '').trim() : '';
+        vorname = importCols.vorname !== '' ? String(row[parseInt(importCols.vorname)] || '').trim() : '';
+      }
+      klasse = importCols.klasse !== '' ? String(row[parseInt(importCols.klasse)] || '').trim() : '';
+      if (nachname && vorname) eintraege.push({ nachname, vorname, klasse });
+    }
+
+    const res = await API.post('kinder', { action: 'import', eintraege });
+    setImportResult(res);
+    setImporting(false);
+    loadKinder(filterBlock);
+  };
+
+  // Kind bearbeiten
+  const startEdit = (k) => {
+    setEditKind(k);
+    setEditForm({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse || '', notizen: k.notizen || '' });
+  };
+  const saveEdit = async () => {
+    await API.post('kinder', { action: 'edit', id: editKind.id, ...editForm });
+    setEditKind(null);
+    loadKinder(filterBlock);
+    if (selectedKindId === editKind.id) setSelectedKindId(editKind.id); // refresh akte
+  };
+
+  // Kind löschen
+  const deleteKind = async (id) => {
+    const ok = await confirmDialog('Kind löschen', 'Kind aus Stammverzeichnis löschen? Die Listen-Einträge bleiben erhalten.', 'Löschen');
+    if (!ok) return;
+    await API.post('kinder', { action: 'delete', id });
+    toast.success('Kind gelöscht');
+    loadKinder(filterBlock);
+    if (selectedKindId === id) setSelectedKindId(null);
+  };
+
+  // Kind (Duplikat) zusammenführen
+  const mergeKind = async (hauptId, typoId) => {
+    const ok = await confirmDialog(
+      'Mit Haupt-Eintrag zusammenführen', 
+      'Möchtest du den Tippfehler unwiderruflich in den Haupt-Eintrag überführen? Alle bisherigen Anmeldungen und Buchungen des Tippfehlers werden auf den Haupt-Namen überschrieben, und das Duplikat verschwindet.', 
+      'Ja, zusammenführen'
+    );
+    if (!ok) return;
+    const res = await API.post('kinder', { action: 'merge', haupt_id: hauptId, typo_id: typoId });
+    if (res.success) {
+      toast.success('Kinder erfolgreich zusammengeführt!');
+      loadKinder(filterBlock);
+      if (selectedKindId === typoId) setSelectedKindId(hauptId);
+    }
+  };
+
+  // Filter + Sortierung
+  const filtered = kinder.filter(k =>
+    (k.nachname + ' ' + k.vorname + ' ' + (k.klasse || ''))
+      .toLowerCase().includes(search.toLowerCase())
+  ).sort((a, b) => {
+    let va, vb;
+    switch (sortBy) {
+      case 'nachname': va = (a.nachname || '').toLowerCase(); vb = (b.nachname || '').toLowerCase(); break;
+      case 'vorname': va = (a.vorname || '').toLowerCase(); vb = (b.vorname || '').toLowerCase(); break;
+      case 'klasse': va = (a.klasse || '').toLowerCase(); vb = (b.klasse || '').toLowerCase(); break;
+      case 'bloecke': va = parseInt(a.block_count_a) || 0; vb = parseInt(b.block_count_a) || 0; break;
+      case 'anmeldungen': va = parseInt(a.anmeldungen_count) || 0; vb = parseInt(b.anmeldungen_count) || 0; break;
+      case 'buchungen': va = parseInt(a.buchungen_count) || 0; vb = parseInt(b.buchungen_count) || 0; break;
+      default: va = (a.nachname || '').toLowerCase(); vb = (b.nachname || '').toLowerCase();
+    }
+    if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb, 'de') : vb.localeCompare(va, 'de');
+    return sortDir === 'asc' ? va - vb : vb - va;
+  });
+
+  // ═══════════════════════════════════════
+  // AKTE-DETAILANSICHT (Design-Upgrade)
+  // ═══════════════════════════════════════
+  if (selectedKindId) {
+    if (akteLoading) return <div className="flex justify-center py-16"><Spinner /></div>;
+    if (!akte) return <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm border border-outline-variant/10 text-center">
+      <p className="text-error mb-3">Kind nicht gefunden</p>
+      <button className="px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors" onClick={() => setSelectedKindId(null)}>
+        <span className="material-symbols-outlined text-sm align-middle mr-1">arrow_back</span>Zurück zur Liste
+      </button>
+    </div>;
+
+    const { kind, aliases, blocks: akteBlocks, summary } = akte;
+    const weekday = (d) => { try { return new Date(d).toLocaleDateString('de-DE', { weekday: 'short' }); } catch { return ''; } };
+
+    return (
+      <div>
+        <button className="px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors mb-4" onClick={() => setSelectedKindId(null)}>
+          <span className="material-symbols-outlined text-sm align-middle mr-1">arrow_back</span>Zurück zur Übersicht
+        </button>
+
+        {/* ── PROFIL-KARTE ── */}
+        <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10 mb-4 relative">
+          <div className="absolute top-4 right-4">
+            <button className="px-3 py-1.5 text-xs font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors border border-outline-variant/20" onClick={() => startEdit(kind)}>
+              <span className="material-symbols-outlined text-sm align-middle mr-1">edit</span>Bearbeiten
+            </button>
+          </div>
+          <div className="flex items-center gap-4 mb-5">
+            <Avatar vorname={kind.vorname} nachname={kind.nachname} size="lg" />
+            <div>
+              <div className="text-xl font-bold text-on-surface">{kind.vorname} {kind.nachname}</div>
+              {kind.klasse && <span className="bg-blue-500/10 text-blue-600 text-xs font-bold px-2 py-0.5 rounded-full mt-1 inline-block">Klasse {kind.klasse}</span>}
+              {aliases && aliases.length > 0 && (
+                <div className="text-xs text-on-surface-variant mt-1">Auch bekannt als: {aliases.join(', ')}</div>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-surface-container-low rounded-xl p-3 text-center">
+              <div className="text-xl font-bold text-primary">{summary.total_blocks}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Ferienblöcke</div>
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-3 text-center">
+              <div className="text-xl font-bold text-primary">{summary.total_anmeldungen}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Tage angemeldet</div>
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-3 text-center">
+              <div className="text-xl font-bold text-emerald-600">{summary.total_buchungen}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Tage gebucht</div>
+            </div>
+            <div className="bg-surface-container-low rounded-xl p-3 text-center">
+              <div className="text-xl font-bold text-amber-600">{summary.total_kosten.toFixed(0)} €</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Gesamtkosten</div>
+            </div>
+          </div>
+        </div>
+
+        {kind.notizen && (
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-4 py-3 mb-4 flex items-start gap-2">
+            <span className="material-symbols-outlined text-amber-500 text-base mt-0.5">sticky_note_2</span>
+            <div className="text-sm text-on-surface">{kind.notizen}</div>
+          </div>
+        )}
+
+        {akteBlocks.length === 0 ? (
+          <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm border border-outline-variant/10 text-center">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2">inbox</span>
+            <p className="text-sm text-on-surface-variant">Keine Einträge in den Listen gefunden.</p>
+          </div>
+        ) : (
+          <div>
+            <h3 className="text-sm font-bold text-on-surface-variant mb-3 flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-primary">timeline</span>
+              Verlauf ({akteBlocks.length} {akteBlocks.length === 1 ? 'Block' : 'Blöcke'})
+            </h3>
+            <div className="space-y-3">
+              {akteBlocks.map(b => {
+                const aDates = new Set(b.anmeldungen.map(a => String(a.datum).split('T')[0]));
+                const bDates = new Set(b.buchungen.map(x => String(x.datum).split('T')[0]));
+                const allDates = [...new Set([...aDates, ...bDates])].sort();
+                const matchedDays = allDates.filter(d => aDates.has(d) && bDates.has(d)).length;
+                const missingDays = [...aDates].filter(d => !bDates.has(d)).length;
+                const extraDays = [...bDates].filter(d => !aDates.has(d)).length;
+                const borderColor = missingDays > 0 ? 'border-l-red-500' : extraDays > 0 ? 'border-l-amber-500' : 'border-l-emerald-500';
+
+                return (
+                  <div key={b.ferienblock_id} className={`bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 border-l-4 ${borderColor}`}>
+                    <div className="flex justify-between items-start flex-wrap gap-2 mb-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-on-surface">{b.block_name}</h3>
+                        <div className="text-xs text-on-surface-variant mt-0.5">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</div>
+                      </div>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {b.klasse && <span className="bg-blue-500/10 text-blue-600 text-xs font-bold px-2 py-0.5 rounded-full">Klasse {b.klasse}</span>}
+                        {b.match_status && (
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                            b.match_status === 'exact' || b.match_status === 'fuzzy_accepted' ? 'bg-emerald-500/10 text-emerald-600'
+                            : b.match_status === 'nur_in_a' ? 'bg-error/10 text-error' : 'bg-amber-500/10 text-amber-600'
+                          }`}>
+                            {b.match_status === 'exact' ? 'Exakt' : b.match_status === 'fuzzy_accepted' ? 'Fuzzy' : b.match_status === 'nur_in_a' ? 'Fehlt in B' : b.match_status === 'nur_in_b' ? 'Nur in B' : b.match_status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="text-[11px] font-black uppercase tracking-wider text-primary/60 mb-1.5">Anmeldungen (A) <span className="text-on-surface-variant font-medium normal-case">{b.anmeldungen.length} Tage</span></div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[...aDates].sort().map(d => {
+                          const inB = bDates.has(d);
+                          return (
+                            <div key={'a' + d} className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1 ${inB ? 'bg-emerald-500/10 text-emerald-700' : 'bg-red-500/10 text-red-600'}`}>
+                              <span className="material-symbols-outlined text-xs">{inB ? 'check' : 'close'}</span>
+                              {weekday(d)} {fmtDate(d)}
+                            </div>
+                          );
+                        })}
+                        {b.anmeldungen.length === 0 && <span className="text-xs text-on-surface-variant">Keine Anmeldungen</span>}
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <div className="text-[11px] font-black uppercase tracking-wider text-tertiary/60 mb-1.5">Buchungen (B) <span className="text-on-surface-variant font-medium normal-case">{b.buchungen.length} Tage</span></div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[...bDates].sort().map(d => {
+                          const inA = aDates.has(d);
+                          const buchung = b.buchungen.find(x => String(x.datum).split('T')[0] === d);
+                          return (
+                            <div key={'b' + d} className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1 ${inA ? 'bg-emerald-500/10 text-emerald-700' : 'bg-amber-500/10 text-amber-600'}`} title={buchung?.menu || ''}>
+                              <span className="material-symbols-outlined text-xs">{inA ? 'check' : 'warning'}</span>
+                              {weekday(d)} {fmtDate(d)}
+                              {buchung?.menu && <span className="opacity-60 text-[10px]">({buchung.menu})</span>}
+                            </div>
+                          );
+                        })}
+                        {b.buchungen.length === 0 && <span className="text-xs text-on-surface-variant">Keine Buchungen</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs pt-3 border-t border-outline-variant/10 flex-wrap">
+                      <span className="flex items-center gap-1 text-emerald-600"><span className="material-symbols-outlined text-xs">check</span><strong>{matchedDays}</strong> übereinstimmend</span>
+                      {missingDays > 0 && <span className="flex items-center gap-1 text-error"><span className="material-symbols-outlined text-xs">close</span><strong>{missingDays}</strong> ohne Buchung</span>}
+                      {extraDays > 0 && <span className="flex items-center gap-1 text-amber-600"><span className="material-symbols-outlined text-xs">warning</span><strong>{extraDays}</strong> ohne Anmeldung</span>}
+                      <span className="ml-auto font-bold text-on-surface">{b.kosten.toFixed(2)} €</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {editKind && (
+          <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4" onClick={() => setEditKind(null)}>
+            <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-on-surface mb-5">Kind bearbeiten</h3>
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider">Nachname</label>
+                  <input className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-2 transition-all" value={editForm.nachname} onChange={e => setEditForm({ ...editForm, nachname: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider">Vorname</label>
+                  <input className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-2 transition-all" value={editForm.vorname} onChange={e => setEditForm({ ...editForm, vorname: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider">Klasse</label>
+                  <input className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-2 transition-all" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider">Notizen</label>
+                  <textarea className="w-full bg-surface-container-lowest border border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-lg transition-all min-h-[80px] text-sm" value={editForm.notizen} onChange={e => setEditForm({ ...editForm, notizen: e.target.value })} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button className="px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors" onClick={() => setEditKind(null)}>Abbrechen</button>
+                <button className="px-5 py-2 text-sm font-bold bg-primary text-on-primary rounded-lg shadow-sm hover:opacity-90 transition-opacity" onClick={saveEdit}>Speichern</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // LISTENANSICHT (Design-Upgrade)
+  // ═══════════════════════════════════════
+  const mitBuchung = kinder.filter(k => parseInt(k.buchungen_count) > 0).length;
+  const ohneBuchung = kinder.filter(k => parseInt(k.anmeldungen_count) > 0 && parseInt(k.buchungen_count) === 0).length;
+
+  // Sortier-Buttons für Mobile + Desktop
+  const sortOptions = [
+    { key: 'nachname', label: 'Nachname' },
+    { key: 'vorname', label: 'Vorname' },
+    { key: 'klasse', label: 'Klasse' },
+    { key: 'anmeldungen', label: 'Anmeldungen' },
+    { key: 'buchungen', label: 'Buchungen' },
+  ];
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-on-surface flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary">people</span>
+          Kinder-Verzeichnis
+        </h1>
+        <p className="text-sm text-on-surface-variant mt-1">Alle registrierten Kinder mit ihren Akten</p>
+      </div>
+
+      {blocks.length > 0 && (
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-xs font-bold text-on-surface-variant whitespace-nowrap">Statistik für:</span>
+          <select className="max-w-[300px] bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-1.5 text-sm transition-all" value={filterBlock} onChange={e => setFilterBlock(e.target.value)}>
+            <option value="">Alle Ferienblöcke</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="material-symbols-outlined text-primary text-lg">people</span>
+            <span className="text-[11px] font-black uppercase tracking-wider text-primary/80">{filterBlock ? 'Angemeldet (A)' : 'Kinder gesamt'}</span>
+          </div>
+          <div className="text-2xl font-bold text-primary">{loading ? '…' : filterBlock ? kinder.filter(k => parseInt(k.anmeldungen_count) > 0).length : kinder.length}</div>
+        </div>
+        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span>
+            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600/80">{filterBlock ? 'Gebucht (B)' : 'Mit Buchungen'}</span>
+          </div>
+          <div className="text-2xl font-bold text-emerald-600">{loading ? '…' : mitBuchung}</div>
+        </div>
+        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`material-symbols-outlined text-lg ${ohneBuchung > 0 ? 'text-error' : 'text-emerald-500'}`}>{ohneBuchung > 0 ? 'error' : 'check_circle'}</span>
+            <span className={`text-[11px] font-black uppercase tracking-wider ${ohneBuchung > 0 ? 'text-error/80' : 'text-emerald-600/80'}`}>Ohne Buchung</span>
+          </div>
+          <div className={`text-2xl font-bold ${ohneBuchung > 0 ? 'text-error' : 'text-emerald-600'}`}>{loading ? '…' : ohneBuchung}</div>
+          {ohneBuchung > 0 && <div className="text-xs text-on-surface-variant mt-0.5">Angemeldet aber keine Buchung</div>}
+        </div>
+      </div>
+
+      <div className="flex gap-2 flex-wrap mb-4">
+        <button className="px-3 py-1.5 text-xs font-bold bg-primary text-on-primary rounded-lg shadow-sm hover:opacity-90 transition-opacity" onClick={() => setShowImport(!showImport)}>
+          <span className="material-symbols-outlined text-sm align-middle mr-1">{showImport ? 'close' : 'upload_file'}</span>
+          {showImport ? 'Import schließen' : 'Excel importieren'}
+        </button>
+        <button className="px-3 py-1.5 text-xs font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors border border-outline-variant/20 disabled:opacity-50" disabled={syncing} onClick={syncFromLists}>
+          <span className="material-symbols-outlined text-sm align-middle mr-1">{syncing ? 'hourglass_empty' : 'sync'}</span>
+          {syncing ? 'Synchronisiere...' : 'Aus Listen synchronisieren'}
+        </button>
+        {kinder.length > 0 && (
+          <button className="px-3 py-1.5 text-xs font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors border border-outline-variant/20" onClick={() => {
+            const wb = XLSX.utils.book_new();
+            const rows = filtered.map(k => ({
+              Nachname: k.nachname, Vorname: k.vorname, Klasse: k.klasse || '',
+              'Anmeldungen (A)': parseInt(k.anmeldungen_count) || 0, 'Buchungen (B)': parseInt(k.buchungen_count) || 0,
+              'Blöcke': parseInt(k.block_count_a) || 0, Notizen: k.notizen || ''
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Kinder');
+            XLSX.writeFile(wb, `Kinder-Verzeichnis${search ? '_' + search : ''}.xlsx`);
+            toast.success(`${rows.length} Kinder exportiert`);
+          }}>
+            <span className="material-symbols-outlined text-sm align-middle mr-1">download</span>Excel exportieren
+          </button>
+        )}
+        {kinder.length > 0 && (
+          <button className="px-3 py-1.5 text-xs font-bold text-error hover:bg-error/10 rounded-lg transition-colors" onClick={async () => {
+            const ok = await confirmDialog(
+              'Alle Kinder löschen',
+              `Wirklich alle ${kinder.length} Kinder aus dem Verzeichnis löschen? Die Listen-Einträge (A/B) bleiben erhalten.`,
+              'Alle löschen'
+            );
+            if (!ok) return;
+            const res = await API.post('kinder', { action: 'delete_all' });
+            toast.success(`${res.deleted} Kinder gelöscht`);
+            loadKinder(filterBlock);
+          }}>
+            <span className="material-symbols-outlined text-sm align-middle mr-1">delete</span>Alle löschen
+          </button>
+        )}
+        {kinder.length > 1 && (
+          <button className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors border border-outline-variant/20 ${showDuplicates ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container-high'}`} onClick={() => setShowDuplicates(!showDuplicates)}>
+            <span className="material-symbols-outlined text-sm align-middle mr-1">content_copy</span>
+            Duplikate {showDuplicates && duplicates.length > 0 ? `(${duplicates.length})` : 'prüfen'}
+          </button>
+        )}
+        <button className="px-3 py-1.5 text-xs font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors border border-outline-variant/20" onClick={() => loadKinder(filterBlock)}>
+          <span className="material-symbols-outlined text-sm align-middle mr-1">refresh</span>Aktualisieren
+        </button>
+      </div>
+
+      {showDuplicates && duplicates.length > 0 && (
+        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 border-l-4 border-l-amber-500 mb-4">
+          <div className="text-sm font-bold text-amber-600 flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-base">warning</span>
+            {duplicates.length} mögliche Duplikate gefunden
+          </div>
+          <p className="text-xs text-on-surface-variant mb-4">Schau auf die Zahl der Anmeldungen (A) und Buchungen (B) und lösche den überflüssigen Eintrag.</p>
+
+          {duplicates.map((g, i) => {
+            const allEntries = [{ kind: g.kind, reason: 'Haupt-Eintrag' }, ...g.matches.map(m => ({ kind: m.kind, reason: m.reason }))];
+            return (
+              <div key={i} className="bg-surface-container-low rounded-xl p-4 mb-3 border border-outline-variant/10">
+                <div className="text-[10px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Duplikat-Gruppe {i + 1}</div>
+                {allEntries.map((e, j) => (
+                  <div key={j} className={`flex items-center gap-3 py-2 flex-wrap ${j < allEntries.length - 1 ? 'border-b border-dashed border-outline-variant/20' : ''}`}>
+                    <strong className="text-sm">{e.kind.vorname} {e.kind.nachname}</strong>
+                    {e.kind.klasse && <span className="bg-blue-500/10 text-blue-600 text-xs font-bold px-2 py-0.5 rounded-full">Kl. {e.kind.klasse}</span>}
+                    <span className="text-xs bg-surface-container-high px-2 py-0.5 rounded">
+                      <strong>A:</strong> {parseInt(e.kind.anmeldungen_count) || 0} | <strong>B:</strong> {parseInt(e.kind.buchungen_count) || 0}
+                    </span>
+                    <span className="bg-amber-500/10 text-amber-600 text-xs font-bold px-2 py-0.5 rounded-full">{e.reason}</span>
+                    <span className="ml-auto" />
+                    {j > 0 && (
+                      <button className="px-2.5 py-1 text-xs font-bold text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors mr-1" onClick={() => mergeKind(allEntries[0].kind.id, e.kind.id)}>
+                        <span className="material-symbols-outlined text-xs align-middle mr-0.5">merge</span>Zusammenführen
+                      </button>
+                    )}
+                    <button className="px-2.5 py-1 text-xs font-bold text-error bg-error/10 rounded-lg hover:bg-error/20 transition-colors" onClick={() => deleteKind(e.kind.id)}>
+                      <span className="material-symbols-outlined text-xs align-middle mr-0.5">close</span>Löschen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {showDuplicates && duplicates.length === 0 && (
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-700 mb-4 flex items-center gap-2">
+          <span className="material-symbols-outlined text-base">check_circle</span>
+          Keine Duplikate gefunden — alle {kinder.length} Kinder sind eindeutig.
+        </div>
+      )}
+
+      {showImport && (
+        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4">
+          <div className="text-sm font-bold text-on-surface flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-base text-primary">upload_file</span>
+            Kinder-Stammliste importieren
+          </div>
+          <p className="text-xs text-on-surface-variant mb-3">
+            Excel-Datei hochladen und Spalten zuordnen. Duplikate werden automatisch übersprungen.
+          </p>
+          <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} className="text-sm mb-3" />
+
+          {importHeaders.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold mb-3">{importData.length} Zeilen erkannt — Spalten zuordnen:</p>
+              <div className="grid grid-cols-2 gap-3 mb-4 max-w-xl">
+                <div>
+                  <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider block mb-1">Name (kombiniert)</label>
+                  <select className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-1.5 text-sm" value={importCols.name}
+                    onChange={e => setImportCols({ ...importCols, name: e.target.value, nachname: e.target.value ? '' : importCols.nachname, vorname: e.target.value ? '' : importCols.vorname })}>
+                    <option value="">– nicht verwenden –</option>
+                    {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider block mb-1">Klasse (optional)</label>
+                  <select className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-1.5 text-sm" value={importCols.klasse}
+                    onChange={e => setImportCols({ ...importCols, klasse: e.target.value })}>
+                    <option value="">– nicht verwenden –</option>
+                    {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                  </select>
+                </div>
+                {importCols.name === '' && (<>
+                  <div>
+                    <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider block mb-1">Nachname *</label>
+                    <select className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-1.5 text-sm" value={importCols.nachname}
+                      onChange={e => setImportCols({ ...importCols, nachname: e.target.value })}>
+                      <option value="">– wählen –</option>
+                      {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider block mb-1">Vorname *</label>
+                    <select className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-1.5 text-sm" value={importCols.vorname}
+                      onChange={e => setImportCols({ ...importCols, vorname: e.target.value })}>
+                      <option value="">– wählen –</option>
+                      {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                    </select>
+                  </div>
+                </>)}
+              </div>
+
+              {importCols.name !== '' && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm text-on-surface mb-3">
+                  Kombiniertes Namensfeld erkannt — wird automatisch in Vor-/Nachname getrennt.<br />
+                  <span className="text-xs">Format: "Vorname Nachname" oder "Nachname, Vorname"</span>
+                </div>
+              )}
+
+              {(importCols.name !== '' || (importCols.nachname !== '' && importCols.vorname !== '')) && (() => {
+                const preview = getImportPreviewEntries();
+                return (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold mb-2">Vorschau (erste {preview.length}):</p>
+                    <div className="overflow-x-auto rounded-lg border border-outline-variant/10">
+                      <table className="w-full text-left border-collapse">
+                        <thead><tr className="bg-surface-container-low border-b border-outline-variant/10">
+                          <th className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary">Vorname</th>
+                          <th className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary">Nachname</th>
+                          <th className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary">Klasse</th>
+                        </tr></thead>
+                        <tbody className="divide-y divide-outline-variant/5">
+                          {preview.map((e, i) => (
+                            <tr key={i} className={!e.nachname || !e.vorname ? 'bg-error/5' : ''}>
+                              <td className="px-3 py-2 text-sm">{e.vorname || <span className="text-error">–fehlt–</span>}</td>
+                              <td className="px-3 py-2 text-sm">{e.nachname || <span className="text-error">–fehlt–</span>}</td>
+                              <td className="px-3 py-2 text-sm text-on-surface-variant">{e.klasse || '–'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <button className="px-4 py-2 text-sm font-bold bg-primary text-on-primary rounded-lg shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50" disabled={importing} onClick={executeImport}>
+                {importing ? 'Importiere...' : `${importData.length} Kinder importieren`}
+              </button>
+            </div>
+          )}
+
+          {importResult && (
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-700 mt-3 flex items-start gap-2">
+              <span className="material-symbols-outlined text-base mt-0.5">check_circle</span>
+              <div>
+                {importResult.message}
+                {importResult.skipped_names?.length > 0 && (
+                  <div className="mt-1 text-xs">Übersprungen: {importResult.skipped_names.join(', ')}</div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Suche + Sortierung */}
+      <div className="flex gap-3 mb-4 items-center flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+          <input
+            className="w-full bg-surface-container-low border-0 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-on-surface-variant/60"
+            placeholder="Kind suchen (Name, Klasse)..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-1 items-center">
+          <span className="text-xs text-on-surface-variant whitespace-nowrap">Sortieren:</span>
+          <select className="bg-surface-container-low border-0 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-primary/30" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            {sortOptions.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
+          <button className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors" onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>
+            <span className="material-symbols-outlined text-sm text-on-surface-variant">{sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward'}</span>
+          </button>
+        </div>
+      </div>
+
+      {!loading && filtered.length > 0 && (
+        <div className="text-xs text-on-surface-variant mb-3">
+          {filtered.length} {filtered.length === 1 ? 'Kind' : 'Kinder'}{search ? ` für "${search}"` : ''}
+        </div>
+      )}
+
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
+        {loading ? (
+          <div className="py-12 text-center"><Spinner /></div>
+        ) : filtered.length === 0 ? (
+          <div className="py-12 text-center">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2">child_care</span>
+            <p className="text-sm text-on-surface-variant">{kinder.length === 0
+              ? 'Noch keine Kinder registriert. Importiere eine Excel-Liste oder synchronisiere aus den bestehenden Listen.'
+              : `Keine Kinder gefunden für "${search}"`
+            }</p>
+          </div>
+        ) : (
+          filtered.map(k => {
+            const aCount = parseInt(k.anmeldungen_count) || 0;
+            const bCount = parseInt(k.buchungen_count) || 0;
+            const fehlend = aCount > 0 && bCount === 0;
+            return (
+              <div key={k.id} className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/5 hover:bg-surface-container-low/50 cursor-pointer transition-colors" onClick={() => setSelectedKindId(k.id)}>
+                <Avatar vorname={k.vorname} nachname={k.nachname} size="md" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-on-surface truncate">{k.vorname} {k.nachname}</div>
+                  <div className="text-xs text-on-surface-variant">
+                    {k.klasse ? `Klasse ${k.klasse}` : 'Keine Klasse'}
+                    {' · '}
+                    {parseInt(k.block_count_a) || 0} {(parseInt(k.block_count_a) || 0) === 1 ? 'Block' : 'Blöcke'}
+                  </div>
+                </div>
+                <div className="flex gap-3 items-center">
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-primary">{aCount}</div>
+                    <div className="text-[10px] text-on-surface-variant">Anmeld.</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-sm font-bold ${fehlend ? 'text-error' : bCount > 0 ? 'text-emerald-600' : 'text-on-surface-variant'}`}>{bCount}</div>
+                    <div className="text-[10px] text-on-surface-variant">Buchung.</div>
+                  </div>
+                </div>
+                <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                  <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-high transition-colors" onClick={() => startEdit(k)} title="Bearbeiten">
+                    <span className="material-symbols-outlined text-lg text-on-surface-variant">edit</span>
+                  </button>
+                  <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error/10 transition-colors" onClick={() => deleteKind(k.id)} title="Löschen">
+                    <span className="material-symbols-outlined text-lg text-error">delete</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {editKind && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4" onClick={() => setEditKind(null)}>
+          <div className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-on-surface mb-5">Kind bearbeiten</h3>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider">Nachname</label>
+                <input className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-2 transition-all" value={editForm.nachname} onChange={e => setEditForm({ ...editForm, nachname: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider">Vorname</label>
+                <input className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-2 transition-all" value={editForm.vorname} onChange={e => setEditForm({ ...editForm, vorname: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider">Klasse</label>
+                <input className="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-2 transition-all" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-primary/60 tracking-wider">Notizen</label>
+                <textarea className="w-full bg-surface-container-lowest border border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-lg transition-all min-h-[80px] text-sm" value={editForm.notizen} onChange={e => setEditForm({ ...editForm, notizen: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button className="px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors" onClick={() => setEditKind(null)}>Abbrechen</button>
+              <button className="px-5 py-2 text-sm font-bold bg-primary text-on-primary rounded-lg shadow-sm hover:opacity-90 transition-opacity" onClick={saveEdit}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

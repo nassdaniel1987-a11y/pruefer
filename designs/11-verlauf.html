@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="light" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prüfer - Verlauf</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+        }
+        .no-line-border {
+            box-shadow: 0 0 0 1px rgba(200, 197, 208, 0.15);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#787680",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#e0ddf6",
+                        "on-surface": "#1c1b1f",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#313034",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#1a1a2c",
+                        "tertiary-fixed-dim": "#dcc578",
+                        "tertiary": "#6e5d1b",
+                        "secondary-fixed": "#e3e0f9",
+                        "on-primary-container": "#020026",
+                        "surface-container-highest": "#e5e1e6",
+                        "tertiary-container": "#bfaa60",
+                        "surface-container": "#f0edf1",
+                        "inverse-on-surface": "#f3eff4",
+                        "surface-container-low": "#f6f2f7",
+                        "on-primary-fixed-variant": "#424271",
+                        "on-surface-variant": "#47464f",
+                        "tertiary-fixed": "#f9e191",
+                        "secondary-fixed-dim": "#c6c4dd",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#161543",
+                        "primary": "#5a598b",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed-dim": "#c3c1f9",
+                        "secondary": "#5d5c71",
+                        "primary-container": "#7372a5",
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#fcf8fd",
+                        "on-secondary-fixed-variant": "#464559",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#ebe7ec",
+                        "surface-variant": "#e5e1e6",
+                        "on-tertiary-fixed": "#221b00",
+                        "surface-bright": "#fcf8fd",
+                        "surface-dim": "#dcd9dd",
+                        "on-tertiary-fixed-variant": "#554603",
+                        "surface": "#fcf8fd",
+                        "on-background": "#1c1b1f",
+                        "surface-tint": "#5a598b",
+                        "outline-variant": "#c8c5d0",
+                        "on-secondary-container": "#626076",
+                        "inverse-primary": "#c3c1f9",
+                        "on-tertiary-container": "#4c3e00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- SideNavBar Shell -->
+<aside class="h-screen w-64 fixed left-0 top-0 flex flex-col bg-[#f6f2f7] dark:bg-slate-900 z-50">
+<div class="flex flex-col h-full p-4 gap-2">
+<!-- Brand Section -->
+<div class="flex items-center gap-3 px-3 py-6">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-[#5a598b] tracking-wider uppercase">Prüfer</h1>
+<p class="text-[10px] text-primary font-bold tracking-widest uppercase opacity-60">Professional Integrity</p>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-[#1c1b1f] opacity-60 hover:opacity-100 hover:bg-[#ffffff]/50 rounded-lg transition-all scale-95 duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<!-- Active Tab: Verlauf -->
+<a class="flex items-center gap-3 px-4 py-3 text-[#7372A5] bg-[#ffffff] dark:bg-slate-800 rounded-lg font-bold shadow-sm transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-medium text-sm">Verlauf</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#1c1b1f] opacity-60 hover:opacity-100 hover:bg-[#ffffff]/50 rounded-lg transition-all scale-95 duration-200" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-medium text-sm">Inventar</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#1c1b1f] opacity-60 hover:opacity-100 hover:bg-[#ffffff]/50 rounded-lg transition-all scale-95 duration-200" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-medium text-sm">Berichte</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#1c1b1f] opacity-60 hover:opacity-100 hover:bg-[#ffffff]/50 rounded-lg transition-all scale-95 duration-200" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="font-medium text-sm">Prüfung</span>
+</a>
+</nav>
+<!-- Footer Tabs -->
+<div class="mt-auto space-y-1 border-t border-outline-variant border-opacity-10 pt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-[#1c1b1f] opacity-60 hover:opacity-100 hover:bg-[#ffffff]/50 rounded-lg transition-all scale-95 duration-200" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-medium text-sm">Hilfe</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#1c1b1f] opacity-60 hover:opacity-100 hover:bg-[#ffffff]/50 rounded-lg transition-all scale-95 duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-medium text-sm">Abmelden</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar Shell -->
+<header class="w-full sticky top-0 z-40 bg-[#fcf8fd] dark:bg-slate-950">
+<div class="flex justify-between items-center px-8 h-16 w-full font-['Plus_Jakarta_Sans'] antialiased">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-64 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-primary text-sm">search</span>
+<input class="w-full pl-10 pr-4 py-1.5 bg-surface-container-low border-none rounded-lg text-sm focus:ring-1 focus:ring-primary-container/20 placeholder:opacity-50" placeholder="Suche im Verlauf..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-[#f6f2f7] dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined text-[#7372A5]">notifications</span>
+</button>
+<button class="p-2 hover:bg-[#f6f2f7] dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer active:opacity-80">
+<span class="material-symbols-outlined text-[#7372A5]">settings</span>
+</button>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-outline-variant/20">
+<div class="text-right">
+<p class="text-sm font-bold text-on-surface">Marcus Krüger</p>
+<p class="text-[10px] text-primary uppercase tracking-wider font-semibold">Senior Auditor</p>
+</div>
+<img alt="Auditor Profile" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" data-alt="Close-up portrait of a professional man in a tailored grey suit with a confident, neutral expression against a soft-focus office interior" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByfKeL8cR2QHTs5T1va6inGfivI1JBVbdIN2klVwwiap46nRz3Cp-hqORmQ9Pn8Hc3D_Fut9nEr8Brvg8igVwI7zhcTXHKbOHRewnf0oNo4aucvfr0NV4negPWoV0KwW_Ltrrbi-3IeI7gglv8-pMaWLrmvnkor-lVIH__HbuD_Hj6P4oL5zaCL5KaNNiR_oxuYr_p4c_iM-Xd_0CTVoZry8wgYozvn5VcVHPfE5QE12n94JLwSP2mPWBvuyurxPxYri-Ftewl4A"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Canvas Content -->
+<div class="p-10 flex-1 max-w-7xl mx-auto w-full">
+<!-- Header Section -->
+<div class="mb-10">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-4xl font-extrabold text-primary tracking-tight mb-2">Verlauf</h2>
+<p class="text-on-surface-variant font-medium">Transparente Dokumentation aller System-Aktivitäten.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 bg-surface-container-lowest text-primary px-5 py-2.5 rounded-lg font-bold text-sm shadow-sm hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span>Bericht exportieren</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Filter Bar: Architectural Grid -->
+<div class="grid grid-cols-12 gap-6 mb-8">
+<div class="col-span-4 bg-surface-container-low rounded-xl p-4 flex flex-col gap-2">
+<label class="text-[11px] font-bold uppercase tracking-widest text-primary opacity-60">Zeitraum</label>
+<div class="flex items-center gap-2 text-sm font-semibold text-on-surface">
+<span class="material-symbols-outlined text-primary">calendar_today</span>
+<span>01. Jan 2026 — 31. März 2026</span>
+</div>
+</div>
+<div class="col-span-4 bg-surface-container-low rounded-xl p-4 flex flex-col gap-2">
+<label class="text-[11px] font-bold uppercase tracking-widest text-primary opacity-60">Kategorie</label>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-sm font-semibold text-on-surface">
+<span class="material-symbols-outlined text-primary">filter_list</span>
+<span>Alle Kategorien</span>
+</div>
+<span class="material-symbols-outlined text-sm opacity-40">expand_more</span>
+</div>
+</div>
+<div class="col-span-4 bg-surface-container-low rounded-xl p-4 flex flex-col gap-2">
+<label class="text-[11px] font-bold uppercase tracking-widest text-primary opacity-60">Ferienblock</label>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-sm font-semibold text-on-surface">
+<span class="material-symbols-outlined text-primary">bookmark</span>
+<span>Winterferien 2026</span>
+</div>
+<span class="material-symbols-outlined text-sm opacity-40">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Timeline Section -->
+<div class="space-y-6 relative">
+<!-- Vertical Line -->
+<div class="absolute left-[27px] top-4 bottom-4 w-px bg-outline-variant/30 hidden md:block"></div>
+<!-- Timeline Entry 1 -->
+<div class="relative group">
+<div class="flex gap-8 items-start">
+<!-- Timeline Point -->
+<div class="w-14 h-14 bg-surface-container-lowest rounded-full flex items-center justify-center z-10 border-4 border-background group-hover:border-primary/10 transition-all shadow-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+</div>
+<!-- Content Card -->
+<div class="flex-1 bg-surface-container-lowest rounded-xl p-6 shadow-sm no-line-border hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<img alt="Auditor Profile" class="w-8 h-8 rounded-full" data-alt="Professional profile photo of a smiling man with neat beard and styled hair in a bright indoor setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZlm7VlhjTYIgGHJdrJsEXqF34DfJpX0fYieoOWDK04DuvtEWpY8DBydGcqe0RnerOrDMRS1VJK1o3L4SF14_2NLmbqiwt8uylJfxkZ7xrb_G9fMWa1Ve8vVO6bkYYPXsYA2oNSFxdfGx6GLKcPs8CzF7dTq-Ss4Tb9M66Q3Y9bfgs6zfcIvLoa9GzJcjuaTI5jhXPznJ5SywAIjQlwLx-nCaQ0wAj7CD7VMosJSY3VhUZL-wj_cnbmWQD_yQHQaUF8wPHWushEQ"/>
+<div>
+<h4 class="font-bold text-on-surface text-sm">Marcus Krüger (Admin)</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">Vor 15 Minuten • 14:22 Uhr</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-tertiary-container/10 text-tertiary text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-tight">Abgleich</span>
+<span class="bg-surface-container text-on-surface-variant text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-tight">Winterferien 2026</span>
+</div>
+</div>
+<p class="text-on-surface text-base leading-relaxed">
+                                Admin hat den finalen <span class="text-primary font-bold">Abgleich für Winterferien 2026</span> erfolgreich abgeschlossen. Alle Datensätze wurden validiert.
+                            </p>
+</div>
+</div>
+</div>
+<!-- Timeline Entry 2 -->
+<div class="relative group">
+<div class="flex gap-8 items-start">
+<div class="w-14 h-14 bg-surface-container-lowest rounded-full flex items-center justify-center z-10 border-4 border-background group-hover:border-primary/10 transition-all shadow-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">group_add</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest rounded-xl p-6 shadow-sm no-line-border hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<img alt="Auditor Profile" class="w-8 h-8 rounded-full" data-alt="Close-up of a professional woman with glasses and a warm smile, wearing a blazer, minimalist office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCosy9ZSbELjecGG1lxqJADRIpCnIvKI7TBEBupFDUKu-queUytVnfzsTs-ge5gZFKXJ_JTntfqyXuEswrmOXNwAH0Btfrh51vlcHGoELD241iWZ9jvybYxhGtnhQnXEtNNFdt3Apmuq8YhzJbRk2lJB1fUR2w-9zer1pf9MnkbQn7FbIuJMkIpxUETYeVhodXthq48IVNQbMbAFzT8menQ17iOmD-1nZdd58fcvXfVqCIyrxsOCEhmvfQlZpw-KcRDTf0DgQeAjg"/>
+<div>
+<h4 class="font-bold text-on-surface text-sm">Sarah Weber (Editor)</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">Heute • 11:05 Uhr</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-primary-container/10 text-primary text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-tight">Import</span>
+<span class="bg-surface-container text-on-surface-variant text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-tight">Osterferien 2026</span>
+</div>
+</div>
+<p class="text-on-surface text-base leading-relaxed">
+<span class="font-semibold">12 Kinder</span> wurden erfolgreich aus der zentralen Excel-Tabelle in die Datenbank importiert.
+                            </p>
+</div>
+</div>
+</div>
+<!-- Timeline Entry 3 -->
+<div class="relative group">
+<div class="flex gap-8 items-start">
+<div class="w-14 h-14 bg-surface-container-lowest rounded-full flex items-center justify-center z-10 border-4 border-background group-hover:border-primary/10 transition-all shadow-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">upload_file</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest rounded-xl p-6 shadow-sm no-line-border hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary text-[10px] font-bold">MK</div>
+<div>
+<h4 class="font-bold text-on-surface text-sm">Marcus Krüger (Admin)</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">Gestern • 16:45 Uhr</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-tertiary-container/10 text-tertiary text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-tight">Kinder</span>
+<span class="bg-surface-container text-on-surface-variant text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-tight">Osterferien 2026</span>
+</div>
+</div>
+<p class="text-on-surface text-base leading-relaxed">
+<span class="font-semibold">Liste B</span> für die Osterferien 2026 wurde hochgeladen und zur Prüfung markiert.
+                            </p>
+</div>
+</div>
+</div>
+<!-- Timeline Entry 4 (System) -->
+<div class="relative group">
+<div class="flex gap-8 items-start">
+<div class="w-14 h-14 bg-surface-container-lowest rounded-full flex items-center justify-center z-10 border-4 border-background group-hover:border-primary/10 transition-all shadow-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">settings_suggest</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest rounded-xl p-6 shadow-sm no-line-border hover:shadow-md transition-all border-l-4 border-l-primary/30">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-xs">auto_fix_high</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface text-sm">Automatisches System</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">Gestern • 04:00 Uhr</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-error-container/10 text-error text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-tight">System</span>
+<span class="bg-surface-container text-on-surface-variant text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-tight">Zentral</span>
+</div>
+</div>
+<p class="text-on-surface text-base leading-relaxed">
+                                Das wöchentliche <span class="font-semibold">System-Update (v2.4.1)</span> wurde planmäßig durchgeführt. Alle Module sind betriebsbereit.
+                            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="mt-12 flex justify-between items-center bg-surface-container-low p-4 rounded-xl">
+<p class="text-sm text-on-surface-variant font-medium">Zeige 1-10 von 485 Einträgen</p>
+<div class="flex gap-2">
+<button class="p-2 bg-surface-container-lowest rounded-lg shadow-sm opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center bg-primary text-white font-bold rounded-lg shadow-md">1</button>
+<button class="w-10 h-10 flex items-center justify-center hover:bg-surface-container-lowest rounded-lg font-bold transition-all">2</button>
+<button class="w-10 h-10 flex items-center justify-center hover:bg-surface-container-lowest rounded-lg font-bold transition-all">3</button>
+<span class="w-10 h-10 flex items-center justify-center opacity-40">...</span>
+<button class="w-10 h-10 flex items-center justify-center hover:bg-surface-container-lowest rounded-lg font-bold transition-all">49</button>
+<button class="p-2 bg-surface-container-lowest rounded-lg shadow-sm hover:bg-primary-container hover:text-white transition-all">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Decorative Element: Background Shield Watermark -->
+<div class="fixed -bottom-20 -right-20 pointer-events-none opacity-[0.03] rotate-12">
+<span class="material-symbols-outlined text-[400px]">security</span>
+</div>
+</body></html>

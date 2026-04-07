@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+
+<html class="light" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prüfer | Design System &amp; Component Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#e2dfff",
+                        "on-surface-variant": "#47464f",
+                        "surface-container-low": "#f6f2f7",
+                        "on-primary-fixed": "#161543",
+                        "on-background": "#1c1b1f",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e5e1e6",
+                        "tertiary-container": "#bfaa60",
+                        "on-secondary-fixed": "#1a1a2c",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e5e1e6",
+                        "secondary-container": "#e0ddf6",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#020026",
+                        "outline": "#787680",
+                        "on-tertiary-fixed": "#221b00",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#7372a5",
+                        "outline-variant": "#c8c5d0",
+                        "surface-container": "#f0edf1",
+                        "secondary-fixed-dim": "#c6c4dd",
+                        "inverse-primary": "#c3c1f9",
+                        "primary-fixed-dim": "#c3c1f9",
+                        "on-surface": "#1c1b1f",
+                        "on-secondary-container": "#626076",
+                        "surface": "#fcf8fd",
+                        "on-tertiary-container": "#4c3e00",
+                        "background": "#fcf8fd",
+                        "secondary": "#5d5c71",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#5a598b",
+                        "surface-bright": "#fcf8fd",
+                        "secondary-fixed": "#e3e0f9",
+                        "surface-container-high": "#ebe7ec",
+                        "inverse-surface": "#313034",
+                        "tertiary": "#6e5d1b",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#f9e191",
+                        "surface-tint": "#5a598b",
+                        "on-tertiary-fixed-variant": "#554603",
+                        "surface-dim": "#dcd9dd",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#dcc578",
+                        "on-secondary-fixed-variant": "#464559",
+                        "on-primary-fixed-variant": "#424271",
+                        "inverse-on-surface": "#f3eff4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-fixed">
+<div class="flex">
+<!-- Sidebar Navigation (Derived from Shared Components) -->
+<aside class="h-screen w-64 fixed left-0 top-0 flex flex-col p-6 gap-2 bg-surface-container-low text-primary-container font-['Plus_Jakarta_Sans'] text-[13px] font-semibold uppercase tracking-[0.05em]">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-sm">
+<span class="material-symbols-outlined" data-icon="shield">shield</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-on-surface tracking-tight leading-none">Prüfer</h1>
+<p class="text-[10px] text-primary opacity-70 tracking-widest">Audit Suite</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 bg-surface-container-lowest text-primary rounded-lg shadow-sm transition-all scale-95 active:scale-100" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Style Guide</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface opacity-60 hover:bg-surface-container-lowest transition-all hover:opacity-100" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span>Audit Log</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface opacity-60 hover:bg-surface-container-lowest transition-all hover:opacity-100" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span>Compliance</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface opacity-60 hover:bg-surface-container-lowest transition-all hover:opacity-100" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>Team</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface opacity-60 hover:bg-surface-container-lowest transition-all hover:opacity-100" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Assets</span>
+</a>
+</nav>
+<button class="mt-auto w-full py-3 bg-primary text-on-primary rounded-lg font-bold shadow-md hover:bg-primary-container transition-colors">
+                New Audit
+            </button>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 min-h-screen bg-surface px-12 py-12">
+<!-- Header Anchor -->
+<header class="mb-16">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold uppercase tracking-widest rounded-full">System v1.0</span>
+</div>
+<h2 class="text-5xl font-extrabold text-primary tracking-tighter mb-4">Design System</h2>
+<p class="text-on-surface-variant max-w-2xl leading-relaxed">
+                    A comprehensive architectural UI library built for precision and professional integrity. Defined by tonal layering, editorial typography, and high-contrast indigo accents.
+                </p>
+</header>
+<!-- 1. Buttons -->
+<section class="mb-20">
+<h3 class="text-2xl font-bold text-on-surface mb-8 pb-4 border-b border-outline-variant/10">01. Buttons &amp; Interaction</h3>
+<div class="space-y-12">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<div class="space-y-4">
+<p class="text-[11px] font-bold uppercase tracking-widest text-primary/60">Primary</p>
+<div class="flex flex-col gap-4">
+<button class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-lg font-semibold shadow-sm hover:opacity-90 transition-opacity">Speichern</button>
+<button class="px-6 py-3 bg-primary-container/80 text-on-primary rounded-lg font-semibold opacity-70 cursor-not-allowed">Speichern</button>
+<button class="px-6 py-3 bg-primary text-on-primary rounded-lg font-semibold flex items-center justify-center gap-2">
+<span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+<span>Laden...</span>
+</button>
+</div>
+</div>
+<div class="space-y-4">
+<p class="text-[11px] font-bold uppercase tracking-widest text-primary/60">Secondary</p>
+<div class="flex flex-col gap-4">
+<button class="px-6 py-3 border border-outline-variant text-primary rounded-lg font-semibold hover:bg-surface-container transition-colors">Abbrechen</button>
+<button class="px-6 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-semibold">Sekundär</button>
+</div>
+</div>
+<div class="space-y-4">
+<p class="text-[11px] font-bold uppercase tracking-widest text-primary/60">Action Colors</p>
+<div class="flex flex-col gap-4">
+<button class="px-6 py-3 bg-error text-white rounded-lg font-semibold shadow-sm hover:bg-red-700">Löschen</button>
+<button class="px-6 py-3 bg-tertiary text-on-tertiary rounded-lg font-semibold">Akzeptieren</button>
+</div>
+</div>
+<div class="space-y-4">
+<p class="text-[11px] font-bold uppercase tracking-widest text-primary/60">Ghost &amp; Icons</p>
+<div class="flex flex-col gap-4">
+<button class="px-4 py-2 text-primary font-bold hover:bg-surface-container-high rounded-lg transition-colors text-left">Ghost Button</button>
+<div class="flex gap-2">
+<button class="w-10 h-10 flex items-center justify-center bg-surface-container-lowest shadow-sm rounded-lg text-primary hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center border border-outline-variant/30 rounded-lg text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Icons -->
+<section class="mb-20 p-8 bg-surface-container-low rounded-xl">
+<h3 class="text-2xl font-bold text-on-surface mb-8">02. Iconography</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-6">
+<div class="p-6 bg-surface-container-lowest rounded-lg">
+<p class="text-[10px] font-black uppercase text-primary mb-4">Navigationsset</p>
+<div class="flex flex-wrap gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="material-symbols-outlined" data-icon="card_giftcard">card_giftcard</span>
+<span class="material-symbols-outlined" data-icon="compare_arrows">compare_arrows</span>
+</div>
+</div>
+<div class="p-6 bg-surface-container-lowest rounded-lg">
+<p class="text-[10px] font-black uppercase text-primary mb-4">Aktionen</p>
+<div class="flex flex-wrap gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+</div>
+</div>
+<div class="p-6 bg-surface-container-lowest rounded-lg">
+<p class="text-[10px] font-black uppercase text-primary mb-4">Utility</p>
+<div class="flex flex-wrap gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+<span class="material-symbols-outlined" data-icon="close">close</span>
+<span class="material-symbols-outlined" data-icon="check">check</span>
+</div>
+</div>
+<div class="p-6 bg-surface-container-lowest rounded-lg col-span-2">
+<p class="text-[10px] font-black uppercase text-primary mb-4">Status Feedback</p>
+<div class="flex gap-6">
+<div class="flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-green-600" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-[9px] uppercase tracking-tighter">Success</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-error" data-icon="error" style="font-variation-settings: 'FILL' 1;">error</span>
+<span class="text-[9px] uppercase tracking-tighter">Error</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-tertiary" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-[9px] uppercase tracking-tighter">Warning</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="material-symbols-outlined text-primary" data-icon="info" style="font-variation-settings: 'FILL' 1;">info</span>
+<span class="text-[9px] uppercase tracking-tighter">Info</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. Badges & Form Elements -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+<section>
+<h3 class="text-2xl font-bold text-on-surface mb-8">03. Status &amp; Data Markers</h3>
+<div class="space-y-8">
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm space-y-4">
+<div class="flex flex-wrap gap-3">
+<span class="px-3 py-1 bg-green-100 text-green-700 text-[11px] font-bold rounded-full uppercase tracking-wider">Aktiv</span>
+<span class="px-3 py-1 bg-primary-fixed text-primary text-[11px] font-bold rounded-full uppercase tracking-wider">Geplant</span>
+<span class="px-3 py-1 bg-surface-container-high text-on-surface-variant text-[11px] font-bold rounded-full uppercase tracking-wider">Abgeschlossen</span>
+<span class="px-3 py-1 bg-tertiary-container/30 text-on-tertiary-container text-[11px] font-bold rounded-full uppercase tracking-wider">Offen</span>
+<span class="px-3 py-1 bg-error-container text-on-error-container text-[11px] font-bold rounded-full uppercase tracking-wider">Fehler</span>
+</div>
+<div class="flex gap-4 items-center">
+<span class="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200 text-[11px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-green-600"></span> Score: High
+                                </span>
+<div class="relative">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+<span class="absolute -top-1 -right-1 w-4 h-4 bg-error text-white text-[9px] font-bold flex items-center justify-center rounded-full">5</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section>
+<h3 class="text-2xl font-bold text-on-surface mb-8">04. Input Fields</h3>
+<div class="space-y-4">
+<div class="space-y-1">
+<label class="text-[11px] font-black uppercase text-primary/60 tracking-wider">Prüfungsname</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-0 py-2 transition-all" placeholder="Geben Sie einen Namen ein..." type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<label class="text-[11px] font-black uppercase text-primary/60 tracking-wider">Status</label>
+<select class="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 py-2 px-0 appearance-none">
+<option>Bitte wählen...</option>
+<option>Priorität 1</option>
+</select>
+</div>
+<div class="space-y-1">
+<label class="text-[11px] font-black uppercase text-error tracking-wider">Pflichtfeld *</label>
+<input class="w-full bg-surface-container-lowest border-0 border-b border-error focus:border-error focus:ring-0 px-0 py-2 text-error" type="text" value="Ungültige Eingabe"/>
+<p class="text-[10px] text-error font-medium">Dies ist ein Fehlerhinweis.</p>
+</div>
+</div>
+<div class="flex items-center gap-8 pt-4">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary/20" type="checkbox"/>
+<span class="text-xs font-medium">Auto-Speichern</span>
+</label>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+<span class="ml-3 text-xs font-medium">Cloud Sync</span>
+</label>
+</div>
+</div>
+</section>
+</div>
+<!-- 5. Cards & Tables -->
+<section class="mb-20">
+<h3 class="text-2xl font-bold text-on-surface mb-8">05. Content Architectures</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<!-- Stat Card -->
+<div class="p-8 bg-surface-container-lowest rounded-xl shadow-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-5 text-primary">
+<span class="material-symbols-outlined text-6xl" data-icon="shield">shield</span>
+</div>
+<span class="material-symbols-outlined text-primary mb-4" data-icon="query_stats">query_stats</span>
+<p class="text-xs font-black uppercase tracking-widest text-primary/40">Audit Score</p>
+<h4 class="text-4xl font-extrabold text-on-surface tracking-tighter">98.4</h4>
+<p class="mt-2 text-[10px] text-green-600 font-bold">+12% vs last month</p>
+</div>
+<!-- Empty State Card -->
+<div class="p-8 bg-surface rounded-xl border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center opacity-70">
+<span class="material-symbols-outlined text-3xl text-primary/40 mb-3" data-icon="add_circle">add_circle</span>
+<p class="text-xs font-bold text-primary">Keine Daten verfügbar</p>
+<p class="text-[10px] text-on-surface-variant">Klicken Sie hier um eine Prüfung zu starten</p>
+</div>
+<!-- Content Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm flex flex-col overflow-hidden border border-outline-variant/5">
+<div class="h-32 bg-primary-fixed relative">
+<img class="w-full h-full object-cover mix-blend-overlay opacity-30" data-alt="professional modern minimalist workspace with accounting tools and soft blue lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKt6n7_FryIl3Ebrzdy5gzMqH3zgWQ17urSZ2RuP5EAP-tVbzUMYHtQT4Sg04gSXxHLK-Xu6VpyYIQ6fWi4XWDCJKEtURHFSiViSfIpB5I38i5QliqAhwvoURFooGXqCRYNPFgPc-8hXzjigmuGeVmzJwfs5Q346-3_2AgmFZYeFbpFnH5wqjtBvyZuO-IOp6ADWS2xtxzoDXEDJNc3YxiY2GyyMHgFdx7nOeDDKrWThrVtHBEH3JU1ZKxVSqfesa3lV3zE9bTDg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent"></div>
+</div>
+<div class="p-5 space-y-2">
+<div class="flex justify-between items-center">
+<span class="text-[9px] font-black tracking-widest text-primary uppercase">Portfolio</span>
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+</div>
+<h5 class="font-bold text-on-surface leading-tight">Jahresabschluss 2023</h5>
+<p class="text-[11px] text-on-surface-variant line-clamp-2">Detaillierte Analyse aller Vermögenswerte und Verbindlichkeiten für das Geschäftsjahr.</p>
+<div class="pt-2 flex gap-2">
+<button class="text-[10px] font-bold text-primary px-3 py-1 bg-primary-fixed rounded">Details</button>
+<button class="text-[10px] font-bold text-on-surface-variant px-3 py-1 hover:bg-surface-container-low rounded">Edit</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/5 overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant/10">
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary">ID</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1">
+                                    Prüfung <span class="material-symbols-outlined text-[14px]" data-icon="unfold_more">unfold_more</span>
+</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary">Status</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary">Datum</th>
+<th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-primary">Aktion</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-6 py-4 text-[11px] font-medium text-on-surface-variant">#8920</td>
+<td class="px-6 py-4 font-bold text-on-surface">Inventarprüfung Nord</td>
+<td class="px-6 py-4"><span class="px-2 py-0.5 bg-green-100 text-green-700 text-[9px] font-bold rounded uppercase">Aktiv</span></td>
+<td class="px-6 py-4 text-[11px] text-on-surface-variant">12. Okt 2023</td>
+<td class="px-6 py-4"><span class="material-symbols-outlined text-primary cursor-pointer hover:scale-110 transition-transform" data-icon="more_horiz">more_horiz</span></td>
+</tr>
+<tr class="bg-primary-fixed/20">
+<td class="px-6 py-4 text-[11px] font-medium text-on-surface-variant">#8921</td>
+<td class="px-6 py-4 font-bold text-on-surface">Steuer-Review</td>
+<td class="px-6 py-4"><span class="px-2 py-0.5 bg-surface-container-high text-on-surface-variant text-[9px] font-bold rounded uppercase">Geplant</span></td>
+<td class="px-6 py-4 text-[11px] text-on-surface-variant">15. Okt 2023</td>
+<td class="px-6 py-4"><span class="material-symbols-outlined text-primary cursor-pointer" data-icon="more_horiz">more_horiz</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- 7 & 8. Modals & Toasts -->
+<section class="mb-20">
+<h3 class="text-2xl font-bold text-on-surface mb-8">06. Feedback &amp; Dialogue</h3>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+<!-- Inline Modal Mock -->
+<div class="p-8 bg-surface-container-low rounded-xl flex items-center justify-center">
+<div class="bg-surface-container-lowest w-full max-w-sm rounded-xl shadow-2xl p-6 border border-outline-variant/10 backdrop-blur-md">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+<h6 class="text-lg font-bold">Löschbestätigung</h6>
+</div>
+<p class="text-[13px] text-on-surface-variant leading-relaxed mb-6">Sind Sie sicher, dass Sie die ausgewählten Audits unwiderruflich löschen möchten? Dieser Vorgang kann nicht rückgängig gemacht werden.</p>
+<div class="flex justify-end gap-3">
+<button class="px-4 py-2 text-[11px] font-bold text-on-surface-variant">Abbrechen</button>
+<button class="px-4 py-2 text-[11px] font-bold bg-error text-white rounded-lg">Ja, Löschen</button>
+</div>
+</div>
+</div>
+<!-- Toasts -->
+<div class="space-y-4">
+<div class="p-4 bg-surface-container-lowest border-l-4 border-green-500 shadow-sm rounded flex items-center gap-4">
+<span class="material-symbols-outlined text-green-500" data-icon="check_circle">check_circle</span>
+<div>
+<p class="text-[11px] font-black uppercase tracking-widest text-on-surface">Erfolgreich</p>
+<p class="text-[10px] text-on-surface-variant">Daten wurden erfolgreich synchronisiert.</p>
+</div>
+</div>
+<div class="p-4 bg-surface-container-lowest border-l-4 border-error shadow-sm rounded flex items-center gap-4">
+<span class="material-symbols-outlined text-error" data-icon="error">error</span>
+<div>
+<p class="text-[11px] font-black uppercase tracking-widest text-on-surface">Fehler</p>
+<p class="text-[10px] text-on-surface-variant">Verbindung zum Server fehlgeschlagen.</p>
+</div>
+</div>
+<div class="p-4 bg-surface-container-lowest border-l-4 border-primary shadow-sm rounded flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="info">info</span>
+<div>
+<p class="text-[11px] font-black uppercase tracking-widest text-on-surface">Information</p>
+<p class="text-[10px] text-on-surface-variant">Ein neues Update steht bereit.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 9. Navigation & Misc -->
+<section class="mb-20">
+<h3 class="text-2xl font-bold text-on-surface mb-8">07. Utilities &amp; Navigation</h3>
+<div class="space-y-12">
+<!-- Breadcrumbs & Progress -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<div class="space-y-8">
+<div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+<a class="text-primary opacity-50 hover:opacity-100" href="#">Dashboard</a>
+<span class="text-outline-variant">/</span>
+<a class="text-primary opacity-50 hover:opacity-100" href="#">Audit Suite</a>
+<span class="text-outline-variant">/</span>
+<span class="text-on-surface">Current</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-black uppercase tracking-widest">
+<span class="text-primary">Gesamtfortschritt</span>
+<span class="text-primary">65%</span>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all" style="width: 65%"></div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-6">
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-lg border-2 border-surface-container-lowest">JS</div>
+<div class="flex -space-x-3 overflow-hidden">
+<div class="inline-block h-10 w-10 rounded-full ring-2 ring-surface bg-surface-container-high flex items-center justify-center text-[10px] font-bold">MK</div>
+<div class="inline-block h-10 w-10 rounded-full ring-2 ring-surface bg-primary text-white flex items-center justify-center text-[10px] font-bold">TH</div>
+<div class="inline-block h-10 w-10 rounded-full ring-2 ring-surface bg-tertiary-container text-on-tertiary-container flex items-center justify-center text-[10px] font-bold">+2</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="flex gap-1">
+<button class="w-8 h-8 rounded border border-outline-variant/30 flex items-center justify-center text-primary opacity-50"><span class="material-symbols-outlined text-[18px]" data-icon="chevron_left">chevron_left</span></button>
+<button class="w-8 h-8 rounded bg-primary text-white font-bold text-xs">1</button>
+<button class="w-8 h-8 rounded border border-outline-variant/30 text-xs font-bold hover:bg-surface-container transition-colors">2</button>
+<button class="w-8 h-8 rounded border border-outline-variant/30 text-xs font-bold hover:bg-surface-container transition-colors">3</button>
+<button class="w-8 h-8 rounded border border-outline-variant/30 flex items-center justify-center text-primary hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span></button>
+</div>
+</div>
+</div>
+<!-- Tooltip -->
+<div class="relative group inline-block">
+<div class="px-4 py-2 bg-primary text-on-primary rounded font-bold text-[11px] cursor-help">Hover for Tooltip</div>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-32 p-2 bg-on-surface text-surface text-[10px] rounded text-center shadow-xl">
+                            Dieser Wert wird automatisch berechnet.
+                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-on-surface"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>
