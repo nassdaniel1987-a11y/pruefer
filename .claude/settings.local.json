@@ -22,7 +22,8 @@
       "Bash(where:*)",
       "Bash(npx netlify:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(grep -v \"//.*badge\\\\|//.*btn\\\\|html +=\")"
     ]
   }
 }

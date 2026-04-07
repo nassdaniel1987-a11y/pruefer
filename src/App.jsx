@@ -44,13 +44,13 @@ const ConfirmDialog = () => {
   if (!state) return null;
   const close = (val) => { setState(null); _confirmState = null; if (_confirmResolver) { _confirmResolver(val); _confirmResolver = null; } };
   return (
-    <div className="confirm-overlay" onClick={() => close(false)}>
-      <div className="confirm-box" onClick={e => e.stopPropagation()}>
-        <h3>{state.title}</h3>
-        <p>{state.message}</p>
-        <div className="confirm-actions">
-          <button className="btn btn-ghost" onClick={() => close(false)}>Abbrechen</button>
-          <button className="btn btn-danger" style={{ width: 'auto' }} onClick={() => close(true)}>{state.dangerLabel}</button>
+    <div className="fixed inset-0 bg-black/40 z-[300] flex items-center justify-center" onClick={() => close(false)}>
+      <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-on-surface mb-2">{state.title}</h3>
+        <p className="text-on-surface-variant text-sm mb-5">{state.message}</p>
+        <div className="flex gap-2 justify-end">
+          <button className="px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => close(false)}>Abbrechen</button>
+          <button className="px-4 py-2 text-sm font-medium rounded-xl bg-error text-on-error hover:bg-error/90 transition-colors" onClick={() => close(true)}>{state.dangerLabel}</button>
         </div>
       </div>
     </div>
@@ -386,23 +386,33 @@ const LoginPage = ({ onLogin }) => {
   };
 
   return (
-    <div className="login-wrap">
-      <div className="login-card">
-        <div className="login-logo">
-          <h1>Prüfer</h1>
-          <p>Ferienversorgung Abgleich-System</p>
+    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+      <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-lg w-full max-w-sm border border-outline-variant/20">
+        <div className="text-center mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <span className="material-symbols-outlined text-primary text-3xl">fact_check</span>
+          </div>
+          <h1 className="text-2xl font-bold text-on-surface font-headline">Prüfer</h1>
+          <p className="text-on-surface-variant text-sm mt-1">Ferienversorgung Abgleich-System</p>
         </div>
-        {err && <div className="error-msg">{err}</div>}
-        <form onSubmit={submit}>
-          <div className="form-group">
-            <label>Benutzername</label>
-            <input className="form-input" value={user} onChange={e => setUser(e.target.value)} autoFocus />
+        {err && (
+          <div className="flex items-center gap-2 bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3 mb-5">
+            <span className="material-symbols-outlined text-base">error</span>
+            {err}
           </div>
-          <div className="form-group">
-            <label>Passwort</label>
-            <input className="form-input" type="password" value={pass} onChange={e => setPass(e.target.value)} />
+        )}
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Benutzername</label>
+            <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+              value={user} onChange={e => setUser(e.target.value)} autoFocus />
           </div>
-          <button className="btn btn-primary" disabled={loading || !user || !pass}>
+          <div>
+            <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Passwort</label>
+            <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/50"
+              type="password" value={pass} onChange={e => setPass(e.target.value)} />
+          </div>
+          <button className="w-full mt-2 py-3 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50" disabled={loading || !user || !pass}>
             {loading ? 'Anmelden...' : 'Anmelden'}
           </button>
         </form>
@@ -520,158 +530,167 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
 
   return (
     <div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1>Dashboard</h1>
-          <p>Übersicht aller Ferienblöcke und aktueller Status</p>
+          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">dashboard</span>
+            Dashboard
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">Übersicht aller Ferienblöcke und aktueller Status</p>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={onReload}>↻ Aktualisieren</button>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-xl text-primary hover:bg-primary/10 transition-colors" onClick={onReload}>
+          <span className="material-symbols-outlined text-base">refresh</span>Aktualisieren
+        </button>
       </div>
 
-      <div className="stat-grid">
-        <div className="stat-card accent-blue">
-          <div className="stat-label">Ferienblöcke</div>
-          <div className="stat-value">{blocks.length}</div>
-          <div className="stat-sub">gesamt angelegt</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+          <div className="text-xs text-on-surface-variant font-medium mb-1">Ferienblöcke</div>
+          <div className="text-3xl font-bold text-primary">{blocks.length}</div>
+          <div className="text-xs text-on-surface-variant mt-0.5">gesamt angelegt</div>
         </div>
-        <div className="stat-card accent-blue">
-          <div className="stat-label">Kinder in A</div>
-          <div className="stat-value">{gesamtKinderA}</div>
-          <div className="stat-sub">verschiedene Kinder angemeldet</div>
+        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+          <div className="text-xs text-on-surface-variant font-medium mb-1">Kinder in A</div>
+          <div className="text-3xl font-bold text-primary">{gesamtKinderA}</div>
+          <div className="text-xs text-on-surface-variant mt-0.5">verschiedene Kinder angemeldet</div>
         </div>
-        <div className="stat-card accent-green">
-          <div className="stat-label">Kinder in B</div>
-          <div className="stat-value">{gesamtKinderB}</div>
-          <div className="stat-sub">verschiedene Kinder gebucht</div>
+        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+          <div className="text-xs text-on-surface-variant font-medium mb-1">Kinder in B</div>
+          <div className="text-3xl font-bold text-green-700">{gesamtKinderB}</div>
+          <div className="text-xs text-on-surface-variant mt-0.5">verschiedene Kinder gebucht</div>
         </div>
         {hatAbgleich ? (<>
-          <div className="stat-card accent-green">
-            <div className="stat-label">✓ Übereinstimmung</div>
-            <div className="stat-value">{gesamtMatches}</div>
-            <div className="stat-sub">Kinder mit Buchung</div>
+          <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+            <div className="text-xs text-on-surface-variant font-medium mb-1">Übereinstimmung</div>
+            <div className="text-3xl font-bold text-green-700">{gesamtMatches}</div>
+            <div className="text-xs text-on-surface-variant mt-0.5">Kinder mit Buchung</div>
           </div>
-          <div className={`stat-card ${gesamtFehltInB > 0 ? 'accent-red' : 'accent-green'}`}>
-            <div className="stat-label">✗ Fehlt in B</div>
-            <div className="stat-value">{gesamtFehltInB}</div>
-            <div className="stat-sub">{gesamtFehltInB > 0 ? 'Kinder ohne Buchung' : 'alle gebucht ✓'}</div>
+          <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+            <div className="text-xs text-on-surface-variant font-medium mb-1">Fehlt in B</div>
+            <div className={`text-3xl font-bold ${gesamtFehltInB > 0 ? 'text-error' : 'text-green-700'}`}>{gesamtFehltInB}</div>
+            <div className="text-xs text-on-surface-variant mt-0.5">{gesamtFehltInB > 0 ? 'Kinder ohne Buchung' : 'alle gebucht'}</div>
           </div>
         </>) : (
-          <div className="stat-card">
-            <div className="stat-label">Abgleich</div>
-            <div className="stat-value">–</div>
-            <div className="stat-sub">noch keiner durchgeführt</div>
+          <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+            <div className="text-xs text-on-surface-variant font-medium mb-1">Abgleich</div>
+            <div className="text-3xl font-bold text-on-surface-variant">–</div>
+            <div className="text-xs text-on-surface-variant mt-0.5">noch keiner durchgeführt</div>
           </div>
         )}
       </div>
 
       {blocks.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            <div className="icon">📅</div>
-            <p>Noch kein Ferienblock angelegt.</p>
-            <br />
-            <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => onNavigate('ferienblock')}>
-              Ersten Block anlegen
-            </button>
-          </div>
+        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">calendar_month</span>
+          <p className="text-on-surface-variant mb-4">Noch kein Ferienblock angelegt.</p>
+          <button className="px-5 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors" onClick={() => onNavigate('ferienblock')}>
+            Ersten Block anlegen
+          </button>
         </div>
       ) : (
-        <div className="card">
-          <div className="card-title">
-            Alle Ferienblöcke
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/10">
+            <span className="font-semibold text-on-surface">Alle Ferienblöcke</span>
+            <div className="flex gap-2">
               {hatAbgleich && gesamtFehltInB > 0 && <>
-                <button className="btn btn-ghost btn-sm" onClick={printAllFehlende}>🖨️ Drucken</button>
-                <button className="btn btn-ghost btn-sm" onClick={exportFehlende}>📥 Excel</button>
+                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={printAllFehlende}>
+                  <span className="material-symbols-outlined text-sm">print</span>Drucken
+                </button>
+                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={exportFehlende}>
+                  <span className="material-symbols-outlined text-sm">download</span>Excel
+                </button>
               </>}
-              <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('ferienblock')}>+ Neu / Verwalten</button>
+              <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-primary hover:bg-primary/10 transition-colors" onClick={() => onNavigate('ferienblock')}>
+                <span className="material-symbols-outlined text-sm">add</span>Neu / Verwalten
+              </button>
             </div>
           </div>
-          <div className="table-wrap">
-            <table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
               <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Zeitraum</th>
-                  <th>€/Tag</th>
-                  <th>Angemeldet (A)</th>
-                  <th>Gebucht (B)</th>
-                  <th>✓ OK</th>
-                  <th>✗ Fehlt in B</th>
-                  <th>⚠ Nur in B</th>
-                  <th>Abgleiche</th>
-                  <th></th>
+                <tr className="bg-surface-container/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Name</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Zeitraum</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">€/Tag</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Angemeldet (A)</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Gebucht (B)</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">OK</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Fehlt in B</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Nur in B</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Abgleiche</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-outline-variant/10">
                 {blocks.map(b => {
                   const d = blockDetail[b.id];
                   const loading = loadingDetail[b.id];
                   const hatErgebnis = d?.letzter_abgleich != null;
                   return (
                     <React.Fragment key={b.id}>
-                      <tr>
-                        <td><strong>{b.name}</strong></td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</td>
-                        <td>{parseFloat(b.preis_pro_tag).toFixed(2)} €</td>
-                        <td>
-                          {loading ? '…' : <><span className="badge badge-blue">{d?.kinder_a ?? 0}</span>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 4 }}>({d?.eintraege_a ?? 0} Tage)</span></>}
+                      <tr className="hover:bg-surface-container/30 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-on-surface">{b.name}</td>
+                        <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</td>
+                        <td className="px-4 py-3 text-on-surface-variant">{parseFloat(b.preis_pro_tag).toFixed(2)} €</td>
+                        <td className="px-4 py-3">
+                          {loading ? '…' : <><span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d?.kinder_a ?? 0}</span>
+                            <span className="text-[0.65rem] text-on-surface-variant ml-1">({d?.eintraege_a ?? 0} Tage)</span></>}
                         </td>
-                        <td>
-                          {loading ? '…' : <><span className="badge badge-blue">{d?.kinder_b ?? 0}</span>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 4 }}>({d?.eintraege_b ?? 0} Tage)</span></>}
+                        <td className="px-4 py-3">
+                          {loading ? '…' : <><span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d?.kinder_b ?? 0}</span>
+                            <span className="text-[0.65rem] text-on-surface-variant ml-1">({d?.eintraege_b ?? 0} Tage)</span></>}
                         </td>
-                        <td>
+                        <td className="px-4 py-3">
                           {loading ? '…' : hatErgebnis
-                            ? <><span className="badge badge-green">{d.matches}</span>
-                              <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 3 }}>({d.matches_zeilen} Tage)</span></>
-                            : <span style={{ color: 'var(--text2)' }}>–</span>}
+                            ? <><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.matches}</span>
+                              <span className="text-[0.65rem] text-on-surface-variant ml-1">({d.matches_zeilen} Tage)</span></>
+                            : <span className="text-on-surface-variant">–</span>}
                         </td>
-                        <td>
+                        <td className="px-4 py-3">
                           {loading ? '…' : hatErgebnis
-                            ? <><span className={`badge ${d.nur_in_a > 0 ? 'badge-red' : 'badge-green'}`}>{d.nur_in_a}</span>
-                              {d.nur_in_a > 0 && <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 3 }}>({d.nur_in_a_zeilen} Tage)</span>}</>
-                            : <span style={{ color: 'var(--text2)' }}>–</span>}
+                            ? <><span className={`text-xs font-bold px-2 py-0.5 rounded-full ${d.nur_in_a > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{d.nur_in_a}</span>
+                              {d.nur_in_a > 0 && <span className="text-[0.65rem] text-on-surface-variant ml-1">({d.nur_in_a_zeilen} Tage)</span>}</>
+                            : <span className="text-on-surface-variant">–</span>}
                         </td>
-                        <td>
+                        <td className="px-4 py-3">
                           {loading ? '…' : hatErgebnis
-                            ? <><span className="badge badge-orange">{d.nur_in_b}</span>
-                              {d.nur_in_b > 0 && <span style={{ fontSize: '0.65rem', color: 'var(--text2)', marginLeft: 3 }}>({d.nur_in_b_zeilen} Tage)</span>}</>
-                            : <span style={{ color: 'var(--text2)' }}>–</span>}
+                            ? <><span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.nur_in_b}</span>
+                              {d.nur_in_b > 0 && <span className="text-[0.65rem] text-on-surface-variant ml-1">({d.nur_in_b_zeilen} Tage)</span>}</>
+                            : <span className="text-on-surface-variant">–</span>}
                         </td>
-                        <td>{loading ? '…' : <span className="badge badge-blue">{d?.abgleich_count ?? 0}</span>}</td>
-                        <td style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                          {hatErgebnis && d.nur_in_a > 0 && (
-                            <button className="btn btn-danger btn-sm" style={{ width: 'auto' }} onClick={() => {
-                              if (expandedBlock === b.id) { setExpandedBlock(null); return; }
-                              setExpandedBlock(b.id);
-                              if (!abgleichDetail[b.id] && d.letzter_abgleich) {
-                                setLoadingAbgleich(prev => ({ ...prev, [b.id]: true }));
-                                API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
-                                  setAbgleichDetail(prev => ({ ...prev, [b.id]: res }));
-                                  setLoadingAbgleich(prev => ({ ...prev, [b.id]: false }));
-                                });
-                              }
-                            }}>
-                              ⚠ Fehlende anzeigen
+                        <td className="px-4 py-3">{loading ? '…' : <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d?.abgleich_count ?? 0}</span>}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1.5 flex-wrap justify-end">
+                            {hatErgebnis && d.nur_in_a > 0 && (
+                              <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors" onClick={() => {
+                                if (expandedBlock === b.id) { setExpandedBlock(null); return; }
+                                setExpandedBlock(b.id);
+                                if (!abgleichDetail[b.id] && d.letzter_abgleich) {
+                                  setLoadingAbgleich(prev => ({ ...prev, [b.id]: true }));
+                                  API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
+                                    setAbgleichDetail(prev => ({ ...prev, [b.id]: res }));
+                                    setLoadingAbgleich(prev => ({ ...prev, [b.id]: false }));
+                                  });
+                                }
+                              }}>
+                                Fehlende anzeigen
+                              </button>
+                            )}
+                            <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors" onClick={() => onNavigate('abgleich', b.id)}>
+                              Abgleich starten
                             </button>
-                          )}
-                          <button className="btn btn-primary btn-sm" style={{ width: 'auto' }} onClick={() => onNavigate('abgleich', b.id)}>
-                            Abgleich starten
-                          </button>
+                          </div>
                         </td>
                       </tr>
                       {expandedBlock === b.id && (
                         <tr key={b.id + '-detail'}>
-                          <td colSpan="10" style={{ padding: '1rem', background: 'var(--surface2)' }}>
+                          <td colSpan="10" className="px-4 py-4 bg-surface-container/30">
                             {loadingAbgleich[b.id] ? <Spinner /> : abgleichDetail[b.id]?.matches ? (() => {
                               const am = abgleichDetail[b.id].matches;
                               const fehlende = am.filter(m => m.match_typ === 'nur_in_a');
                               const nurInB = am.filter(m => m.match_typ === 'nur_in_b');
                               const matched = am.filter(m => m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted');
 
-                              // Nach Kind gruppieren
                               const groupEntries = (entries, prefix) => {
                                 const map = {};
                                 entries.forEach(m => {
@@ -685,62 +704,89 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                               const nurInBGrp = groupEntries(nurInB, 'b');
 
                               return (
-                                <div>
+                                <div className="space-y-4">
                                   {fehlendeGrp.length > 0 && (() => {
                                     const sorted = sortDetailList(fehlendeGrp);
-                                    const thStyle = { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' };
-                                    return <div style={{ marginBottom: '1rem' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                                        <h4 style={{ color: 'var(--danger)', margin: 0 }}>⚠ {fehlendeGrp.length} Kinder OHNE Buchung ({fehlende.length} Tage)</h4>
-                                        <button className="btn btn-ghost btn-sm" style={{ width: 'auto', fontSize: '0.75rem' }}
+                                    const thCls = "cursor-pointer select-none whitespace-nowrap text-left px-3 py-2 text-xs font-semibold text-on-surface-variant uppercase tracking-wide";
+                                    return <div>
+                                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        <h4 className="font-semibold text-error flex items-center gap-1 text-sm">
+                                          <span className="material-symbols-outlined text-base">warning</span>
+                                          {fehlendeGrp.length} Kinder OHNE Buchung ({fehlende.length} Tage)
+                                        </h4>
+                                        <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-1"
                                           onClick={() => printFehlendeKinder('Fehlende Kinder — OHNE Buchung', sorted, b.name)}>
-                                          🖨️ Drucken
+                                          <span className="material-symbols-outlined text-sm">print</span>Drucken
                                         </button>
                                       </div>
-                                      <div className="table-wrap"><table><thead><tr>
-                                        <th>#</th>
-                                        <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
-                                        <th style={thStyle} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
-                                        <th style={thStyle} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
-                                        <th style={thStyle} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
-                                        <th>Daten</th>
-                                      </tr></thead>
-                                        <tbody>{sorted.map((k, i) => (<tr key={i} style={{ background: 'rgba(220,53,69,0.06)' }}>
-                                          <td>{i + 1}</td><td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse || '–'}</td>
-                                          <td><span className="badge badge-red">{k.dates.length}</span></td>
-                                          <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                                        </tr>))}</tbody></table></div>
+                                      <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                                        <table className="w-full text-sm">
+                                          <thead><tr className="bg-red-50">
+                                            <th className={thCls}>#</th>
+                                            <th className={thCls} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
+                                            <th className={thCls} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
+                                            <th className={thCls} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
+                                            <th className={thCls} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
+                                            <th className={thCls}>Daten</th>
+                                          </tr></thead>
+                                          <tbody className="divide-y divide-outline-variant/10">
+                                            {sorted.map((k, i) => (<tr key={i} className="bg-red-50/50">
+                                              <td className="px-3 py-2 text-on-surface-variant">{i + 1}</td>
+                                              <td className="px-3 py-2 font-semibold text-on-surface">{k.nachname}</td>
+                                              <td className="px-3 py-2 text-on-surface">{k.vorname}</td>
+                                              <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
+                                              <td className="px-3 py-2"><span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                                              <td className="px-3 py-2 text-xs text-on-surface-variant">{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                                            </tr>))}
+                                          </tbody>
+                                        </table>
+                                      </div>
                                     </div>;
                                   })()}
                                   {nurInBGrp.length > 0 && (() => {
                                     const sorted = sortDetailList(nurInBGrp);
-                                    const thStyle = { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' };
-                                    return <div style={{ marginBottom: '1rem' }}>
-                                      <h4 style={{ color: 'var(--warning)', marginBottom: '0.5rem' }}>ℹ {nurInBGrp.length} Kinder NUR in Liste B ({nurInB.length} Tage)</h4>
-                                      <div className="table-wrap"><table><thead><tr>
-                                        <th>#</th>
-                                        <th style={thStyle} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
-                                        <th style={thStyle} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
-                                        <th style={thStyle} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
-                                        <th style={thStyle} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
-                                        <th>Daten</th>
-                                      </tr></thead>
-                                        <tbody>{sorted.map((k, i) => (<tr key={i} style={{ background: 'rgba(230,168,23,0.06)' }}>
-                                          <td>{i + 1}</td><td><strong>{k.nachname}</strong></td><td>{k.vorname}</td><td>{k.klasse || '–'}</td>
-                                          <td><span className="badge badge-orange">{k.dates.length}</span></td>
-                                          <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                                        </tr>))}</tbody></table></div>
+                                    const thCls = "cursor-pointer select-none whitespace-nowrap text-left px-3 py-2 text-xs font-semibold text-on-surface-variant uppercase tracking-wide";
+                                    return <div>
+                                      <h4 className="font-semibold text-amber-700 flex items-center gap-1 text-sm mb-2">
+                                        <span className="material-symbols-outlined text-base">info</span>
+                                        {nurInBGrp.length} Kinder NUR in Liste B ({nurInB.length} Tage)
+                                      </h4>
+                                      <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                                        <table className="w-full text-sm">
+                                          <thead><tr className="bg-amber-50">
+                                            <th className={thCls}>#</th>
+                                            <th className={thCls} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
+                                            <th className={thCls} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
+                                            <th className={thCls} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
+                                            <th className={thCls} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
+                                            <th className={thCls}>Daten</th>
+                                          </tr></thead>
+                                          <tbody className="divide-y divide-outline-variant/10">
+                                            {sorted.map((k, i) => (<tr key={i} className="bg-amber-50/50">
+                                              <td className="px-3 py-2 text-on-surface-variant">{i + 1}</td>
+                                              <td className="px-3 py-2 font-semibold text-on-surface">{k.nachname}</td>
+                                              <td className="px-3 py-2 text-on-surface">{k.vorname}</td>
+                                              <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
+                                              <td className="px-3 py-2"><span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                                              <td className="px-3 py-2 text-xs text-on-surface-variant">{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                                            </tr>))}
+                                          </tbody>
+                                        </table>
+                                      </div>
                                     </div>;
                                   })()}
                                   {matched.length > 0 && (
                                     <div>
-                                      <h4 style={{ color: 'var(--success)', marginBottom: '0.5rem' }}>✓ {new Set(matched.map(m => (m.a_nachname + '|' + m.a_vorname).toLowerCase())).size} Kinder übereinstimmend ({matched.length} Tage)</h4>
-                                      <p style={{ fontSize: '0.82rem', color: 'var(--text2)' }}>Alle Kinder mit Anmeldung und Buchung stimmen überein.</p>
+                                      <h4 className="font-semibold text-green-700 flex items-center gap-1 text-sm mb-1">
+                                        <span className="material-symbols-outlined text-base">check_circle</span>
+                                        {new Set(matched.map(m => (m.a_nachname + '|' + m.a_vorname).toLowerCase())).size} Kinder übereinstimmend ({matched.length} Tage)
+                                      </h4>
+                                      <p className="text-xs text-on-surface-variant">Alle Kinder mit Anmeldung und Buchung stimmen überein.</p>
                                     </div>
                                   )}
                                 </div>
                               );
-                            })() : <p style={{ color: 'var(--text2)' }}>Keine Abgleich-Daten verfügbar</p>}
+                            })() : <p className="text-on-surface-variant text-sm">Keine Abgleich-Daten verfügbar</p>}
                           </td>
                         </tr>
                       )}
@@ -837,90 +883,98 @@ const FerienblockPage = ({ blocks, onReload }) => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Ferienblöcke</h1>
-        <p>Verwalte Ferienblöcke, Daten und Einträge</p>
-      </div>
-
-      <div style={{ marginBottom: '1.5rem' }}>
-        <button className="btn btn-primary" style={{ width: 'auto' }} onClick={openNew}>+ Neuer Ferienblock</button>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">beach_access</span>
+            Ferienblöcke
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">Verwalte Ferienblöcke, Daten und Einträge</p>
+        </div>
+        <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors" onClick={openNew}>
+          <span className="material-symbols-outlined text-base">add</span>Neuer Ferienblock
+        </button>
       </div>
 
       {blocks.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            <div className="icon">📅</div>
-            <p>Noch kein Ferienblock vorhanden.</p>
-          </div>
+        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">calendar_month</span>
+          <p className="text-on-surface-variant">Noch kein Ferienblock vorhanden.</p>
         </div>
       ) : blocks.map(b => {
         const isOpen = expanded === b.id;
         const d = detail[b.id];
         const loading = detailLoading[b.id];
         return (
-          <div key={b.id} className="card" style={{ marginBottom: '1rem' }}>
-            {/* Block-Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                  <strong style={{ fontSize: '1.05rem' }}>{b.name}</strong>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text2)' }}>
-                    {fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}
-                  </span>
-                  <span className="badge badge-orange">{parseFloat(b.preis_pro_tag).toFixed(2)} €/Tag</span>
+          <div key={b.id} className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
+            <div className="flex justify-between items-center gap-3 p-5 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap mb-1">
+                  <span className="font-semibold text-on-surface text-base">{b.name}</span>
+                  <span className="text-sm text-on-surface-variant">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</span>
+                  <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{parseFloat(b.preis_pro_tag).toFixed(2)} €/Tag</span>
                 </div>
                 {d && (
-                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
-                    <span className="badge badge-blue">📋 {d.a.length} Anmeldungen</span>
-                    <span className="badge badge-green">🍽 {d.b.length} Buchungen</span>
+                  <div className="flex gap-2 flex-wrap">
+                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.a.length} Anmeldungen</span>
+                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.b.length} Buchungen</span>
                     {d.a.length > d.b.length && (
-                      <span className="badge badge-red">⚠️ {d.a.length - d.b.length} fehlend</span>
+                      <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.a.length - d.b.length} fehlend</span>
                     )}
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <button className="btn btn-ghost btn-sm" onClick={() => toggleExpand(b.id)}>
-                  {isOpen ? '▲ Zuklappen' : '▼ Details'}
+              <div className="flex gap-2 flex-wrap">
+                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => toggleExpand(b.id)}>
+                  <span className="material-symbols-outlined text-sm">{isOpen ? 'expand_less' : 'expand_more'}</span>
+                  {isOpen ? 'Zuklappen' : 'Details'}
                 </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => openEdit(b)}>✏️ Bearbeiten</button>
-                <button className="btn btn-danger btn-sm" onClick={() => remove(b.id)}>🗑 Löschen</button>
+                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => openEdit(b)}>
+                  <span className="material-symbols-outlined text-sm">edit</span>Bearbeiten
+                </button>
+                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors" onClick={() => remove(b.id)}>
+                  <span className="material-symbols-outlined text-sm">delete</span>Löschen
+                </button>
               </div>
             </div>
 
-            {/* Aufgeklappte Details */}
             {isOpen && (
-              <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+              <div className="border-t border-outline-variant/10 p-5">
                 {loading ? <Spinner /> : (
-                  <div className="two-col" style={{ gap: '1rem' }}>
-                    {/* Liste A */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <strong style={{ fontSize: '0.9rem' }}>📋 Liste A – Anmeldungen ({d?.a.length || 0})</strong>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => reloadDetail(b.id)}>↻</button>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-semibold text-sm text-on-surface flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-base text-primary">assignment</span>
+                          Liste A – Anmeldungen ({d?.a.length || 0})
+                        </span>
+                        <div className="flex gap-1.5">
+                          <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => reloadDetail(b.id)}>
+                            <span className="material-symbols-outlined text-sm">refresh</span>
+                          </button>
                           {d?.a.length > 0 && (
-                            <button className="btn btn-danger btn-sm" onClick={() => clearListe(b.id, 'A')}>
-                              Alle löschen
-                            </button>
+                            <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors" onClick={() => clearListe(b.id, 'A')}>Alle löschen</button>
                           )}
                         </div>
                       </div>
                       {!d?.a.length ? (
-                        <p style={{ color: 'var(--text2)', fontSize: '0.85rem' }}>Keine Einträge vorhanden.</p>
+                        <p className="text-on-surface-variant text-sm">Keine Einträge vorhanden.</p>
                       ) : (
-                        <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                          <table style={{ margin: 0 }}>
-                            <thead>
-                              <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th></tr>
-                            </thead>
-                            <tbody>
+                        <div className="max-h-[300px] overflow-y-auto rounded-xl border border-outline-variant/10">
+                          <table className="w-full text-sm">
+                            <thead><tr className="bg-surface-container/50 sticky top-0">
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Nachname</th>
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Vorname</th>
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Klasse</th>
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Datum</th>
+                            </tr></thead>
+                            <tbody className="divide-y divide-outline-variant/10">
                               {d.a.map(e => (
-                                <tr key={e.id}>
-                                  <td>{e.nachname}</td>
-                                  <td>{e.vorname}</td>
-                                  <td>{e.klasse || '–'}</td>
-                                  <td>{fmtDate(e.datum)}</td>
+                                <tr key={e.id} className="hover:bg-surface-container/30">
+                                  <td className="px-3 py-2 text-on-surface">{e.nachname}</td>
+                                  <td className="px-3 py-2 text-on-surface">{e.vorname}</td>
+                                  <td className="px-3 py-2 text-on-surface-variant">{e.klasse || '–'}</td>
+                                  <td className="px-3 py-2 text-on-surface-variant">{fmtDate(e.datum)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -929,35 +983,41 @@ const FerienblockPage = ({ blocks, onReload }) => {
                       )}
                     </div>
 
-                    {/* Liste B */}
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <strong style={{ fontSize: '0.9rem' }}>🍽 Liste B – Buchungen ({d?.b.length || 0})</strong>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => reloadDetail(b.id)}>↻</button>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-semibold text-sm text-on-surface flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-base text-primary">restaurant</span>
+                          Liste B – Buchungen ({d?.b.length || 0})
+                        </span>
+                        <div className="flex gap-1.5">
+                          <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => reloadDetail(b.id)}>
+                            <span className="material-symbols-outlined text-sm">refresh</span>
+                          </button>
                           {d?.b.length > 0 && (
-                            <button className="btn btn-danger btn-sm" onClick={() => clearListe(b.id, 'B')}>
-                              Alle löschen
-                            </button>
+                            <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors" onClick={() => clearListe(b.id, 'B')}>Alle löschen</button>
                           )}
                         </div>
                       </div>
                       {!d?.b.length ? (
-                        <p style={{ color: 'var(--text2)', fontSize: '0.85rem' }}>Keine Einträge vorhanden.</p>
+                        <p className="text-on-surface-variant text-sm">Keine Einträge vorhanden.</p>
                       ) : (
-                        <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                          <table style={{ margin: 0 }}>
-                            <thead>
-                              <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Datum</th><th>Menü</th></tr>
-                            </thead>
-                            <tbody>
+                        <div className="max-h-[300px] overflow-y-auto rounded-xl border border-outline-variant/10">
+                          <table className="w-full text-sm">
+                            <thead><tr className="bg-surface-container/50 sticky top-0">
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Nachname</th>
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Vorname</th>
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Klasse</th>
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Datum</th>
+                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Menü</th>
+                            </tr></thead>
+                            <tbody className="divide-y divide-outline-variant/10">
                               {d.b.map(e => (
-                                <tr key={e.id}>
-                                  <td>{e.nachname}</td>
-                                  <td>{e.vorname}</td>
-                                  <td>{e.klasse || '–'}</td>
-                                  <td>{fmtDate(e.datum)}</td>
-                                  <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{e.menu || '–'}</td>
+                                <tr key={e.id} className="hover:bg-surface-container/30">
+                                  <td className="px-3 py-2 text-on-surface">{e.nachname}</td>
+                                  <td className="px-3 py-2 text-on-surface">{e.vorname}</td>
+                                  <td className="px-3 py-2 text-on-surface-variant">{e.klasse || '–'}</td>
+                                  <td className="px-3 py-2 text-on-surface-variant">{fmtDate(e.datum)}</td>
+                                  <td className="px-3 py-2 text-on-surface-variant text-xs">{e.menu || '–'}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -974,30 +1034,37 @@ const FerienblockPage = ({ blocks, onReload }) => {
       })}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>{editing ? 'Ferienblock bearbeiten' : 'Neuer Ferienblock'}</h3>
-            <div className="form-group">
-              <label>Name</label>
-              <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="z.B. Winterferien 2026" autoFocus />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="form-group">
-                <label>Startdatum</label>
-                <input className="form-input" type="date" value={form.startdatum} onChange={e => setForm({ ...form, startdatum: e.target.value })} />
+        <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-on-surface mb-5">{editing ? 'Ferienblock bearbeiten' : 'Neuer Ferienblock'}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Name</label>
+                <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                  value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="z.B. Winterferien 2026" autoFocus />
               </div>
-              <div className="form-group">
-                <label>Enddatum</label>
-                <input className="form-input" type="date" value={form.enddatum} onChange={e => setForm({ ...form, enddatum: e.target.value })} />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Startdatum</label>
+                  <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    type="date" value={form.startdatum} onChange={e => setForm({ ...form, startdatum: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Enddatum</label>
+                  <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                    type="date" value={form.enddatum} onChange={e => setForm({ ...form, enddatum: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Preis pro Tag (€)</label>
+                <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                  type="number" step="0.01" value={form.preis_pro_tag} onChange={e => setForm({ ...form, preis_pro_tag: e.target.value })} />
               </div>
             </div>
-            <div className="form-group">
-              <label>Preis pro Tag (€)</label>
-              <input className="form-input" type="number" step="0.01" value={form.preis_pro_tag} onChange={e => setForm({ ...form, preis_pro_tag: e.target.value })} />
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Abbrechen</button>
-              <button className="btn btn-primary" style={{ width: 'auto' }} disabled={saving || !form.name || !form.startdatum || !form.enddatum} onClick={save}>
+            <div className="flex gap-2 justify-end mt-6">
+              <button className="px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setShowModal(false)}>Abbrechen</button>
+              <button className="px-4 py-2 text-sm font-medium rounded-xl bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50"
+                disabled={saving || !form.name || !form.startdatum || !form.enddatum} onClick={save}>
                 {saving ? 'Speichern...' : 'Speichern'}
               </button>
             </div>
@@ -1566,15 +1633,21 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Abgleich-Tool</h1>
-        <p>Vergleiche Anmeldungen (A) mit Essensbuchungen (B)</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">compare_arrows</span>
+            Abgleich-Tool
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">Vergleiche Anmeldungen (A) mit Essensbuchungen (B)</p>
+        </div>
       </div>
 
       {/* Ferienblock Auswahl */}
-      <div className="card">
-        <div className="card-title">Ferienblock</div>
-        <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
+      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4">
+        <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Ferienblock</label>
+        <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+          value={blockId} onChange={e => setBlockId(e.target.value)}>
           <option value="">– Block wählen –</option>
           {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
         </select>
@@ -1599,20 +1672,18 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
               {(listADb.length > 0 || listBDb.length > 0) && (() => {
                 const uniqueA = new Set(listADb.map(e => (e.nachname + '|' + e.vorname).toLowerCase())).size;
                 const uniqueB = new Set(listBDb.map(e => (e.nachname + '|' + e.vorname).toLowerCase())).size;
-                return <div className="info-box" style={{ marginBottom: '1rem' }}>
-                  In der Datenbank vorhanden:
-                  {listADb.length > 0 && <> <strong>{uniqueA} Kinder</strong> <span style={{ opacity: 0.7 }}>· {listADb.length} Tage</span> (Liste A)</>}
-                  {listADb.length > 0 && listBDb.length > 0 && ', '}
-                  {listBDb.length > 0 && <> <strong>{uniqueB} Kinder</strong> <span style={{ opacity: 0.7 }}>· {listBDb.length} Tage</span> (Liste B)</>}
+                return <div className="flex items-center gap-3 flex-wrap bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 mb-4 text-sm text-on-surface">
+                  <span className="material-symbols-outlined text-primary text-base">database</span>
+                  <span>In der Datenbank vorhanden:
+                    {listADb.length > 0 && <> <strong>{uniqueA} Kinder</strong> · {listADb.length} Tage (A)</>}
+                    {listADb.length > 0 && listBDb.length > 0 && ', '}
+                    {listBDb.length > 0 && <> <strong>{uniqueB} Kinder</strong> · {listBDb.length} Tage (B)</>}
+                  </span>
                   {listADb.length > 0 && listBDb.length > 0 && (
-                    <> – <button className="btn btn-primary btn-sm" style={{ marginLeft: '0.75rem' }} onClick={startComparisonFromDb}>Direkt vergleichen</button></>
+                    <button className="px-3 py-1 text-xs font-semibold rounded-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors" onClick={startComparisonFromDb}>Direkt vergleichen</button>
                   )}
-                  <button className="btn btn-ghost btn-sm" style={{ marginLeft: '0.5rem', color: 'var(--danger)' }} onClick={async () => {
-                    const ok = await confirmDialog(
-                      'Alle Daten löschen',
-                      `Alle Listen (${listADb.length} A + ${listBDb.length} B) und gespeicherte Abgleiche für diesen Block löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
-                      'Alles löschen'
-                    );
+                  <button className="px-3 py-1 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors flex items-center gap-1" onClick={async () => {
+                    const ok = await confirmDialog('Alle Daten löschen', `Alle Listen (${listADb.length} A + ${listBDb.length} B) und gespeicherte Abgleiche löschen?`, 'Alles löschen');
                     if (!ok) return;
                     await Promise.all([
                       API.post('listen', { action: 'delete', ferienblock_id: blockId, liste: 'A' }),
@@ -1625,55 +1696,57 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                     setRawA(null); setRawB(null);
                     setPotentialMatches([]); setReviewed({});
                     setStep(1);
-                  }}>🗑 Listen löschen</button>
+                  }}><span className="material-symbols-outlined text-sm">delete</span>Listen löschen</button>
                 </div>;
               })()}
-              <div className="two-col">
-                <div className="card">
-                  <div className="card-title">Liste A – Anmeldungen</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-semibold text-on-surface flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-base text-primary">assignment</span>
+                      Liste A – Anmeldungen
+                    </span>
+                  </div>
                   {rawA ? (
-                    <div className="upload-zone has-data" style={{ cursor: 'default' }}>
-                      <div className="icon">✅</div>
-                      <p>{rawA.data.length} Zeilen geladen</p>
-                      <button className="btn btn-ghost btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { setRawA(null); setColMapA({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
+                    <div className="text-center py-4">
+                      <span className="material-symbols-outlined text-3xl text-green-600 mb-2 block">check_circle</span>
+                      <p className="text-on-surface font-medium mb-2">{rawA.data.length} Zeilen geladen</p>
+                      <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => { setRawA(null); setColMapA({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <label className="upload-zone" style={{ borderBottomRightRadius: 0, borderBottomLeftRadius: 0, marginBottom: 0, padding: '1rem', flex: 1 }}>
-                        <input type="file" accept=".xlsx" style={{ display: 'none' }} onChange={e => handleExcelUpload(e.target.files[0], 'A')} />
-                        <div className="icon" style={{ fontSize: '2rem', marginBottom: '0.2rem' }}>📂</div>
-                        <p style={{ fontSize: '0.85rem' }}>Excel-Datei hochladen (.xlsx)</p>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-xl p-6 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
+                        <input type="file" accept=".xlsx" className="hidden" onChange={e => handleExcelUpload(e.target.files[0], 'A')} />
+                        <span className="material-symbols-outlined text-3xl text-on-surface-variant mb-1">upload_file</span>
+                        <p className="text-sm text-on-surface-variant">Excel hochladen (.xlsx)</p>
                       </label>
-                      <button 
-                        className="btn btn-secondary" 
-                        style={{ borderTopRightRadius: 0, borderTopLeftRadius: 0, width: '100%', padding: '0.75rem', fontWeight: 'bold' }}
-                        onClick={() => setShowPasteModal('A')}
-                      >
+                      <button className="w-full py-2.5 rounded-xl border-2 border-primary/30 text-primary font-semibold text-sm hover:bg-primary/10 transition-colors" onClick={() => setShowPasteModal('A')}>
                         oder Tabelle einfügen (Strg+V)
                       </button>
                     </div>
                   )}
                 </div>
-                <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div className="card-title">Liste B – Essensbuchungen</div>
+                <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-semibold text-on-surface flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-base text-primary">restaurant</span>
+                      Liste B – Essensbuchungen
+                    </span>
+                  </div>
                   {rawB ? (
-                    <div className="upload-zone has-data" style={{ cursor: 'default' }}>
-                      <div className="icon">✅</div>
-                      <p>{rawB.data.length} Zeilen geladen</p>
-                      <button className="btn btn-ghost btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { setRawB(null); setColMapB({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
+                    <div className="text-center py-4">
+                      <span className="material-symbols-outlined text-3xl text-green-600 mb-2 block">check_circle</span>
+                      <p className="text-on-surface font-medium mb-2">{rawB.data.length} Zeilen geladen</p>
+                      <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => { setRawB(null); setColMapB({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                      <label className="upload-zone" style={{ borderBottomRightRadius: 0, borderBottomLeftRadius: 0, marginBottom: 0, padding: '1rem', flex: 1 }}>
-                        <input type="file" accept=".xlsx" style={{ display: 'none' }} onChange={e => handleExcelUpload(e.target.files[0], 'B')} />
-                        <div className="icon" style={{ fontSize: '2rem', marginBottom: '0.2rem' }}>📂</div>
-                        <p style={{ fontSize: '0.85rem' }}>Excel-Datei hochladen (.xlsx)</p>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-xl p-6 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
+                        <input type="file" accept=".xlsx" className="hidden" onChange={e => handleExcelUpload(e.target.files[0], 'B')} />
+                        <span className="material-symbols-outlined text-3xl text-on-surface-variant mb-1">upload_file</span>
+                        <p className="text-sm text-on-surface-variant">Excel hochladen (.xlsx)</p>
                       </label>
-                      <button 
-                        className="btn btn-secondary" 
-                        style={{ borderTopRightRadius: 0, borderTopLeftRadius: 0, width: '100%', padding: '0.75rem', fontWeight: 'bold' }}
-                        onClick={() => setShowPasteModal('B')}
-                      >
+                      <button className="w-full py-2.5 rounded-xl border-2 border-primary/30 text-primary font-semibold text-sm hover:bg-primary/10 transition-colors" onClick={() => setShowPasteModal('B')}>
                         oder Tabelle einfügen (Strg+V)
                       </button>
                     </div>
@@ -1681,9 +1754,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 </div>
               </div>
               {(rawA || rawB) && (
-                <div className="action-row">
-                  <span />
-                  <button className="btn btn-primary" onClick={() => setStep(2)} disabled={!rawA && !rawB}>
+                <div className="flex justify-end mt-4">
+                  <button className="px-5 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors" onClick={() => setStep(2)} disabled={!rawA && !rawB}>
                     Weiter: Spalten zuordnen
                   </button>
                 </div>
@@ -1694,19 +1766,25 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           {/* SCHRITT 2: Spalten zuordnen */}
           {!isLoading && step === 2 && (
             <div>
-              <div className="two-col">
-                <div className="card">
-                  <div className="card-title">Liste A – Spalten</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
+                  <div className="font-semibold text-on-surface mb-3 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-primary">view_column</span>
+                    Liste A – Spalten
+                  </div>
                   <ColMapper raw={rawA} colMap={colMapA} onChange={setColMapA} label="A" />
                 </div>
-                <div className="card">
-                  <div className="card-title">Liste B – Spalten</div>
+                <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
+                  <div className="font-semibold text-on-surface mb-3 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-primary">view_column</span>
+                    Liste B – Spalten
+                  </div>
                   <ColMapper raw={rawB} colMap={colMapB} onChange={setColMapB} label="B" />
                 </div>
               </div>
-              <div className="action-row">
-                <button className="btn btn-ghost" onClick={() => setStep(1)}>Zurück</button>
-                <button className="btn btn-primary" onClick={processAndUpload}
+              <div className="flex justify-between mt-4">
+                <button className="px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setStep(1)}>Zurück</button>
+                <button className="px-5 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50" onClick={processAndUpload}
                   disabled={!(rawA && colMapA.nachname && colMapA.date) && !(rawB && colMapB.nachname && colMapB.date)}>
                   Verarbeiten & Vergleichen
                 </button>
@@ -1732,77 +1810,79 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
               {/* Zusammenfassung: Was wurde automatisch zugeordnet */}
               {comparisonSummary && (
-                <div className="stat-grid" style={{ marginBottom: '1rem' }}>
-                  <div className="stat-card accent-green" style={{ padding: '0.75rem 1rem' }}>
-                    <div className="stat-label" style={{ fontSize: '0.7rem' }}>Exakte Treffer</div>
-                    <div className="stat-value" style={{ fontSize: '1.5rem' }}>{comparisonSummary.exact}</div>
-                    <div className="stat-sub">{comparisonSummary.exactKinder} Kinder · automatisch zugeordnet</div>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                    <div className="text-xs text-on-surface-variant mb-1">Exakte Treffer</div>
+                    <div className="text-2xl font-bold text-green-700">{comparisonSummary.exact}</div>
+                    <div className="text-xs text-on-surface-variant mt-0.5">{comparisonSummary.exactKinder} Kinder · automatisch</div>
                   </div>
-                  <div className="stat-card accent-orange" style={{ padding: '0.75rem 1rem' }}>
-                    <div className="stat-label" style={{ fontSize: '0.7rem' }}>Ähnliche Namen</div>
-                    <div className="stat-value" style={{ fontSize: '1.5rem' }}>{potentialMatches.length}</div>
-                    <div className="stat-sub">{potentialMatches.length === 1 ? 'Vorschlag' : 'Vorschläge'} zur Prüfung</div>
+                  <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                    <div className="text-xs text-on-surface-variant mb-1">Ähnliche Namen</div>
+                    <div className="text-2xl font-bold text-amber-700">{potentialMatches.length}</div>
+                    <div className="text-xs text-on-surface-variant mt-0.5">Vorschläge zur Prüfung</div>
                   </div>
-                  <div className="stat-card accent-blue" style={{ padding: '0.75rem 1rem' }}>
-                    <div className="stat-label" style={{ fontSize: '0.7rem' }}>Gesamt geladen</div>
-                    <div className="stat-value" style={{ fontSize: '1.5rem' }}>{comparisonSummary.totalA}</div>
-                    <div className="stat-sub">Einträge A · {comparisonSummary.totalB} Einträge B</div>
+                  <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                    <div className="text-xs text-on-surface-variant mb-1">Gesamt geladen</div>
+                    <div className="text-2xl font-bold text-primary">{comparisonSummary.totalA}</div>
+                    <div className="text-xs text-on-surface-variant mt-0.5">Einträge A · {comparisonSummary.totalB} Einträge B</div>
                   </div>
                 </div>
               )}
 
-              <div className="card">
-                <div className="card-title">
-                  Mögliche Übereinstimmungen
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text2)' }}>
-                    {openGroups.length} offen
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-4">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/10">
+                  <span className="font-semibold text-on-surface flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-base text-primary">fact_check</span>
+                    Mögliche Übereinstimmungen
+                    <span className="bg-surface-container text-on-surface-variant text-xs font-bold px-2 py-0.5 rounded-full ml-1">{openGroups.length} offen</span>
                   </span>
+                  <div className="flex gap-2">
+                    <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => bulkAction('accept', 90)}>Alle &gt;90% akzeptieren</button>
+                    <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => bulkAction('accept', 90)}>Alle &gt;90% akzeptieren</button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
-                </div>
-
-                {openGroups.length === 0 && potentialMatches.length === 0 && (
-                  <p style={{ color: 'var(--text2)' }}>Keine ähnlichen Namen gefunden — alle Einträge wurden exakt zugeordnet oder haben keine Entsprechung.</p>
-                )}
-                {openGroups.length === 0 && potentialMatches.length > 0 && (
-                  <p style={{ color: 'var(--text2)' }}>Alle Vorschläge überprüft.</p>
-                )}
-
-                {openGroups.map(group => {
-                  const cls = scoreClass(group.score);
-                  const analysis = analyzeMatch(group.nameA, group.nameB);
-                  return (
-                    <div key={group.nameA + group.nameB} className={`match-card ${cls}`}>
-                      <div className="match-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, flexWrap: 'wrap' }}>
-                          <span className={`score-pill ${cls}`}>{group.score}%</span>
-                          <div>
-                            <div className="name-tokens">
-                              <strong>A:</strong>
-                              {analysis.tokensA.map((t, i) => <span key={i} className={`token ${t.matched ? 'matched' : 'unmatched'}`}>{t.token}</span>)}
-                              <span style={{ color: 'var(--text2)', margin: '0 0.25rem' }}>↔</span>
-                              <strong>B:</strong>
-                              {analysis.tokensB.map((t, i) => <span key={i} className={`token ${t.matched ? 'matched' : 'unmatched'}`}>{t.token}</span>)}
+                <div className="p-5">
+                  {openGroups.length === 0 && potentialMatches.length === 0 && (
+                    <p className="text-on-surface-variant text-sm">Keine ähnlichen Namen gefunden — alle Einträge wurden exakt zugeordnet oder haben keine Entsprechung.</p>
+                  )}
+                  {openGroups.length === 0 && potentialMatches.length > 0 && (
+                    <p className="text-on-surface-variant text-sm">Alle Vorschläge überprüft.</p>
+                  )}
+                  <div className="space-y-2">
+                    {openGroups.map(group => {
+                      const cls = scoreClass(group.score);
+                      const analysis = analyzeMatch(group.nameA, group.nameB);
+                      const scoreBg = group.score >= 90 ? 'bg-green-100 text-green-700' : group.score >= 75 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+                      return (
+                        <div key={group.nameA + group.nameB} className="flex items-center gap-3 p-3 rounded-xl bg-surface-container/50 border border-outline-variant/10 flex-wrap">
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${scoreBg}`}>{group.score}%</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1 flex-wrap text-sm">
+                              <strong className="text-on-surface-variant text-xs">A:</strong>
+                              {analysis.tokensA.map((t, i) => <span key={i} className={`px-1.5 py-0.5 rounded text-xs font-medium ${t.matched ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>{t.token}</span>)}
+                              <span className="material-symbols-outlined text-sm text-on-surface-variant">swap_horiz</span>
+                              <strong className="text-on-surface-variant text-xs">B:</strong>
+                              {analysis.tokensB.map((t, i) => <span key={i} className={`px-1.5 py-0.5 rounded text-xs font-medium ${t.matched ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>{t.token}</span>)}
                             </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text2)', marginTop: '0.3rem' }}>
-                              {group.reason} · {group.entries.length} Einträge · {fmtDate(group.entries[0]?.entryA.date)}
-                            </div>
+                            <div className="text-xs text-on-surface-variant mt-0.5">{group.reason} · {group.entries.length} Einträge · {fmtDate(group.entries[0]?.entryA.date)}</div>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button className="w-8 h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors flex items-center justify-center" onClick={() => handleGroupAction(group, 'accept')}>
+                              <span className="material-symbols-outlined text-sm">check</span>
+                            </button>
+                            <button className="w-8 h-8 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors flex items-center justify-center" onClick={() => handleGroupAction(group, 'reject')}>
+                              <span className="material-symbols-outlined text-sm">close</span>
+                            </button>
                           </div>
                         </div>
-                        <div className="match-actions">
-                          <button className="btn btn-success btn-sm" onClick={() => handleGroupAction(group, 'accept')}>✓</button>
-                          <button className="btn btn-danger btn-sm" onClick={() => handleGroupAction(group, 'reject')}>✗</button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-              <div className="action-row">
-                <button className="btn btn-ghost" onClick={() => setStep(1)}>Zurück</button>
-                <button className="btn btn-primary" onClick={() => setStep(4)}>Ergebnisse anzeigen</button>
+              <div className="flex justify-between mt-4">
+                <button className="px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setStep(1)}>Zurück</button>
+                <button className="px-5 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors" onClick={() => setStep(4)}>Ergebnisse anzeigen</button>
               </div>
             </div>
           )}
@@ -1824,47 +1904,50 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
             return (
               <div>
-                <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
-                  <div className="stat-card accent-green">
-                    <div className="stat-label">Übereinstimmung</div>
-                    <div className="stat-value">{matchedKinder.length}</div>
-                    <div className="stat-sub">{matchedKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.matches.length} Tage</div>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                    <div className="text-xs text-on-surface-variant mb-1">Übereinstimmung</div>
+                    <div className="text-2xl font-bold text-green-700">{matchedKinder.length}</div>
+                    <div className="text-xs text-on-surface-variant mt-0.5">{matchedKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.matches.length} Tage</div>
                   </div>
-                  <div className="stat-card accent-red">
-                    <div className="stat-label">Fehlt in B</div>
-                    <div className="stat-value">{fehlendeKinder.length}</div>
-                    <div className="stat-sub">{fehlendeKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInA.length} Tage ohne Buchung</div>
+                  <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                    <div className="text-xs text-on-surface-variant mb-1">Fehlt in B</div>
+                    <div className="text-2xl font-bold text-error">{fehlendeKinder.length}</div>
+                    <div className="text-xs text-on-surface-variant mt-0.5">{fehlendeKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInA.length} Tage</div>
                   </div>
-                  <div className="stat-card accent-orange">
-                    <div className="stat-label">Nur in B</div>
-                    <div className="stat-value">{nurInBKinder.length}</div>
-                    <div className="stat-sub">{nurInBKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInB.length} Tage ohne Anmeldung</div>
+                  <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                    <div className="text-xs text-on-surface-variant mb-1">Nur in B</div>
+                    <div className="text-2xl font-bold text-amber-700">{nurInBKinder.length}</div>
+                    <div className="text-xs text-on-surface-variant mt-0.5">{nurInBKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInB.length} Tage</div>
                   </div>
                 </div>
 
                 {fehlendeKinder.length > 0 && (
-                  <div className="card" style={{ marginBottom: '1rem' }}>
-                    <div className="card-title" style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      Fehlt in Liste B <span className="badge badge-red" style={{ marginLeft: '0.5rem' }}>{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
-                      <button className="btn btn-ghost btn-sm" style={{ width: 'auto', fontSize: '0.75rem', marginLeft: 'auto' }}
+                  <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
+                    <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10 flex-wrap">
+                      <span className="material-symbols-outlined text-error text-base">warning</span>
+                      <span className="font-semibold text-error">Fehlt in Liste B</span>
+                      <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
+                      <button className="ml-auto flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
                         onClick={() => {
                           const bName = blocks.find(bl => String(bl.id) === String(blockId))?.name || '';
-                          const printData = fehlendeKinder.map(k => {
-                            const parts = k.name.split(' ');
-                            return { vorname: parts[0] || '', nachname: parts.slice(1).join(' ') || k.name, klasse: '', dates: k.dates };
-                          });
+                          const printData = fehlendeKinder.map(k => { const parts = k.name.split(' '); return { vorname: parts[0] || '', nachname: parts.slice(1).join(' ') || k.name, klasse: '', dates: k.dates }; });
                           printFehlendeKinder('Fehlende Kinder — OHNE Buchung', printData, bName);
-                        }}>🖨️ Drucken</button>
+                        }}><span className="material-symbols-outlined text-sm">print</span>Drucken</button>
                     </div>
-                    <div className="table-wrap">
-                      <table>
-                        <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
-                        <tbody>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr className="bg-surface-container/50">
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Name</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tage</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Daten</th>
+                        </tr></thead>
+                        <tbody className="divide-y divide-outline-variant/10">
                           {fehlendeKinder.map(k => (
-                            <tr key={k.name}>
-                              <td><strong>{k.name}</strong></td>
-                              <td><span className="badge badge-red">{k.dates.length}</span></td>
-                              <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                            <tr key={k.name} className="bg-red-50/40">
+                              <td className="px-4 py-2 font-semibold text-on-surface">{k.name}</td>
+                              <td className="px-4 py-2"><span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                              <td className="px-4 py-2 text-xs text-on-surface-variant">{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1874,19 +1957,25 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 )}
 
                 {matchedKinder.length > 0 && (
-                  <div className="card" style={{ marginBottom: '1rem' }}>
-                    <div className="card-title" style={{ color: 'var(--success)' }}>
-                      Übereinstimmungen <span className="badge badge-green" style={{ marginLeft: '0.5rem' }}>{matchedKinder.length} Kinder · {finalResults.matches.length} Tage</span>
+                  <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
+                    <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10">
+                      <span className="material-symbols-outlined text-green-600 text-base">task_alt</span>
+                      <span className="font-semibold text-green-700">Übereinstimmungen</span>
+                      <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{matchedKinder.length} Kinder · {finalResults.matches.length} Tage</span>
                     </div>
-                    <div className="table-wrap">
-                      <table>
-                        <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
-                        <tbody>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr className="bg-surface-container/50">
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Name</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tage</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Daten</th>
+                        </tr></thead>
+                        <tbody className="divide-y divide-outline-variant/10">
                           {matchedKinder.map(k => (
                             <tr key={k.name}>
-                              <td><strong>{k.name}</strong></td>
-                              <td><span className="badge badge-green">{k.dates.length}</span></td>
-                              <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                              <td className="px-4 py-2 font-semibold text-on-surface">{k.name}</td>
+                              <td className="px-4 py-2"><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                              <td className="px-4 py-2 text-xs text-on-surface-variant">{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1896,19 +1985,25 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 )}
 
                 {nurInBKinder.length > 0 && (
-                  <div className="card" style={{ marginBottom: '1rem' }}>
-                    <div className="card-title" style={{ color: 'var(--warning)' }}>
-                      Nur in Liste B <span className="badge badge-orange" style={{ marginLeft: '0.5rem' }}>{nurInBKinder.length} Kinder · {finalResults.onlyInB.length} Tage</span>
+                  <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
+                    <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10">
+                      <span className="material-symbols-outlined text-amber-600 text-base">info</span>
+                      <span className="font-semibold text-amber-700">Nur in Liste B</span>
+                      <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{nurInBKinder.length} Kinder · {finalResults.onlyInB.length} Tage</span>
                     </div>
-                    <div className="table-wrap">
-                      <table>
-                        <thead><tr><th>Name</th><th>Tage</th><th>Daten</th></tr></thead>
-                        <tbody>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr className="bg-surface-container/50">
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Name</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tage</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Daten</th>
+                        </tr></thead>
+                        <tbody className="divide-y divide-outline-variant/10">
                           {nurInBKinder.map(k => (
                             <tr key={k.name}>
-                              <td><strong>{k.name}</strong></td>
-                              <td><span className="badge badge-orange">{k.dates.length}</span></td>
-                              <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
+                              <td className="px-4 py-2 font-semibold text-on-surface">{k.name}</td>
+                              <td className="px-4 py-2"><span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                              <td className="px-4 py-2 text-xs text-on-surface-variant">{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1917,11 +2012,14 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   </div>
                 )}
 
-                <div className="action-row">
-                  <button className="btn btn-ghost" onClick={() => setStep(3)}>Zurück</button>
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button className="btn btn-ghost" onClick={exportExcel}>Excel exportieren</button>
-                    <button className="btn btn-primary" disabled={saving} onClick={saveAbgleich}>
+                <div className="flex justify-between mt-4">
+                  <button className="px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setStep(3)}>Zurück</button>
+                  <div className="flex gap-2">
+                    <button className="flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={exportExcel}>
+                      <span className="material-symbols-outlined text-base">download</span>Excel exportieren
+                    </button>
+                    <button className="flex items-center gap-1 px-5 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50" disabled={saving} onClick={saveAbgleich}>
+                      <span className="material-symbols-outlined text-base">save</span>
                       {saving ? 'Speichern...' : 'In Datenbank speichern'}
                     </button>
                   </div>
@@ -1933,20 +2031,24 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       )}
 
       {showPasteModal && (
-        <div className="modal-overlay" onClick={() => setShowPasteModal(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%' }}>
-            <h2>Daten für Liste {showPasteModal} einfügen</h2>
-            <p className="text-muted" style={{ marginBottom: '1rem' }}>Kopiere deine Daten aus Excel/Word und füge sie hier mit Strg+V ein.</p>
-            <MiniExcel 
-              onImport={(json) => { 
-                setIsLoading(true); 
-                processImportArray(json, showPasteModal); 
-                setShowPasteModal(null);
-              }} 
-              label={showPasteModal} 
-            />
-            <div className="action-row" style={{ marginTop: '1.5rem', justifyContent: 'flex-end' }}>
-              <button className="btn btn-ghost" onClick={() => setShowPasteModal(null)}>Abbrechen</button>
+        <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4" onClick={() => setShowPasteModal(null)}>
+          <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/10">
+              <h2 className="text-lg font-bold text-on-surface">Daten für Liste {showPasteModal} einfügen</h2>
+              <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setShowPasteModal(null)}>
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-on-surface-variant mb-4">Kopiere deine Daten aus Excel/Word und füge sie hier mit Strg+V ein.</p>
+              <MiniExcel
+                onImport={(json) => {
+                  setIsLoading(true);
+                  processImportArray(json, showPasteModal);
+                  setShowPasteModal(null);
+                }}
+                label={showPasteModal}
+              />
             </div>
           </div>
         </div>
@@ -1973,13 +2075,20 @@ const FinanzenPage = ({ blocks }) => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Finanzen</h1>
-        <p>Kostenkalkulation: {data?.block?.preis_pro_tag || '3.50'} € pro Kind pro Tag</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">account_balance</span>
+            Finanzen
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">Kostenkalkulation: {data?.block?.preis_pro_tag || '3.50'} € pro Kind pro Tag</p>
+        </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
+      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4">
+        <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Ferienblock</label>
+        <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+          value={blockId} onChange={e => setBlockId(e.target.value)}>
           <option value="">– Block wählen –</option>
           {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
@@ -1988,10 +2097,8 @@ const FinanzenPage = ({ blocks }) => {
       {loading && <Spinner />}
 
       {!loading && data && data.statistik && (() => {
-        // Excel-Export Funktion für Finanzen
         const exportFinanzen = () => {
           const wb = XLSX.utils.book_new();
-          // Buchungen pro Kind
           if (data.buchungen?.length) {
             const rows = data.buchungen.map(k => ({
               Nachname: k.nachname, Vorname: k.vorname, Klasse: k.klasse || '',
@@ -2000,7 +2107,6 @@ const FinanzenPage = ({ blocks }) => {
             }));
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Buchungen');
           }
-          // Fehlende
           if (data.fehlende_buchungen?.length) {
             const rows = data.fehlende_buchungen.map(k => ({
               Nachname: k.nachname, Vorname: k.vorname, Klasse: k.klasse || '', 'Tage angemeldet': parseInt(k.tage_angemeldet)
@@ -2014,46 +2120,55 @@ const FinanzenPage = ({ blocks }) => {
         };
 
         return <>
-          <div className="stat-grid">
-            <div className="stat-card accent-blue">
-              <div className="stat-label">Kinder mit Buchung</div>
-              <div className="stat-value">{data.statistik.kinder_mit_buchung}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+              <div className="text-xs text-on-surface-variant mb-1">Kinder mit Buchung</div>
+              <div className="text-2xl font-bold text-primary">{data.statistik.kinder_mit_buchung}</div>
             </div>
-            <div className="stat-card accent-green">
-              <div className="stat-label">Gesamt gebuchte Mahlzeiten</div>
-              <div className="stat-value">{data.statistik.gesamt_buchungen}</div>
+            <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+              <div className="text-xs text-on-surface-variant mb-1">Gesamt Mahlzeiten</div>
+              <div className="text-2xl font-bold text-green-700">{data.statistik.gesamt_buchungen}</div>
             </div>
-            <div className="stat-card accent-orange">
-              <div className="stat-label">Gesamtbetrag</div>
-              <div className="stat-value">{data.statistik.gesamt_betrag.toFixed(2)} €</div>
+            <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+              <div className="text-xs text-on-surface-variant mb-1">Gesamtbetrag</div>
+              <div className="text-2xl font-bold text-amber-700">{data.statistik.gesamt_betrag.toFixed(2)} €</div>
             </div>
-            <div className="stat-card accent-red">
-              <div className="stat-label">Ohne Buchung</div>
-              <div className="stat-value">{data.statistik.kinder_ohne_buchung}</div>
-              <div className="stat-sub">in A, nicht in B</div>
+            <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+              <div className="text-xs text-on-surface-variant mb-1">Ohne Buchung</div>
+              <div className="text-2xl font-bold text-error">{data.statistik.kinder_ohne_buchung}</div>
+              <div className="text-xs text-on-surface-variant mt-0.5">in A, nicht in B</div>
             </div>
           </div>
 
-          <div className="toolbar">
-            <button className="btn btn-ghost btn-sm" onClick={exportFinanzen}>📥 Als Excel exportieren</button>
+          <div className="flex justify-end mb-4">
+            <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/20 transition-colors" onClick={exportFinanzen}>
+              <span className="material-symbols-outlined text-base">download</span>Als Excel exportieren
+            </button>
           </div>
 
           {data.fehlende_buchungen?.length > 0 && (
-            <div className="card">
-              <div className="card-title" style={{ color: 'var(--danger)' }}>
-                Fehlende Buchungen
-                <span className="count-badge red">{data.fehlende_buchungen.length}</span>
+            <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10">
+                <span className="material-symbols-outlined text-error text-base">person_off</span>
+                <span className="font-semibold text-error">Fehlende Buchungen</span>
+                <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{data.fehlende_buchungen.length}</span>
               </div>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text2)', marginBottom: '1rem' }}>
-                Diese Kinder sind bei uns angemeldet, haben aber keine Buchung beim Caterer.
-              </p>
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Tage angemeldet</th></tr></thead>
-                  <tbody>
+              <p className="text-sm text-on-surface-variant px-5 py-3">Diese Kinder sind angemeldet, haben aber keine Buchung beim Caterer.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="bg-surface-container/50">
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Nachname</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Vorname</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Klasse</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tage angemeldet</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-outline-variant/10">
                     {data.fehlende_buchungen.map((k, i) => (
-                      <tr key={i}>
-                        <td>{k.nachname}</td><td>{k.vorname}</td><td>{k.klasse || '–'}</td><td>{k.tage_angemeldet}</td>
+                      <tr key={i} className="hover:bg-surface-container/30">
+                        <td className="px-4 py-2 text-on-surface">{k.nachname}</td>
+                        <td className="px-4 py-2 text-on-surface">{k.vorname}</td>
+                        <td className="px-4 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
+                        <td className="px-4 py-2">{k.tage_angemeldet}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2062,22 +2177,32 @@ const FinanzenPage = ({ blocks }) => {
             </div>
           )}
 
-          <div className="card">
-            <div className="card-title">Buchungen pro Kind</div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Tage</th><th>Gesamtbetrag</th><th>Kontostand</th></tr>
-                </thead>
-                <tbody>
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
+            <div className="px-5 py-4 border-b border-outline-variant/10">
+              <span className="font-semibold text-on-surface flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base text-primary">receipt_long</span>
+                Buchungen pro Kind
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="bg-surface-container/50">
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Nachname</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Vorname</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Klasse</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tage</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Gesamtbetrag</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Kontostand</th>
+                </tr></thead>
+                <tbody className="divide-y divide-outline-variant/10">
                   {data.buchungen.map((k, i) => (
-                    <tr key={i}>
-                      <td>{k.nachname}</td>
-                      <td>{k.vorname}</td>
-                      <td>{k.klasse || '–'}</td>
-                      <td>{k.tage_gebucht}</td>
-                      <td><strong>{parseFloat(k.gesamtbetrag).toFixed(2)} €</strong></td>
-                      <td>{k.kontostand ? `${parseFloat(k.kontostand).toFixed(2)} €` : '–'}</td>
+                    <tr key={i} className="hover:bg-surface-container/30">
+                      <td className="px-4 py-2 text-on-surface">{k.nachname}</td>
+                      <td className="px-4 py-2 text-on-surface">{k.vorname}</td>
+                      <td className="px-4 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
+                      <td className="px-4 py-2 text-on-surface">{k.tage_gebucht}</td>
+                      <td className="px-4 py-2 font-semibold text-on-surface">{parseFloat(k.gesamtbetrag).toFixed(2)} €</td>
+                      <td className="px-4 py-2 text-on-surface-variant">{k.kontostand ? `${parseFloat(k.kontostand).toFixed(2)} €` : '–'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2375,63 +2500,75 @@ const VerlaufPage = ({ blocks }) => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Verlauf</h1>
-        <p>Gespeicherte Abgleiche einsehen</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">history</span>
+            Verlauf
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">Gespeicherte Abgleiche einsehen</p>
+        </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <select className="ferienblock-select" value={blockId}
-            onChange={e => { setBlockId(e.target.value); setVerlauf([]); }}>
-            <option value="">– Block wählen –</option>
-            {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
-          </select>
-          {blockId && <button className="btn btn-ghost btn-sm" onClick={() => loadVerlauf(blockId)}>↻ Neu laden</button>}
-          {blockId && verlauf.length > 0 && (
-            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={async () => {
-              const ok = await confirmDialog(
-                'Alle Abgleiche löschen',
-                `Alle ${verlauf.length} gespeicherten Abgleiche für diesen Block löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
-                'Alle löschen'
-              );
-              if (!ok) return;
-              const res = await API.post('abgleich', { action: 'delete_all', ferienblock_id: blockId });
-              toast.success(`${res.deleted} Abgleiche gelöscht`);
-              setVerlauf([]); setDetail({}); setOpenId(null);
-            }}>🗑 Alle Abgleiche löschen</button>
-          )}
-        </div>
+      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4 flex items-center gap-3 flex-wrap">
+        <select className="flex-1 min-w-[200px] border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+          value={blockId} onChange={e => { setBlockId(e.target.value); setVerlauf([]); }}>
+          <option value="">– Block wählen –</option>
+          {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
+        </select>
+        {blockId && (
+          <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => loadVerlauf(blockId)}>
+            <span className="material-symbols-outlined text-sm">refresh</span>Neu laden
+          </button>
+        )}
+        {blockId && verlauf.length > 0 && (
+          <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors" onClick={async () => {
+            const ok = await confirmDialog('Alle Abgleiche löschen', `Alle ${verlauf.length} gespeicherten Abgleiche für diesen Block löschen?`, 'Alle löschen');
+            if (!ok) return;
+            const res = await API.post('abgleich', { action: 'delete_all', ferienblock_id: blockId });
+            toast.success(`${res.deleted} Abgleiche gelöscht`);
+            setVerlauf([]); setDetail({}); setOpenId(null);
+          }}><span className="material-symbols-outlined text-sm">delete</span>Alle löschen</button>
+        )}
       </div>
 
       {loading && <Spinner />}
 
       {!loading && !blockId && (
-        <div className="card"><div className="empty-state"><div className="icon">📋</div><p>Bitte einen Ferienblock auswählen.</p></div></div>
+        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">history</span>
+          <p className="text-on-surface-variant">Bitte einen Ferienblock auswählen.</p>
+        </div>
       )}
 
       {!loading && blockId && verlauf.length === 0 && (
-        <div className="card"><div className="empty-state"><div className="icon">📋</div><p>Noch keine Abgleiche für diesen Block gespeichert.</p></div></div>
+        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">history</span>
+          <p className="text-on-surface-variant">Noch keine Abgleiche für diesen Block gespeichert.</p>
+        </div>
       )}
 
       {/* ── Vergleichsmodus ── */}
       {!loading && blockId && verlauf.length >= 2 && (
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <div className="card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>↔ Abgleiche vergleichen</span>
-            <button className="btn btn-ghost btn-sm" style={{ width: 'auto' }}
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-4 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/10">
+            <span className="font-semibold text-on-surface flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-base text-primary">compare_arrows</span>
+              Abgleiche vergleichen
+            </span>
+            <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
               onClick={() => { setCompareMode(!compareMode); setCompareData({ a: null, b: null }); setCompareA(''); setCompareB(''); }}>
-              {compareMode ? '✗ Schließen' : '↔ Vergleichen'}
+              <span className="material-symbols-outlined text-sm">{compareMode ? 'close' : 'compare_arrows'}</span>
+              {compareMode ? 'Schließen' : 'Vergleichen'}
             </button>
           </div>
           {compareMode && (
-            <div>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                <div style={{ flex: 1, minWidth: '180px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Alter Abgleich (vorher)
-                  </label>
-                  <select className="form-input" value={compareA} onChange={e => { setCompareA(e.target.value); setCompareData({ a: null, b: null }); }}>
+            <div className="p-5">
+              <div className="flex gap-3 items-end flex-wrap mb-4">
+                <div className="flex-1 min-w-[180px]">
+                  <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Alter Abgleich (vorher)</label>
+                  <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors text-sm"
+                    value={compareA} onChange={e => { setCompareA(e.target.value); setCompareData({ a: null, b: null }); }}>
                     <option value="">– wählen –</option>
                     {verlauf.map(v => (
                       <option key={v.id} value={v.id} disabled={String(v.id) === String(compareB)}>
@@ -2440,12 +2577,11 @@ const VerlaufPage = ({ blocks }) => {
                     ))}
                   </select>
                 </div>
-                <div style={{ fontSize: '1.5rem', color: 'var(--text2)', padding: '0 0.25rem 0.5rem' }}>→</div>
-                <div style={{ flex: 1, minWidth: '180px' }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Neuer Abgleich (nachher)
-                  </label>
-                  <select className="form-input" value={compareB} onChange={e => { setCompareB(e.target.value); setCompareData({ a: null, b: null }); }}>
+                <span className="material-symbols-outlined text-on-surface-variant pb-1">arrow_forward</span>
+                <div className="flex-1 min-w-[180px]">
+                  <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Neuer Abgleich (nachher)</label>
+                  <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors text-sm"
+                    value={compareB} onChange={e => { setCompareB(e.target.value); setCompareData({ a: null, b: null }); }}>
                     <option value="">– wählen –</option>
                     {verlauf.map(v => (
                       <option key={v.id} value={v.id} disabled={String(v.id) === String(compareA)}>
@@ -2454,20 +2590,15 @@ const VerlaufPage = ({ blocks }) => {
                     ))}
                   </select>
                 </div>
-                <button className="btn btn-primary btn-sm" style={{ width: 'auto', marginBottom: '2px' }}
+                <button className="px-4 py-2 text-sm font-semibold rounded-xl bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50"
                   disabled={!compareA || !compareB || compareA === compareB || compareLoading}
                   onClick={loadComparison}>
-                  {compareLoading ? '⏳ Lade…' : 'Vergleichen'}
+                  {compareLoading ? 'Lade…' : 'Vergleichen'}
                 </button>
               </div>
               {compareLoading && <Spinner />}
               {!compareLoading && compareData.a?.matches && compareData.b?.matches && (
-                <VergleichView
-                  matchesOld={compareData.a.matches}
-                  matchesNew={compareData.b.matches}
-                  abgleichOld={compareData.a.abgleich}
-                  abgleichNew={compareData.b.abgleich}
-                />
+                <VergleichView matchesOld={compareData.a.matches} matchesNew={compareData.b.matches} abgleichOld={compareData.a.abgleich} abgleichNew={compareData.b.abgleich} />
               )}
             </div>
           )}
@@ -2478,70 +2609,71 @@ const VerlaufPage = ({ blocks }) => {
         const isOpen = openId === v.id;
         const d = detail[v.id];
         const dLoading = detailLoading[v.id];
+        const badgeCls = (key) => { if (key === 'exact' || key === 'fuzzy_accepted') return 'bg-green-100 text-green-700'; if (key === 'nur_in_b') return 'bg-blue-100 text-blue-700'; if (key === 'nur_in_a' || key === 'fuzzy_rejected') return 'bg-red-100 text-red-700'; return 'bg-gray-100 text-gray-600'; };
         return (
-          <div key={v.id} className="card" style={{ marginBottom: '1rem' }}>
-            {/* Abgleich-Kopfzeile */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div key={v.id} className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
+            <div className="flex justify-between items-center p-5 flex-wrap gap-3">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <strong>Abgleich vom {fmtDateTime(v.erstellt_am)}</strong>
-                  <span className="badge badge-green">{v.status}</span>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="font-semibold text-on-surface">Abgleich vom {fmtDateTime(v.erstellt_am)}</span>
+                  <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{v.status}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
-                  <span className="badge badge-green">✅ {v.matches_count} Treffer</span>
-                  {parseInt(v.nur_in_a_count) > 0 && <span className="badge badge-red">⚠️ {v.nur_in_a_count} nur in A</span>}
-                  {parseInt(v.nur_in_b_count) > 0 && <span className="badge badge-blue">📋 {v.nur_in_b_count} nur in B</span>}
+                <div className="flex gap-2 flex-wrap">
+                  <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{v.matches_count} Treffer</span>
+                  {parseInt(v.nur_in_a_count) > 0 && <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{v.nur_in_a_count} nur in A</span>}
+                  {parseInt(v.nur_in_b_count) > 0 && <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{v.nur_in_b_count} nur in B</span>}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <button className="btn btn-ghost btn-sm" onClick={() => toggleDetail(v.id)}>
-                  {isOpen ? '▲ Zuklappen' : '▼ Details anzeigen'}
+              <div className="flex gap-2 items-center">
+                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => toggleDetail(v.id)}>
+                  <span className="material-symbols-outlined text-sm">{isOpen ? 'expand_less' : 'expand_more'}</span>
+                  {isOpen ? 'Zuklappen' : 'Details'}
                 </button>
-                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', width: 'auto' }} title="Diesen Abgleich löschen" onClick={async (e) => {
-                  e.stopPropagation();
-                  const ok = await confirmDialog('Abgleich löschen', `Abgleich vom ${fmtDateTime(v.erstellt_am)} löschen?`, 'Löschen');
-                  if (!ok) return;
-                  await API.post('abgleich', { action: 'delete', id: v.id });
-                  toast.success('Abgleich gelöscht');
-                  loadVerlauf(blockId);
-                }}>✗</button>
+                <button className="w-8 h-8 rounded-lg text-error hover:bg-error/10 transition-colors flex items-center justify-center" title="Abgleich löschen"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const ok = await confirmDialog('Abgleich löschen', `Abgleich vom ${fmtDateTime(v.erstellt_am)} löschen?`, 'Löschen');
+                    if (!ok) return;
+                    await API.post('abgleich', { action: 'delete', id: v.id });
+                    toast.success('Abgleich gelöscht');
+                    loadVerlauf(blockId);
+                  }}>
+                  <span className="material-symbols-outlined text-sm">delete</span>
+                </button>
               </div>
             </div>
 
-            {/* Detail-Bereich */}
             {isOpen && (
-              <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+              <div className="border-t border-outline-variant/10 p-5">
                 {dLoading && <Spinner />}
-                {d && typConfig.map(({ key, label, badge }) => {
+                {d && typConfig.map(({ key, label }) => {
                   const items = d.matches?.filter(m => m.match_typ === key) || [];
                   if (!items.length) return null;
                   return (
-                    <div key={key} style={{ marginBottom: '1.25rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
-                        <strong style={{ fontSize: '0.9rem' }}>{label}</strong>
-                        <span className={`badge ${badge}`}>{items.length}</span>
+                    <div key={key} className="mb-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold text-sm text-on-surface">{label}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeCls(key)}`}>{items.length}</span>
                       </div>
-                      <div className="table-wrap">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>Name A</th>
-                              <th>Datum A</th>
-                              {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th>Name B</th>}
-                              {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th>Datum B</th>}
-                              {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th>Score</th>}
-                              {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th>Grund</th>}
-                            </tr>
-                          </thead>
-                          <tbody>
+                      <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                        <table className="w-full text-sm">
+                          <thead><tr className="bg-surface-container/50">
+                            <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Name A</th>
+                            <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Datum A</th>
+                            {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Name B</th>}
+                            {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Datum B</th>}
+                            {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Score</th>}
+                            {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Grund</th>}
+                          </tr></thead>
+                          <tbody className="divide-y divide-outline-variant/10">
                             {items.map(m => (
-                              <tr key={m.id}>
-                                <td>{m.a_vorname} {m.a_nachname}</td>
-                                <td>{fmtDate(m.a_datum)}</td>
-                                {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td>{m.b_vorname} {m.b_nachname}</td>}
-                                {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td>{fmtDate(m.b_datum)}</td>}
-                                {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td><span className={`badge ${m.score >= 90 ? 'badge-green' : m.score >= 75 ? 'badge-orange' : 'badge-red'}`}>{m.score}%</span></td>}
-                                {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td style={{ fontSize: '0.8rem', color: 'var(--text2)' }}>{m.grund}</td>}
+                              <tr key={m.id} className="hover:bg-surface-container/30">
+                                <td className="px-3 py-2 text-on-surface">{m.a_vorname} {m.a_nachname}</td>
+                                <td className="px-3 py-2 text-on-surface-variant">{fmtDate(m.a_datum)}</td>
+                                {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td className="px-3 py-2 text-on-surface">{m.b_vorname} {m.b_nachname}</td>}
+                                {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td className="px-3 py-2 text-on-surface-variant">{fmtDate(m.b_datum)}</td>}
+                                {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td className="px-3 py-2"><span className={`text-xs font-bold px-2 py-0.5 rounded-full ${m.score >= 90 ? 'bg-green-100 text-green-700' : m.score >= 75 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{m.score}%</span></td>}
+                                {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td className="px-3 py-2 text-xs text-on-surface-variant">{m.grund}</td>}
                               </tr>
                             ))}
                           </tbody>
@@ -2729,13 +2861,20 @@ const TagesansichtPage = ({ blocks }) => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Tagesansicht</h1>
-        <p>Welche Kinder sind pro Tag angemeldet und gebucht?</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">calendar_view_day</span>
+            Tagesansicht
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">Welche Kinder sind pro Tag angemeldet und gebucht?</p>
+        </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
+      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4">
+        <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Ferienblock</label>
+        <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+          value={blockId} onChange={e => setBlockId(e.target.value)}>
           <option value="">– Block wählen –</option>
           {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
         </select>
@@ -2744,31 +2883,47 @@ const TagesansichtPage = ({ blocks }) => {
       {loading && <Spinner />}
 
       {!loading && blockId && dayStats.length === 0 && (
-        <div className="card"><div className="empty-state"><div className="icon">📅</div><p>Keine Daten für diesen Block vorhanden.</p></div></div>
+        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">event_busy</span>
+          <p className="text-on-surface-variant">Keine Daten für diesen Block vorhanden.</p>
+        </div>
       )}
 
       {!loading && dayStats.length > 0 && (
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            Tage im Überblick
-            {!hasAbgleich && <span style={{ fontSize: '0.78rem', color: 'var(--text2)', fontWeight: 400 }}>– Führe zuerst einen Abgleich durch für OK/Fehlt/Nur-in-B Spalten</span>}
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-4 overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10 flex-wrap">
+            <span className="font-semibold text-on-surface flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-base text-primary">date_range</span>
+              Tage im Überblick
+            </span>
+            {!hasAbgleich && <span className="text-xs text-on-surface-variant">– Führe zuerst einen Abgleich durch für OK/Fehlt/Nur-in-B Spalten</span>}
           </div>
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Tag</th><th>Datum</th><th>Angemeldet (A)</th><th>Gebucht (B)</th>{hasAbgleich && <><th>✓ OK</th><th>✗ Fehlt in B</th><th>⚠ Nur in B</th></>}<th></th></tr></thead>
-              <tbody>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-surface-container/50">
+                <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tag</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Datum</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Angemeldet (A)</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Gebucht (B)</th>
+                {hasAbgleich && <><th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">OK</th><th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Fehlt in B</th><th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Nur in B</th></>}
+                <th className="px-4 py-2"></th>
+              </tr></thead>
+              <tbody className="divide-y divide-outline-variant/10">
                 {dayStats.map(d => (
-                  <tr key={d.date} style={{ background: selectedDate === d.date ? 'rgba(0,90,156,0.08)' : undefined, cursor: 'pointer' }} onClick={() => setSelectedDate(selectedDate === d.date ? null : d.date)}>
-                    <td><strong>{weekday(d.date)}</strong></td>
-                    <td>{fmtDate(d.date)}</td>
-                    <td><span className="badge badge-blue">{d.angemeldet}</span></td>
-                    <td><span className="badge badge-green">{d.gebucht}</span></td>
+                  <tr key={d.date} className={`cursor-pointer hover:bg-surface-container/30 transition-colors ${selectedDate === d.date ? 'bg-primary/5' : ''}`}
+                    onClick={() => setSelectedDate(selectedDate === d.date ? null : d.date)}>
+                    <td className="px-4 py-2 font-semibold text-on-surface">{weekday(d.date)}</td>
+                    <td className="px-4 py-2 text-on-surface">{fmtDate(d.date)}</td>
+                    <td className="px-4 py-2"><span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.angemeldet}</span></td>
+                    <td className="px-4 py-2"><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.gebucht}</span></td>
                     {hasAbgleich && <>
-                      <td><span className="badge badge-green">{d.matched}</span></td>
-                      <td>{d.missingInB > 0 ? <span className="badge badge-red">{d.missingInB}</span> : <span style={{ color: 'var(--text2)' }}>0</span>}</td>
-                      <td>{d.onlyInB > 0 ? <span className="badge badge-orange">{d.onlyInB}</span> : <span style={{ color: 'var(--text2)' }}>0</span>}</td>
+                      <td className="px-4 py-2"><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.matched}</span></td>
+                      <td className="px-4 py-2">{d.missingInB > 0 ? <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.missingInB}</span> : <span className="text-on-surface-variant">0</span>}</td>
+                      <td className="px-4 py-2">{d.onlyInB > 0 ? <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.onlyInB}</span> : <span className="text-on-surface-variant">0</span>}</td>
                     </>}
-                    <td style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>{selectedDate === d.date ? '▲' : '▼'}</td>
+                    <td className="px-4 py-2 text-primary">
+                      <span className="material-symbols-outlined text-sm">{selectedDate === d.date ? 'expand_less' : 'expand_more'}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -2778,51 +2933,52 @@ const TagesansichtPage = ({ blocks }) => {
       )}
 
       {selectedDate && dayDetail && (
-        <div className="card">
-          <div className="card-title">
-            {weekday(selectedDate)} {fmtDate(selectedDate)} — {dayDetail.length} Kinder
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10">
+            <span className="material-symbols-outlined text-base text-primary">today</span>
+            <span className="font-semibold text-on-surface">{weekday(selectedDate)} {fmtDate(selectedDate)} — {dayDetail.length} Kinder</span>
           </div>
           {hasAbgleich && (
-            <div className="stat-grid" style={{ marginBottom: '1rem' }}>
-              <div className="stat-card accent-green" style={{ padding: '0.75rem 1rem' }}>
-                <div className="stat-label" style={{ fontSize: '0.7rem' }}>Angemeldet + Gebucht</div>
-                <div className="stat-value" style={{ fontSize: '1.5rem' }}>{dayDetail.filter(k => k.inA && k.inB).length}</div>
+            <div className="grid grid-cols-3 gap-3 p-5 pb-0">
+              <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                <div className="text-xs text-on-surface-variant mb-1">Angemeldet + Gebucht</div>
+                <div className="text-2xl font-bold text-green-700">{dayDetail.filter(k => k.inA && k.inB).length}</div>
               </div>
-              <div className={`stat-card ${dayDetail.filter(k => k.inA && !k.inB).length > 0 ? 'accent-red' : 'accent-green'}`} style={{ padding: '0.75rem 1rem' }}>
-                <div className="stat-label" style={{ fontSize: '0.7rem' }}>Angemeldet, nicht gebucht</div>
-                <div className="stat-value" style={{ fontSize: '1.5rem' }}>{dayDetail.filter(k => k.inA && !k.inB).length}</div>
+              <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                <div className="text-xs text-on-surface-variant mb-1">Angemeldet, nicht gebucht</div>
+                <div className={`text-2xl font-bold ${dayDetail.filter(k => k.inA && !k.inB).length > 0 ? 'text-error' : 'text-green-700'}`}>{dayDetail.filter(k => k.inA && !k.inB).length}</div>
               </div>
-              <div className="stat-card accent-orange" style={{ padding: '0.75rem 1rem' }}>
-                <div className="stat-label" style={{ fontSize: '0.7rem' }}>Nur gebucht (nicht angemeldet)</div>
-                <div className="stat-value" style={{ fontSize: '1.5rem' }}>{dayDetail.filter(k => !k.inA && k.inB).length}</div>
+              <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
+                <div className="text-xs text-on-surface-variant mb-1">Nur gebucht</div>
+                <div className="text-2xl font-bold text-amber-700">{dayDetail.filter(k => !k.inA && k.inB).length}</div>
               </div>
             </div>
           )}
-          <div className="table-wrap">
-            <table>
-              <thead><tr>
-                <th>#</th>
-                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
-                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
-                <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
-                {hasAbgleich && <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>}
-                <th>Liste</th>
+          <div className="overflow-x-auto p-5 pt-4">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-surface-container/50">
+                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">#</th>
+                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
+                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
+                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
+                {hasAbgleich && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>}
+                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Liste</th>
               </tr></thead>
-              <tbody>
+              <tbody className="divide-y divide-outline-variant/10">
                 {sortedDetail.map((k, i) => (
-                  <tr key={i} style={{ background: hasAbgleich && k.inA && !k.inB ? 'rgba(220,53,69,0.06)' : hasAbgleich && !k.inA && k.inB ? 'rgba(230,168,23,0.06)' : undefined }}>
-                    <td>{i + 1}</td>
-                    <td><strong>{k.nachname}</strong></td>
-                    <td>{k.vorname}</td>
-                    <td>{k.klasse || '–'}</td>
-                    {hasAbgleich && <td>
-                      {k.inA && k.inB && <span className="badge badge-green">✓ OK</span>}
-                      {k.inA && !k.inB && <span className="badge badge-red">✗ Fehlt in B</span>}
-                      {!k.inA && k.inB && <span className="badge badge-orange">⚠ Nur in B</span>}
+                  <tr key={i} className={`hover:bg-surface-container/30 ${hasAbgleich && k.inA && !k.inB ? 'bg-red-50/40' : hasAbgleich && !k.inA && k.inB ? 'bg-amber-50/40' : ''}`}>
+                    <td className="px-3 py-2 text-on-surface-variant">{i + 1}</td>
+                    <td className="px-3 py-2 font-semibold text-on-surface">{k.nachname}</td>
+                    <td className="px-3 py-2 text-on-surface">{k.vorname}</td>
+                    <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
+                    {hasAbgleich && <td className="px-3 py-2">
+                      {k.inA && k.inB && <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">OK</span>}
+                      {k.inA && !k.inB && <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">Fehlt in B</span>}
+                      {!k.inA && k.inB && <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">Nur in B</span>}
                     </td>}
-                    <td style={{ fontSize: '0.8rem' }}>
-                      {k.inA && <span className="badge badge-blue" style={{ marginRight: 3 }}>A</span>}
-                      {k.inB && <span className="badge badge-green">B</span>}
+                    <td className="px-3 py-2 flex gap-1">
+                      {k.inA && <span className="bg-blue-100 text-blue-700 text-xs font-bold px-1.5 py-0.5 rounded-full">A</span>}
+                      {k.inB && <span className="bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded-full">B</span>}
                     </td>
                   </tr>
                 ))}
@@ -2938,74 +3094,87 @@ const KlassenPage = ({ blocks }) => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Klassen-Übersicht</h1>
-        <p>Statistiken gruppiert nach Schulklasse</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">school</span>
+            Klassen-Übersicht
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">Statistiken gruppiert nach Schulklasse</p>
+        </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <select className="ferienblock-select" value={blockId} onChange={e => setBlockId(e.target.value)}>
-            <option value="">– Block wählen –</option>
-            {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
-          </select>
-          {klassenData.length > 0 && (
-            <button className="btn btn-ghost btn-sm" onClick={() => {
-              const wb = XLSX.utils.book_new();
-              const rows = klassenData.map(k => ({
-                Klasse: k.klasse, 'Kinder (A)': k.kinderA, 'Kinder (B)': k.kinderB,
-                'Tage (A)': k.tageA, 'Tage (B)': k.tageB,
-                'Fehlt in B': k.ohneB, 'Nur in B': k.nurInB,
-                'Kosten (€)': (k.tageB * preis).toFixed(2)
-              }));
-              XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Klassen');
-              XLSX.writeFile(wb, `Klassen_${block?.name || 'Export'}.xlsx`);
-              toast.success('Klassen-Übersicht exportiert');
-            }}>📊 Excel exportieren</button>
-          )}
-        </div>
+      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4 flex items-center gap-3 flex-wrap">
+        <select className="flex-1 min-w-[200px] border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+          value={blockId} onChange={e => setBlockId(e.target.value)}>
+          <option value="">– Block wählen –</option>
+          {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
+        </select>
+        {klassenData.length > 0 && (
+          <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => {
+            const wb = XLSX.utils.book_new();
+            const rows = klassenData.map(k => ({
+              Klasse: k.klasse, 'Kinder (A)': k.kinderA, 'Kinder (B)': k.kinderB,
+              'Tage (A)': k.tageA, 'Tage (B)': k.tageB, 'Fehlt in B': k.ohneB, 'Nur in B': k.nurInB,
+              'Kosten (€)': (k.tageB * preis).toFixed(2)
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Klassen');
+            XLSX.writeFile(wb, `Klassen_${block?.name || 'Export'}.xlsx`);
+            toast.success('Klassen-Übersicht exportiert');
+          }}>
+            <span className="material-symbols-outlined text-sm">download</span>Excel exportieren
+          </button>
+        )}
       </div>
 
       {loading && <Spinner />}
 
       {!loading && blockId && klassenData.length === 0 && (
-        <div className="card"><div className="empty-state"><div className="icon">🏫</div><p>Keine Daten für diesen Block vorhanden.</p></div></div>
+        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">school</span>
+          <p className="text-on-surface-variant">Keine Daten für diesen Block vorhanden.</p>
+        </div>
       )}
 
       {!loading && klassenData.length > 0 && (
-        <div className="card">
-          {!hasAbgleich && <p style={{ fontSize: '0.82rem', color: 'var(--text2)', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
+          {!hasAbgleich && <p className="text-xs text-on-surface-variant italic px-5 pt-4">
             Hinweis: Ohne Abgleich basieren "Fehlt in B" und "Nur in B" auf einfachem Namensvergleich (ungenau bei unterschiedlicher Schreibweise).
           </p>}
-          <div className="table-wrap">
-            <table>
-              <thead><tr>
-                <th>Klasse</th><th>Kinder (A)</th><th>Kinder (B)</th>
-                <th>Tage (A)</th><th>Tage (B)</th>
-                <th title="Kinder aus A ohne Entsprechung in B">✗ Fehlt in B</th><th title="Kinder nur in B, nicht in A">⚠ Nur in B</th><th>Kosten</th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-surface-container/50">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Klasse</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Kinder (A)</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Kinder (B)</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Tage (A)</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Tage (B)</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase" title="Kinder aus A ohne Entsprechung in B">Fehlt in B</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase" title="Kinder nur in B">Nur in B</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Kosten</th>
               </tr></thead>
-              <tbody>
+              <tbody className="divide-y divide-outline-variant/10">
                 {klassenData.map(k => (
-                  <tr key={k.klasse}>
-                    <td><strong>{k.klasse}</strong></td>
-                    <td><span className="badge badge-blue">{k.kinderA}</span></td>
-                    <td><span className="badge badge-green">{k.kinderB}</span></td>
-                    <td style={{ color: 'var(--text2)' }}>{k.tageA}</td>
-                    <td style={{ color: 'var(--text2)' }}>{k.tageB}</td>
-                    <td>{k.ohneB > 0 ? <span className="badge badge-red">{k.ohneB}</span> : <span style={{ color: 'var(--text2)' }}>0</span>}</td>
-                    <td>{k.nurInB > 0 ? <span className="badge badge-orange">{k.nurInB}</span> : <span style={{ color: 'var(--text2)' }}>0</span>}</td>
-                    <td><strong>{(k.tageB * preis).toFixed(2)} €</strong></td>
+                  <tr key={k.klasse} className="hover:bg-surface-container/30">
+                    <td className="px-4 py-2 font-semibold text-on-surface">{k.klasse}</td>
+                    <td className="px-4 py-2"><span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.kinderA}</span></td>
+                    <td className="px-4 py-2"><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.kinderB}</span></td>
+                    <td className="px-4 py-2 text-on-surface-variant">{k.tageA}</td>
+                    <td className="px-4 py-2 text-on-surface-variant">{k.tageB}</td>
+                    <td className="px-4 py-2">{k.ohneB > 0 ? <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.ohneB}</span> : <span className="text-on-surface-variant">0</span>}</td>
+                    <td className="px-4 py-2">{k.nurInB > 0 ? <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.nurInB}</span> : <span className="text-on-surface-variant">0</span>}</td>
+                    <td className="px-4 py-2 font-semibold text-on-surface">{(k.tageB * preis).toFixed(2)} €</td>
                   </tr>
                 ))}
-                <tr style={{ fontWeight: 700, borderTop: '2px solid var(--border)' }}>
-                  <td>Gesamt</td>
-                  <td>{klassenData.reduce((s, k) => s + k.kinderA, 0)}</td>
-                  <td>{klassenData.reduce((s, k) => s + k.kinderB, 0)}</td>
-                  <td>{klassenData.reduce((s, k) => s + k.tageA, 0)}</td>
-                  <td>{klassenData.reduce((s, k) => s + k.tageB, 0)}</td>
-                  <td style={{ color: 'var(--danger)' }}>{klassenData.reduce((s, k) => s + k.ohneB, 0)}</td>
-                  <td style={{ color: 'var(--warning)' }}>{klassenData.reduce((s, k) => s + k.nurInB, 0)}</td>
-                  <td>{(klassenData.reduce((s, k) => s + k.tageB, 0) * preis).toFixed(2)} €</td>
+                <tr className="border-t-2 border-outline-variant/30 font-semibold bg-surface-container/30">
+                  <td className="px-4 py-2 text-on-surface">Gesamt</td>
+                  <td className="px-4 py-2 text-on-surface">{klassenData.reduce((s, k) => s + k.kinderA, 0)}</td>
+                  <td className="px-4 py-2 text-on-surface">{klassenData.reduce((s, k) => s + k.kinderB, 0)}</td>
+                  <td className="px-4 py-2 text-on-surface">{klassenData.reduce((s, k) => s + k.tageA, 0)}</td>
+                  <td className="px-4 py-2 text-on-surface">{klassenData.reduce((s, k) => s + k.tageB, 0)}</td>
+                  <td className="px-4 py-2 text-error">{klassenData.reduce((s, k) => s + k.ohneB, 0)}</td>
+                  <td className="px-4 py-2 text-amber-700">{klassenData.reduce((s, k) => s + k.nurInB, 0)}</td>
+                  <td className="px-4 py-2 text-on-surface">{(klassenData.reduce((s, k) => s + k.tageB, 0) * preis).toFixed(2)} €</td>
                 </tr>
               </tbody>
             </table>
@@ -3095,54 +3264,84 @@ const EinstellungenPage = ({ user, onLogout }) => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Einstellungen</h1>
-        <p>Konto, Sicherheit und Datensicherung</p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">settings</span>
+            Einstellungen
+          </h1>
+          <p className="text-on-surface-variant text-sm mt-1">Konto, Sicherheit und Datensicherung</p>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gap: '1.5rem', maxWidth: 560 }}>
+      <div className="grid gap-4 max-w-lg">
         {/* Passwort */}
-        <div className="card">
-          <div className="card-title">Passwort ändern</div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text2)', marginBottom: '1rem' }}>
-            Angemeldet als: <strong>{user?.username}</strong>
-          </p>
-          {err && <div className="error-msg">{err}</div>}
-          {msg && <div style={{ background: '#efe', border: '1px solid #8c8', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem' }}>{msg}</div>}
-          <div className="form-group">
-            <label>Neues Passwort</label>
-            <input className="form-input" type="password" value={pw1} onChange={e => setPw1(e.target.value)} />
+        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-base text-primary">lock</span>
+            <span className="font-semibold text-on-surface">Passwort ändern</span>
           </div>
-          <div className="form-group">
-            <label>Passwort wiederholen</label>
-            <input className="form-input" type="password" value={pw2} onChange={e => setPw2(e.target.value)} />
+          <p className="text-sm text-on-surface-variant mb-4">Angemeldet als: <strong className="text-on-surface">{user?.username}</strong></p>
+          {err && (
+            <div className="flex items-center gap-2 bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3 mb-4">
+              <span className="material-symbols-outlined text-base">error</span>{err}
+            </div>
+          )}
+          {msg && (
+            <div className="flex items-center gap-2 bg-green-50 text-green-800 text-sm rounded-xl px-4 py-3 mb-4">
+              <span className="material-symbols-outlined text-base">check_circle</span>{msg}
+            </div>
+          )}
+          <div className="space-y-4 mb-5">
+            <div>
+              <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Neues Passwort</label>
+              <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                type="password" value={pw1} onChange={e => setPw1(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Passwort wiederholen</label>
+              <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
+                type="password" value={pw2} onChange={e => setPw2(e.target.value)} />
+            </div>
           </div>
-          <button className="btn btn-primary" onClick={changePassword} disabled={!pw1 || !pw2}>Passwort ändern</button>
-          <hr />
-          <button className="btn btn-danger" onClick={onLogout}>Abmelden</button>
+          <div className="flex gap-2">
+            <button className="px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
+              onClick={changePassword} disabled={!pw1 || !pw2}>
+              <span className="material-symbols-outlined text-sm align-middle mr-1">key</span>Passwort ändern
+            </button>
+            <button className="flex items-center gap-1 px-4 py-2 rounded-xl text-error hover:bg-error/10 font-semibold text-sm transition-colors" onClick={onLogout}>
+              <span className="material-symbols-outlined text-sm">logout</span>Abmelden
+            </button>
+          </div>
         </div>
 
         {/* Backup */}
-        <div className="card">
-          <div className="card-title">💾 Datensicherung (Backup)</div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text2)', marginBottom: '1rem' }}>
+        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-base text-primary">backup</span>
+            <span className="font-semibold text-on-surface">Datensicherung (Backup)</span>
+          </div>
+          <p className="text-sm text-on-surface-variant mb-4">
             Erstelle ein vollständiges Backup aller Daten (Ferienblöcke, Listen, Abgleiche, Kinder) als JSON-Datei.
           </p>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-            <button className="btn btn-primary" onClick={exportBackup} disabled={backupLoading} style={{ width: 'auto' }}>
-              {backupLoading ? '⏳ Exportiere…' : '📥 Backup herunterladen'}
+          <div className="flex gap-2 flex-wrap mb-4">
+            <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
+              onClick={exportBackup} disabled={backupLoading}>
+              <span className="material-symbols-outlined text-sm">download</span>
+              {backupLoading ? 'Exportiere…' : 'Backup herunterladen'}
             </button>
 
-            <label className="btn btn-ghost" style={{ width: 'auto', cursor: restoreLoading ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-              {restoreLoading ? '⏳ Wiederherstelle…' : '📤 Backup wiederherstellen'}
-              <input type="file" accept=".json" onChange={importBackup} style={{ display: 'none' }} disabled={restoreLoading} />
+            <label className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant font-semibold text-sm hover:bg-surface-container transition-colors ${restoreLoading ? 'cursor-wait opacity-50' : 'cursor-pointer'}`}>
+              <span className="material-symbols-outlined text-sm">upload</span>
+              {restoreLoading ? 'Wiederherstelle…' : 'Backup wiederherstellen'}
+              <input type="file" accept=".json" onChange={importBackup} className="hidden" disabled={restoreLoading} />
             </label>
           </div>
 
-          <div style={{ fontSize: '0.82rem', color: 'var(--text2)', background: 'var(--surface2)', padding: '0.75rem', borderRadius: '8px', lineHeight: 1.5 }}>
-            <strong>Hinweis:</strong> Beim Wiederherstellen werden alle bestehenden Daten überschrieben.
-            Erstelle vorher ein frisches Backup, falls du die aktuellen Daten behalten möchtest.
+          <div className="flex items-start gap-2 bg-surface-container rounded-xl px-4 py-3 text-xs text-on-surface-variant">
+            <span className="material-symbols-outlined text-sm mt-0.5">info</span>
+            <span><strong>Hinweis:</strong> Beim Wiederherstellen werden alle bestehenden Daten überschrieben. Erstelle vorher ein frisches Backup, falls du die aktuellen Daten behalten möchtest.</span>
           </div>
         </div>
       </div>
