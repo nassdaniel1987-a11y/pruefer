@@ -172,135 +172,147 @@ const TagesansichtPage = ({ blocks }) => {
   const weekday = (d) => { try { return new Date(d).toLocaleDateString('de-DE', { weekday: 'short' }); } catch { return ''; } };
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6">
+    <div className="space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">calendar_view_day</span>
-            Tagesansicht
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">Welche Kinder sind pro Tag angemeldet und gebucht?</p>
+          <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Audit-Zeitplan & Übersicht</span>
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Tagesansicht</h2>
+        </div>
+        <div className="flex items-center bg-surface-container-lowest px-4 py-1.5 rounded-xl border border-outline-variant/20 gap-4">
+          <select className="bg-transparent text-sm border-none focus:ring-0 outline-none font-bold text-on-surface py-2" value={blockId} onChange={e => setBlockId(e.target.value)}>
+            <option value="">– Block wählen –</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
         </div>
       </div>
 
-      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4">
-        <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Ferienblock</label>
-        <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-          value={blockId} onChange={e => setBlockId(e.target.value)}>
-          <option value="">– Block wählen –</option>
-          {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
-        </select>
-      </div>
-
-      {loading && <Spinner />}
-
-      {!loading && blockId && dayStats.length === 0 && (
-        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">event_busy</span>
-          <p className="text-on-surface-variant">Keine Daten für diesen Block vorhanden.</p>
+      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
+      
+      {!loading && dayStats.length === 0 && blockId && (
+        <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-3">event_busy</span>
+          <p className="text-lg font-bold text-on-surface">Keine Daten für diesen Block vorhanden.</p>
         </div>
       )}
 
       {!loading && dayStats.length > 0 && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-4 overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10 flex-wrap">
-            <span className="font-semibold text-on-surface flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-base text-primary">date_range</span>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-4 space-y-4">
+            <h3 className="text-lg font-extrabold text-primary tracking-tight mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined">calendar_month</span>
               Tage im Überblick
-            </span>
-            {!hasAbgleich && <span className="text-xs text-on-surface-variant">– Führe zuerst einen Abgleich durch für OK/Fehlt/Nur-in-B Spalten</span>}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="bg-surface-container/50">
-                <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tag</th>
-                <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Datum</th>
-                <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Angemeldet (A)</th>
-                <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Gebucht (B)</th>
-                {hasAbgleich && <><th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">OK</th><th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Fehlt in B</th><th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Nur in B</th></>}
-                <th className="px-4 py-2"></th>
-              </tr></thead>
-              <tbody className="divide-y divide-outline-variant/10">
-                {dayStats.map(d => (
-                  <tr key={d.date} className={`cursor-pointer hover:bg-surface-container/30 transition-colors ${selectedDate === d.date ? 'bg-primary/5' : ''}`}
-                    onClick={() => setSelectedDate(selectedDate === d.date ? null : d.date)}>
-                    <td className="px-4 py-2 font-semibold text-on-surface">{weekday(d.date)}</td>
-                    <td className="px-4 py-2 text-on-surface">{fmtDate(d.date)}</td>
-                    <td className="px-4 py-2"><span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.angemeldet}</span></td>
-                    <td className="px-4 py-2"><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.gebucht}</span></td>
-                    {hasAbgleich && <>
-                      <td className="px-4 py-2"><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.matched}</span></td>
-                      <td className="px-4 py-2">{d.missingInB > 0 ? <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.missingInB}</span> : <span className="text-on-surface-variant">0</span>}</td>
-                      <td className="px-4 py-2">{d.onlyInB > 0 ? <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.onlyInB}</span> : <span className="text-on-surface-variant">0</span>}</td>
-                    </>}
-                    <td className="px-4 py-2 text-primary">
-                      <span className="material-symbols-outlined text-sm">{selectedDate === d.date ? 'expand_less' : 'expand_more'}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {selectedDate && dayDetail && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10">
-            <span className="material-symbols-outlined text-base text-primary">today</span>
-            <span className="font-semibold text-on-surface">{weekday(selectedDate)} {fmtDate(selectedDate)} — {dayDetail.length} Kinder</span>
-          </div>
-          {hasAbgleich && (
-            <div className="grid grid-cols-3 gap-3 p-5 pb-0">
-              <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-                <div className="text-xs text-on-surface-variant mb-1">Angemeldet + Gebucht</div>
-                <div className="text-2xl font-bold text-green-700">{dayDetail.filter(k => k.inA && k.inB).length}</div>
-              </div>
-              <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-                <div className="text-xs text-on-surface-variant mb-1">Angemeldet, nicht gebucht</div>
-                <div className={`text-2xl font-bold ${dayDetail.filter(k => k.inA && !k.inB).length > 0 ? 'text-error' : 'text-green-700'}`}>{dayDetail.filter(k => k.inA && !k.inB).length}</div>
-              </div>
-              <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-                <div className="text-xs text-on-surface-variant mb-1">Nur gebucht</div>
-                <div className="text-2xl font-bold text-amber-700">{dayDetail.filter(k => !k.inA && k.inB).length}</div>
-              </div>
+            </h3>
+            
+            <div className="relative space-y-4 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-outline-variant/20 before:to-transparent">
+              {dayStats.map(d => {
+                const isActive = selectedDate === d.date;
+                return (
+                  <div key={d.date} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group select-none cursor-pointer" onClick={() => setSelectedDate(isActive ? null : d.date)}>
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm transition-colors ${isActive ? 'bg-primary border-primary-container z-10' : 'bg-surface-container-lowest border-surface-container group-hover:border-primary-fixed z-10'}`}>
+                      <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-on-surface-variant group-hover:text-primary'}`}>{weekday(d.date).substring(0,2)}</span>
+                    </div>
+                    
+                    <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-surface-container-lowest p-4 rounded-xl shadow-sm border transition-all ${isActive ? 'border-primary border-l-4 shadow-md scale-[1.02]' : 'border-outline-variant/10 hover:border-primary/30'}`}>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm font-bold text-on-surface">{fmtDate(d.date)}</span>
+                        {hasAbgleich && d.missingInB > 0 && <span className="flex w-2 h-2 rounded-full bg-error"></span>}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold uppercase text-on-surface-variant flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>{d.angemeldet} A</span>
+                        <span className="text-[10px] font-bold uppercase text-on-surface-variant flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{d.gebucht} B</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-          <div className="overflow-x-auto p-5 pt-4">
-            <table className="w-full text-sm">
-              <thead><tr className="bg-surface-container/50">
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">#</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
-                {hasAbgleich && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant cursor-pointer select-none" onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>}
-                <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Liste</th>
-              </tr></thead>
-              <tbody className="divide-y divide-outline-variant/10">
-                {sortedDetail.map((k, i) => (
-                  <tr key={i} className={`hover:bg-surface-container/30 ${hasAbgleich && k.inA && !k.inB ? 'bg-red-50/40' : hasAbgleich && !k.inA && k.inB ? 'bg-amber-50/40' : ''}`}>
-                    <td className="px-3 py-2 text-on-surface-variant">{i + 1}</td>
-                    <td className="px-3 py-2 font-semibold text-on-surface">{k.nachname}</td>
-                    <td className="px-3 py-2 text-on-surface">{k.vorname}</td>
-                    <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
-                    {hasAbgleich && <td className="px-3 py-2">
-                      {k.inA && k.inB && <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">OK</span>}
-                      {k.inA && !k.inB && <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">Fehlt in B</span>}
-                      {!k.inA && k.inB && <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">Nur in B</span>}
-                    </td>}
-                    <td className="px-3 py-2 flex gap-1">
-                      {k.inA && <span className="bg-blue-100 text-blue-700 text-xs font-bold px-1.5 py-0.5 rounded-full">A</span>}
-                      {k.inB && <span className="bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded-full">B</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          </div>
+
+          <div className="lg:col-span-8">
+            <div className="sticky top-24">
+              {selectedDate && dayDetail ? (
+                <div className="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/15 shadow-xl">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 bg-primary-container rounded-xl text-white shadow-sm">
+                      <span className="material-symbols-outlined text-2xl">group</span>
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-extrabold text-on-surface">{weekday(selectedDate)}, {fmtDate(selectedDate)}</h3>
+                      <p className="text-sm text-on-surface-variant font-medium">{dayDetail.length} Kinder an diesem Tag verzeichnet</p>
+                    </div>
+                  </div>
+
+                  {hasAbgleich && (
+                    <div className="grid grid-cols-3 gap-4 mb-8">
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                        <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">OK (Abgleich)</p>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-emerald-600">{dayDetail.filter(k => k.inA && k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                      </div>
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                        <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Fehlt in B</p>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-error">{dayDetail.filter(k => k.inA && !k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                      </div>
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">Nur in B</p>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-amber-600">{dayDetail.filter(k => !k.inA && k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                      </div>
+                    </div>
+                  )}
+
+                  <h4 className="text-xs font-bold text-primary uppercase tracking-widest border-b border-outline-variant/20 pb-2 mb-4">Besonderheiten & Zuordnungen</h4>
+                  <div className="overflow-x-auto rounded-xl border border-outline-variant/10 w-full">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-surface-container-low border-b border-outline-variant/10">
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/5">
+                        {sortedDetail.map((k, i) => (
+                           <tr key={i} className={`hover:bg-surface-container-low/50 transition-colors group ${hasAbgleich && k.inA && !k.inB ? 'bg-error-container/20' : hasAbgleich && !k.inA && k.inB ? 'bg-amber-100/30' : ''}`}>
+                             <td className="px-4 py-3 text-sm font-bold text-on-surface">{k.nachname}</td>
+                             <td className="px-4 py-3 text-sm font-medium text-on-surface-variant flex items-center gap-2">
+                               {k.vorname}
+                               {k.klasse && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-outline font-bold">Kl. {k.klasse}</span>}
+                             </td>
+                             <td className="px-4 py-3 text-center">
+                               {hasAbgleich ? (
+                                 <div className="flex justify-center flex-wrap gap-1">
+                                   {k.inA && k.inB && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px]">check</span>OK</span>}
+                                   {k.inA && !k.inB && <span className="bg-error font-bold text-white text-[10px] px-2 py-0.5 rounded-full">Fehlt (B)</span>}
+                                   {!k.inA && k.inB && <span className="bg-amber-500 font-bold text-white text-[10px] px-2 py-0.5 rounded-full">Nur (B)</span>}
+                                 </div>
+                               ) : (
+                                  <div className="flex gap-1 justify-center">
+                                    {k.inA && <span className="font-bold text-blue-600 bg-blue-100 text-[10px] px-2 py-0.5 rounded-md">Liste A</span>}
+                                    {k.inB && <span className="font-bold text-emerald-600 bg-emerald-100 text-[10px] px-2 py-0.5 rounded-md">Liste B</span>}
+                                  </div>
+                               )}
+                             </td>
+                           </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full min-h-[400px] border-2 border-dashed border-outline-variant/30 rounded-2xl flex flex-col items-center justify-center p-12 text-center bg-surface-container-lowest/50">
+                  <div className="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mb-4">
+                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/50">ads_click</span>
+                  </div>
+                  <p className="text-xl font-extrabold text-on-surface mb-2">Tag auswählen</p>
+                  <p className="text-sm text-on-surface-variant max-w-xs">Wähle links einen Tag aus der Zeitachse, um die Details zu Mittagessen, Anwesenheit und Fehlzeiten anzuzeigen.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
     </div>
   );
+
 };
 
 export default TagesansichtPage;

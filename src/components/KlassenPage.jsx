@@ -106,97 +106,97 @@ const KlassenPage = ({ blocks }) => {
   const block = blocks.find(b => String(b.id) === String(blockId));
   const preis = block ? parseFloat(block.preis_pro_tag) : 3.5;
 
-  return (
-    <div>
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">school</span>
-            Klassen-Übersicht
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">Statistiken gruppiert nach Schulklasse</p>
-        </div>
+return (
+    <div className="pb-20 space-y-8 max-w-6xl mx-auto">
+      <div>
+        <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Verwaltung</span>
+        <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Klassen & Einteilung</h2>
+        <p className="text-sm text-on-surface-variant mt-1">Übersicht aller Klassen, Hortgruppen und unzugeordneten Kinder.</p>
       </div>
 
-      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4 flex items-center gap-3 flex-wrap">
-        <select className="flex-1 min-w-[200px] border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-          value={blockId} onChange={e => setBlockId(e.target.value)}>
-          <option value="">– Block wählen –</option>
-          {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
+      <div className="flex items-center gap-3">
+        <select className="bg-surface-container-lowest text-sm border border-outline-variant/20 rounded-xl focus:ring-2 focus:ring-primary outline-none px-4 py-2.5 font-bold text-on-surface shadow-sm cursor-pointer" value={blockId} onChange={e => setBlockId(e.target.value)}>
+          <option value="">Block wählen</option>
+          {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
-        {klassenData.length > 0 && (
-          <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => {
-            const wb = XLSX.utils.book_new();
-            const rows = klassenData.map(k => ({
-              Klasse: k.klasse, 'Kinder (A)': k.kinderA, 'Kinder (B)': k.kinderB,
-              'Tage (A)': k.tageA, 'Tage (B)': k.tageB, 'Fehlt in B': k.ohneB, 'Nur in B': k.nurInB,
-              'Kosten (€)': (k.tageB * preis).toFixed(2)
-            }));
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Klassen');
-            XLSX.writeFile(wb, `Klassen_${block?.name || 'Export'}.xlsx`);
-            toast.success('Klassen-Übersicht exportiert');
-          }}>
-            <span className="material-symbols-outlined text-sm">download</span>Excel exportieren
+        {blockId && !loading && (
+          <button className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2" onClick={handleGenerateKlassen}>
+            <span className="material-symbols-outlined text-[18px]">build</span> Klassen aus Block generieren
           </button>
         )}
       </div>
 
-      {loading && <Spinner />}
+      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
 
-      {!loading && blockId && klassenData.length === 0 && (
-        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">school</span>
-          <p className="text-on-surface-variant">Keine Daten für diesen Block vorhanden.</p>
+      {!loading && stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Klassen gesamt</div>
+            <div className="text-2xl font-extrabold text-primary">{stats.totalKlassen}</div>
+          </div>
+          <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Kinder in Klassen</div>
+            <div className="text-2xl font-extrabold text-emerald-600">{stats.kinderZugeordnet}</div>
+          </div>
+          <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Keine Klasse (Leer)</div>
+            <div className={`text-2xl font-extrabold ${stats.kinderOhne > 0 ? 'text-amber-500' : 'text-on-surface-variant/40'}`}>{stats.kinderOhne}</div>
+          </div>
+          <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
+            <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Invalide (z.B. Test)</div>
+            <div className={`text-2xl font-extrabold ${stats.invalidKlassen > 0 ? 'text-error' : 'text-on-surface-variant/40'}`}>{stats.invalidKlassen}</div>
+          </div>
         </div>
       )}
 
-      {!loading && klassenData.length > 0 && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-          {!hasAbgleich && <p className="text-xs text-on-surface-variant italic px-5 pt-4">
-            Hinweis: Ohne Abgleich basieren "Fehlt in B" und "Nur in B" auf einfachem Namensvergleich (ungenau bei unterschiedlicher Schreibweise).
-          </p>}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="bg-surface-container/50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Klasse</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Kinder (A)</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Kinder (B)</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Tage (A)</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Tage (B)</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase" title="Kinder aus A ohne Entsprechung in B">Fehlt in B</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase" title="Kinder nur in B">Nur in B</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase">Kosten</th>
-              </tr></thead>
-              <tbody className="divide-y divide-outline-variant/10">
-                {klassenData.map(k => (
-                  <tr key={k.klasse} className="hover:bg-surface-container/30">
-                    <td className="px-4 py-2 font-semibold text-on-surface">{k.klasse}</td>
-                    <td className="px-4 py-2"><span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.kinderA}</span></td>
-                    <td className="px-4 py-2"><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.kinderB}</span></td>
-                    <td className="px-4 py-2 text-on-surface-variant">{k.tageA}</td>
-                    <td className="px-4 py-2 text-on-surface-variant">{k.tageB}</td>
-                    <td className="px-4 py-2">{k.ohneB > 0 ? <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.ohneB}</span> : <span className="text-on-surface-variant">0</span>}</td>
-                    <td className="px-4 py-2">{k.nurInB > 0 ? <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.nurInB}</span> : <span className="text-on-surface-variant">0</span>}</td>
-                    <td className="px-4 py-2 font-semibold text-on-surface">{(k.tageB * preis).toFixed(2)} €</td>
-                  </tr>
-                ))}
-                <tr className="border-t-2 border-outline-variant/30 font-semibold bg-surface-container/30">
-                  <td className="px-4 py-2 text-on-surface">Gesamt</td>
-                  <td className="px-4 py-2 text-on-surface">{klassenData.reduce((s, k) => s + k.kinderA, 0)}</td>
-                  <td className="px-4 py-2 text-on-surface">{klassenData.reduce((s, k) => s + k.kinderB, 0)}</td>
-                  <td className="px-4 py-2 text-on-surface">{klassenData.reduce((s, k) => s + k.tageA, 0)}</td>
-                  <td className="px-4 py-2 text-on-surface">{klassenData.reduce((s, k) => s + k.tageB, 0)}</td>
-                  <td className="px-4 py-2 text-error">{klassenData.reduce((s, k) => s + k.ohneB, 0)}</td>
-                  <td className="px-4 py-2 text-amber-700">{klassenData.reduce((s, k) => s + k.nurInB, 0)}</td>
-                  <td className="px-4 py-2 text-on-surface">{(klassenData.reduce((s, k) => s + k.tageB, 0) * preis).toFixed(2)} €</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      {!loading && !blockId && (
+        <div className="bg-surface-container-lowest rounded-2xl p-12 text-center border-2 border-dashed border-outline-variant/30 flex flex-col items-center justify-center">
+          <span className="material-symbols-outlined text-6xl text-on-surface-variant/30 mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>grid_view</span>
+          <p className="text-xl font-bold text-on-surface mb-2">Block für Klassenauswertung wählen</p>
+          <p className="text-sm text-on-surface-variant/80 max-w-sm">Bitte wähle oben einen Ferienblock, um die Klassenzuteilung der dort registrierten Kinder zu analysieren.</p>
+        </div>
+      )}
+
+      {!loading && blockId && klassen.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {klassen.map(kl => {
+            const isEmpty = !kl.name || kl.name.trim() === '';
+            const isInvalid = !isEmpty && kl.name.toLowerCase().includes('abgemeldet') || kl.name.toLowerCase().includes('test');
+            // Card Styles
+            let cardClasses = 'bg-surface-container-lowest border-outline-variant/10';
+            let headerClasses = 'bg-primary-container text-white';
+            if (isEmpty) {
+               cardClasses = 'bg-amber-50 border-amber-200';
+               headerClasses = 'bg-amber-500 text-white';
+            } else if (isInvalid) {
+               cardClasses = 'bg-error-container/20 border-error-container/50';
+               headerClasses = 'bg-error text-white';
+            }
+
+            return (
+              <div key={kl.name || 'unbekannt'} className={`rounded-2xl shadow-sm border overflow-hidden flex flex-col ${cardClasses}`}>
+                <div className={`px-5 py-3 ${headerClasses} flex justify-between items-center`}>
+                  <h3 className="font-bold text-lg">{isEmpty ? 'Keine Klasse angegeben' : kl.name}</h3>
+                  <span className="bg-white/20 text-white px-2 py-0.5 rounded text-xs font-bold">{kl.kinder.length} Kinder</span>
+                </div>
+                <div className="p-4 flex-1">
+                  <div className="overflow-y-auto max-h-[300px] pr-2 space-y-2">
+                    {kl.kinder.map(k => (
+                      <div key={k.id} className="flex border-b border-outline-variant/5 pb-2 last:border-0 rounded-lg p-2 hover:bg-black/5 items-center gap-3 transition-colors">
+                        <Avatar vorname={k.vorname} nachname={k.nachname} size="sm" />
+                        <span className="text-sm font-medium text-on-surface">{k.vorname} {k.nachname}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
+
 };
 
 export default KlassenPage;

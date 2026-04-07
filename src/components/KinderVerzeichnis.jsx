@@ -497,346 +497,312 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     { key: 'buchungen', label: 'Buchungen' },
   ];
 
-  return (
-    <div>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1>Kinder-Verzeichnis</h1>
-          <p>Alle registrierten Kinder mit ihren Akten</p>
-        </div>
+return (
+    <div className="pb-20 space-y-8">
+      <div>
+        <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface tracking-tight font-headline">Kinder-Verzeichnis</h2>
+        <p className="text-on-surface-variant/70 text-sm mt-1">Verwaltung der aktiven Datensätze und Buchungsstatus.</p>
       </div>
 
-      {/* Ferienblock-Filter */}
       {blocks.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>Statistik für:</span>
-          <select
-            className="form-input"
-            style={{ maxWidth: '300px', padding: '0.45rem 0.75rem', fontSize: '0.85rem' }}
-            value={filterBlock}
-            onChange={e => setFilterBlock(e.target.value)}
-          >
-            <option value="">Alle Ferienblöcke</option>
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-outline text-sm">filter_list</span>
+          <select className="bg-surface-container-lowest text-sm border-none rounded-xl focus:ring-2 focus:ring-primary outline-none px-4 py-2 font-bold text-on-surface shadow-sm max-w-sm" value={filterBlock} onChange={e => setFilterBlock(e.target.value)}>
+            <option value="">Alle Ferienblöcke (Gesamt-Statistik)</option>
             {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </div>
       )}
 
-      <div className="stat-grid">
-        <div className="stat-card accent-blue">
-          <div className="stat-label">{filterBlock ? 'Angemeldet (A)' : 'Kinder gesamt'}</div>
-          <div className="stat-value">{loading ? '…' : filterBlock ? kinder.filter(k => parseInt(k.anmeldungen_count) > 0).length : kinder.length}</div>
-        </div>
-        <div className="stat-card accent-green">
-          <div className="stat-label">{filterBlock ? 'Gebucht (B)' : 'Mit Buchungen'}</div>
-          <div className="stat-value">{loading ? '…' : mitBuchung}</div>
-        </div>
-        <div className={`stat-card ${ohneBuchung > 0 ? 'accent-red' : 'accent-green'}`}>
-          <div className="stat-label">Ohne Buchung</div>
-          <div className="stat-value">{loading ? '…' : ohneBuchung}</div>
-          <div className="stat-sub">{ohneBuchung > 0 ? 'Angemeldet aber keine Buchung' : ''}</div>
-        </div>
-      </div>
-
-      <div className="toolbar">
-        <button className="btn btn-primary btn-sm" style={{ width: 'auto' }} onClick={() => setShowImport(!showImport)}>
-          {showImport ? '✗ Import schließen' : '📥 Excel importieren'}
-        </button>
-        <button className="btn btn-ghost btn-sm" disabled={syncing} onClick={syncFromLists}>
-          {syncing ? '⏳ Synchronisiere...' : '🔄 Aus Listen synchronisieren'}
-        </button>
-        {kinder.length > 0 && (
-          <button className="btn btn-ghost btn-sm" onClick={() => {
-            const wb = XLSX.utils.book_new();
-            const rows = filtered.map(k => ({
-              Nachname: k.nachname,
-              Vorname: k.vorname,
-              Klasse: k.klasse || '',
-              'Anmeldungen (A)': parseInt(k.anmeldungen_count) || 0,
-              'Buchungen (B)': parseInt(k.buchungen_count) || 0,
-              'Blöcke': parseInt(k.block_count_a) || 0,
-              Notizen: k.notizen || ''
-            }));
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Kinder');
-            XLSX.writeFile(wb, `Kinder-Verzeichnis${search ? '_' + search : ''}.xlsx`);
-            toast.success(`${rows.length} Kinder exportiert`);
-          }}>📊 Excel exportieren</button>
-        )}
-        {kinder.length > 0 && (
-          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={async () => {
-            const ok = await confirmDialog(
-              'Alle Kinder löschen',
-              `Wirklich alle ${kinder.length} Kinder aus dem Verzeichnis löschen? Die Listen-Einträge (A/B) bleiben erhalten.`,
-              'Alle löschen'
-            );
-            if (!ok) return;
-            const res = await API.post('kinder', { action: 'delete_all' });
-            toast.success(`${res.deleted} Kinder gelöscht`);
-            loadKinder(filterBlock);
-          }}>🗑 Alle löschen</button>
-        )}
-        {kinder.length > 1 && (
-          <button className={`btn btn-ghost btn-sm ${showDuplicates ? 'btn-active' : ''}`} onClick={() => setShowDuplicates(!showDuplicates)}>
-            🔎 Duplikate {showDuplicates && duplicates.length > 0 ? `(${duplicates.length})` : 'prüfen'}
-          </button>
-        )}
-        <button className="btn btn-ghost btn-sm" onClick={() => loadKinder(filterBlock)}>↻ Aktualisieren</button>
-      </div>
-
-      {/* Duplikat-Warnung */}
-      {showDuplicates && duplicates.length > 0 && (
-        <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--warning)' }}>
-          <div className="card-title" style={{ color: 'var(--warning)', marginBottom: '0.5rem' }}>⚠ {duplicates.length} mögliche Duplikate gefunden</div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: '1.5rem' }}>Es sieht so aus, als wären folgende Kinder mehrfach angelegt. Schau auf die Zahl der Anmeldungen (A) und Buchungen (B) und lösche den überflüssigen Eintrag.</p>
-
-          {duplicates.map((g, i) => {
-            const allEntries = [{ kind: g.kind, reason: 'Haupt-Eintrag' }, ...g.matches.map(m => ({ kind: m.kind, reason: m.reason }))];
-            return (
-              <div key={i} style={{ padding: '1rem', background: 'var(--bg)', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>Duplikat-Gruppe {i + 1}</div>
-                {allEntries.map((e, j) => (
-                  <div key={j} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0', borderBottom: j < allEntries.length - 1 ? '1px dashed var(--border)' : 'none', flexWrap: 'wrap' }}>
-                    <strong style={{ fontSize: '1rem' }}>{e.kind.vorname} {e.kind.nachname}</strong>
-                    {e.kind.klasse && <span className="badge badge-blue">Kl. {e.kind.klasse}</span>}
-
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text)', background: 'rgba(0,0,0,0.04)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-                      <strong>A:</strong> {parseInt(e.kind.anmeldungen_count) || 0} | <strong>B:</strong> {parseInt(e.kind.buchungen_count) || 0}
-                    </span>
-
-                    <span className="badge badge-orange">{e.reason}</span>
-
-                    <span style={{ marginLeft: 'auto' }} />
-                    {j > 0 && (
-                      <button
-                        className="btn btn-sm"
-                        style={{ color: 'var(--primary)', width: 'auto', padding: '0.3rem 0.75rem', background: 'rgba(0,90,156,0.1)', border: 'none', marginRight: '0.5rem' }}
-                        onClick={() => mergeKind(allEntries[0].kind.id, e.kind.id)}
-                      >
-                        🔗 Zu Haupt-Eintrag
-                      </button>
-                    )}
-                    <button
-                      className="btn btn-sm"
-                      style={{ color: 'var(--danger)', width: 'auto', padding: '0.3rem 0.75rem', background: 'rgba(220,53,69,0.1)', border: 'none' }}
-                      onClick={() => deleteKind(e.kind.id)}
-                    >
-                      ✗ Löschen
-                    </button>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {showDuplicates && duplicates.length === 0 && (
-        <div className="info-box" style={{ marginBottom: '1.5rem' }}>✅ Keine Duplikate gefunden — alle {kinder.length} Kinder sind eindeutig.</div>
-      )}
-
-      {/* Import-Bereich */}
-      {showImport && (
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <div className="card-title">Kinder-Stammliste importieren</div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text2)', marginBottom: '1rem' }}>
-            Excel-Datei hochladen und Spalten zuordnen. Duplikate werden automatisch übersprungen.
-          </p>
-          <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} style={{ marginBottom: '1rem' }} />
-
-          {importHeaders.length > 0 && (
-            <div>
-              <p style={{ fontWeight: 600, marginBottom: '0.75rem' }}>{importData.length} Zeilen erkannt — Spalten zuordnen:</p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem', maxWidth: '600px' }}>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem' }}>
-                    Name (kombiniert) <span style={{ fontSize: '0.7rem', fontWeight: 400 }}>— ODER Nachname+Vorname getrennt</span>
-                  </label>
-                  <select className="form-input" value={importCols.name}
-                    onChange={e => setImportCols({ ...importCols, name: e.target.value, nachname: e.target.value ? '' : importCols.nachname, vorname: e.target.value ? '' : importCols.vorname })}>
-                    <option value="">– nicht verwenden –</option>
-                    {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem' }}>Klasse (optional)</label>
-                  <select className="form-input" value={importCols.klasse}
-                    onChange={e => setImportCols({ ...importCols, klasse: e.target.value })}>
-                    <option value="">– nicht verwenden –</option>
-                    {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
-                  </select>
-                </div>
-                {importCols.name === '' && (
-                  <>
-                    <div>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem' }}>Nachname *</label>
-                      <select className="form-input" value={importCols.nachname}
-                        onChange={e => setImportCols({ ...importCols, nachname: e.target.value })}>
-                        <option value="">– wählen –</option>
-                        {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem' }}>Vorname *</label>
-                      <select className="form-input" value={importCols.vorname}
-                        onChange={e => setImportCols({ ...importCols, vorname: e.target.value })}>
-                        <option value="">– wählen –</option>
-                        {importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}
-                      </select>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {importCols.name !== '' && (
-                <div className="info-box" style={{ marginBottom: '1rem' }}>
-                  Kombiniertes Namensfeld erkannt — wird automatisch in Vor-/Nachname getrennt.<br />
-                  <span style={{ fontSize: '0.8rem' }}>Format: "Vorname Nachname" oder "Nachname, Vorname"</span>
-                </div>
-              )}
-
-              {/* Vorschau */}
-              {(importCols.name !== '' || (importCols.nachname !== '' && importCols.vorname !== '')) && (() => {
-                const preview = getImportPreviewEntries();
-                return (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <p style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.85rem' }}>Vorschau (erste {preview.length}):</p>
-                    <div className="table-wrap">
-                      <table>
-                        <thead><tr><th>Vorname</th><th>Nachname</th><th>Klasse</th></tr></thead>
-                        <tbody>
-                          {preview.map((e, i) => (
-                            <tr key={i} style={!e.nachname || !e.vorname ? { background: 'rgba(220,53,69,0.08)' } : {}}>
-                              <td>{e.vorname || <span style={{ color: 'var(--danger)' }}>–fehlt–</span>}</td>
-                              <td>{e.nachname || <span style={{ color: 'var(--danger)' }}>–fehlt–</span>}</td>
-                              <td>{e.klasse || '–'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <button className="btn btn-primary btn-sm" style={{ width: 'auto' }} disabled={importing} onClick={executeImport}>
-                {importing ? 'Importiere...' : `${importData.length} Kinder importieren`}
-              </button>
-            </div>
-          )}
-
-          {importResult && (
-            <div className="info-box" style={{ marginTop: '1rem' }}>
-              ✓ {importResult.message}
-              {importResult.skipped_names?.length > 0 && (
-                <div style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>Übersprungen: {importResult.skipped_names.join(', ')}</div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Suche + Sortierung */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div className="search-wrap" style={{ flex: '1', minWidth: '200px', marginBottom: 0 }}>
-          <span className="search-icon">🔍</span>
-          <input
-            className="form-input"
-            placeholder="Kind suchen (Name, Klasse)..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ paddingLeft: '2.5rem' }}
-          />
-        </div>
-        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text2)', whiteSpace: 'nowrap' }}>Sortieren:</span>
-          <select className="form-input" style={{ padding: '0.4rem 0.6rem', fontSize: '0.82rem' }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-            {sortOptions.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-          </select>
-          <button className="btn btn-ghost btn-sm" style={{ width: 'auto', padding: '0.4rem 0.5rem', fontSize: '0.85rem' }} onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}>
-            {sortDir === 'asc' ? '↑' : '↓'}
-          </button>
-        </div>
-      </div>
-
-      {/* Kinder-Ergebnis Zähler */}
-      {!loading && filtered.length > 0 && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--text2)', marginBottom: '0.75rem' }}>
-          {filtered.length} {filtered.length === 1 ? 'Kind' : 'Kinder'}{search ? ` für "${search}"` : ''}
-        </div>
-      )}
-
-      {/* Kinder-Liste */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center' }}><Spinner /></div>
-        ) : filtered.length === 0 ? (
-          <div className="empty-state">
-            <div className="icon">👦</div>
-            <p>{kinder.length === 0
-              ? 'Noch keine Kinder registriert. Importiere eine Excel-Liste oder synchronisiere aus den bestehenden Listen.'
-              : 'Keine Kinder gefunden für "' + search + '"'
-            }</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex justify-between items-start">
+          <div>
+            <p className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">{filterBlock ? 'Angemeldet (A)' : 'Kinder gesamt'}</p>
+            <h3 className="text-3xl font-extrabold text-primary">{loading ? '…' : filterBlock ? kinder.filter(k => parseInt(k.anmeldungen_count) > 0).length : kinder.length}</h3>
           </div>
-        ) : (
-          filtered.map(k => {
-            const aCount = parseInt(k.anmeldungen_count) || 0;
-            const bCount = parseInt(k.buchungen_count) || 0;
-            const fehlend = aCount > 0 && bCount === 0;
-            return (
-              <div key={k.id} className="kind-row" onClick={() => setSelectedKindId(k.id)}>
-                <Avatar vorname={k.vorname} nachname={k.nachname} size="md" />
-                <div className="kind-row-info">
-                  <div className="kind-row-name">{k.vorname} {k.nachname}</div>
-                  <div className="kind-row-meta">
-                    {k.klasse ? `Klasse ${k.klasse}` : 'Keine Klasse'}
-                    {' · '}
-                    {parseInt(k.block_count_a) || 0} {(parseInt(k.block_count_a) || 0) === 1 ? 'Block' : 'Blöcke'}
-                  </div>
-                </div>
-                <div className="kind-row-stats">
-                  <div className="kind-mini-stat">
-                    <div className="val" style={{ color: 'var(--primary)' }}>{aCount}</div>
-                    <div className="lbl">Anmeld.</div>
-                  </div>
-                  <div className="kind-mini-stat">
-                    <div className="val" style={{ color: fehlend ? 'var(--danger)' : bCount > 0 ? 'var(--success)' : 'var(--text2)' }}>{bCount}</div>
-                    <div className="lbl">Buchung.</div>
-                  </div>
-                </div>
-                <div className="kind-row-actions" onClick={e => e.stopPropagation()}>
-                  <button className="btn btn-ghost btn-sm" style={{ width: 'auto' }} onClick={() => startEdit(k)} title="Bearbeiten">✎</button>
-                  <button className="btn btn-ghost btn-sm" style={{ width: 'auto', color: 'var(--danger)' }} onClick={() => deleteKind(k.id)} title="Löschen">✗</button>
-                </div>
-              </div>
-            );
-          })
-        )}
+          <span className="material-symbols-outlined text-primary-container bg-primary-fixed/30 p-3 rounded-xl text-2xl">groups</span>
+        </div>
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex justify-between items-start">
+          <div>
+            <p className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">{filterBlock ? 'Mit Buchung (B)' : 'Mind. eine Buchung'}</p>
+            <h3 className="text-3xl font-extrabold text-emerald-600">{loading ? '…' : mitBuchung}</h3>
+          </div>
+          <span className="material-symbols-outlined text-emerald-600 bg-emerald-100 p-3 rounded-xl text-2xl">check_circle</span>
+        </div>
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex justify-between items-start relative overflow-hidden">
+          {ohneBuchung > 0 && <div className="absolute top-0 right-0 w-2 h-full bg-error"></div>}
+          <div>
+            <p className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Ohne Buchung</p>
+            <h3 className={`text-3xl font-extrabold ${ohneBuchung > 0 ? 'text-error' : 'text-on-surface-variant/30'}`}>{loading ? '…' : ohneBuchung}</h3>
+          </div>
+          <span className={`material-symbols-outlined p-3 rounded-xl text-2xl ${ohneBuchung > 0 ? 'text-error bg-error/10' : 'text-on-surface-variant/20 bg-surface-container-high'}`}>warning</span>
+        </div>
       </div>
 
-      {/* Edit Modal */}
+      <div className="flex gap-4 flex-col lg:flex-row items-start">
+        <div className="flex-1 w-full space-y-4">
+          <div className="flex items-center flex-wrap gap-2 mb-2 bg-surface-container-low p-2 rounded-2xl border border-outline-variant/20">
+            <div className="flex-1 flex items-center bg-surface-container-lowest rounded-xl pl-3 pr-2 py-1.5 focus-within:ring-2 ring-primary/30 min-w-[200px]">
+              <span className="material-symbols-outlined text-outline text-sm mr-2">search</span>
+              <input className="w-full bg-transparent border-none focus:ring-0 px-0 outline-none text-sm placeholder:text-outline" placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors" title="Import" onClick={() => setShowImport(!showImport)}>
+                <span className="material-symbols-outlined text-[16px]">{showImport ? 'close' : 'upload_file'}</span> <span className="hidden sm:inline">{showImport ? 'Schließen' : 'Import'}</span>
+              </button>
+              <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors disabled:opacity-50" title="Sync" disabled={syncing} onClick={syncFromLists}>
+                <span className="material-symbols-outlined text-[16px]">{syncing ? 'hourglass_empty' : 'sync'}</span> <span className="hidden sm:inline">Sync</span>
+              </button>
+              {kinder.length > 1 && (
+                <button className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-outline-variant/30 ${showDuplicates ? 'bg-primary text-white' : 'bg-white text-on-surface hover:bg-surface-container-high'} transition-colors`} onClick={() => setShowDuplicates(!showDuplicates)}>
+                  <span className="material-symbols-outlined text-[16px]">content_copy</span> <span className="hidden sm:inline">Duplikate</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {showImport && (
+            <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border-l-4 border-l-primary mb-4">
+              <div className="text-sm font-bold text-on-surface flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-base text-primary">upload_file</span>
+                Kinder-Stammliste importieren
+              </div>
+              <p className="text-xs text-on-surface-variant mb-4">
+                Excel-Datei hochladen und Spalten zuordnen. Duplikate werden automatisch übersprungen.
+              </p>
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all mb-4" />
+              
+              {importHeaders.length > 0 && (
+                <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/10">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                     <div>
+                       <label className="text-[10px] font-bold uppercase text-primary/80 mb-1 block">Nachname *</label>
+                       <select className="w-full text-xs rounded-lg border-none" value={importCols.nachname} onChange={e => setImportCols({ ...importCols, nachname: e.target.value })}><option value="">-</option>{importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}</select>
+                     </div>
+                     <div>
+                       <label className="text-[10px] font-bold uppercase text-primary/80 mb-1 block">Vorname *</label>
+                       <select className="w-full text-xs rounded-lg border-none" value={importCols.vorname} onChange={e => setImportCols({ ...importCols, vorname: e.target.value })}><option value="">-</option>{importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}</select>
+                     </div>
+                     <div>
+                       <label className="text-[10px] font-bold uppercase text-primary/80 mb-1 block">Klasse (opt)</label>
+                       <select className="w-full text-xs rounded-lg border-none" value={importCols.klasse} onChange={e => setImportCols({ ...importCols, klasse: e.target.value })}><option value="">-</option>{importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}</select>
+                     </div>
+                     <div>
+                       <label className="text-[10px] font-bold uppercase text-primary/80 mb-1 block">Name kombiniert</label>
+                       <select className="w-full text-xs rounded-lg border-none" value={importCols.name} onChange={e => setImportCols({ ...importCols, name: e.target.value, nachname:'', vorname:'' })}><option value="">-</option>{importHeaders.map((h, i) => <option key={i} value={i}>{h}</option>)}</select>
+                     </div>
+                  </div>
+                  <button className="px-5 py-2 text-sm font-bold bg-primary text-on-primary rounded-xl shadow-sm hover:opacity-90 disabled:opacity-50" disabled={importing} onClick={executeImport}>
+                    {importing ? 'Importiere...' : `${importData.length} Kinder importieren`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {showDuplicates && duplicates.length > 0 && (
+            <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border-2 border-amber-500/50 mb-4">
+              <div className="text-sm font-bold text-amber-600 flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined">warning</span> {duplicates.length} mögliche Duplikate
+              </div>
+              <div className="space-y-4">
+                {duplicates.map((g, i) => {
+                  const allEntries = [{ kind: g.kind, reason: 'Haupt-Eintrag' }, ...g.matches.map(m => ({ kind: m.kind, reason: m.reason }))];
+                  return (
+                    <div key={i} className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/10">
+                      <div className="text-[10px] font-black uppercase text-on-surface-variant mb-2">Gruppe {i + 1}</div>
+                      {allEntries.map((e, j) => (
+                        <div key={j} className="flex items-center gap-3 py-2 flex-wrap border-b border-dashed border-outline-variant/10 last:border-0">
+                          <strong className="text-sm w-48 truncate">{e.kind.vorname} {e.kind.nachname}</strong>
+                          <span className="text-xs bg-surface-container-high px-2 py-0.5 rounded">A: {parseInt(e.kind.anmeldungen_count)||0} | B: {parseInt(e.kind.buchungen_count)||0}</span>
+                          <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{e.reason}</span>
+                          <div className="ml-auto flex gap-1">
+                            {j>0 && <button className="px-2 py-1 bg-primary text-white text-[10px] font-bold rounded-lg" onClick={() => mergeKind(Math.min(g.kind.id, e.kind.id), Math.max(g.kind.id, e.kind.id))}>Merge</button>}
+                            <button className="px-2 py-1 bg-error text-white text-[10px] font-bold rounded-lg" onClick={() => deleteKind(e.kind.id)}>Löschen</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden text-sm">
+            {loading ? (
+               <div className="p-12 text-center"><Spinner /></div>
+            ) : (
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="bg-surface-container-high/30 border-b border-outline-variant/10">
+                    <th className="px-5 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('nachname')}>Name {sIcon('nachname')}</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('klasse')}>Klasse {sIcon('klasse')}</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-center cursor-pointer select-none" onClick={() => toggleSort('bloecke')}>Ferienblöcke {sIcon('bloecke')}</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-center">Buchungen</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-right">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/10">
+                  {filtered.map(k => {
+                    const isSelected = String(selectedKindId) === String(k.id);
+                    return (
+                    <tr key={k.id} className={`hover:bg-surface-container-low transition-colors group cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`} onClick={() => setSelectedKindId(k.id)}>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar vorname={k.vorname} nachname={k.nachname} size="sm" />
+                          <span className={`font-bold ${isSelected ? 'text-primary' : 'text-on-surface'}`}>{k.nachname}, {k.vorname}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 font-medium text-on-surface-variant">{k.klasse || '—'}</td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="bg-secondary-container text-on-secondary-container px-2 py-1 rounded-md text-xs font-bold">{parseInt(k.block_count_a) || 0}</span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold">
+                           <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">A:{parseInt(k.anmeldungen_count)||0}</span>
+                           <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">B:{parseInt(k.buchungen_count)||0}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="material-symbols-outlined p-1.5 text-outline hover:text-primary hover:bg-surface-container-high rounded-lg text-lg" onClick={(e) => { e.stopPropagation(); startEdit(k); }}>edit</button>
+                          <button className="material-symbols-outlined p-1.5 text-outline hover:text-error hover:bg-error-container rounded-lg text-lg" onClick={(e) => { e.stopPropagation(); deleteKind(k.id); }}>delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  )})}
+                  {filtered.length === 0 && (
+                    <tr><td colSpan="5" className="p-8 text-center text-on-surface-variant font-medium">Keine Kinder gefunden.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            )}
+            <div className="px-6 py-4 bg-surface-container-low/30 border-t border-outline-variant/10 text-xs text-on-surface-variant font-medium text-center">
+               Zeige {filtered.length} Ergebnisse
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full lg:w-96 shrink-0 lg:sticky lg:top-24">
+          {selectedKindId && akte ? (
+            <div className="bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden flex flex-col h-[calc(100vh-8rem)]">
+              <div className="relative h-28 bg-gradient-to-br from-primary-container to-primary shrink-0">
+                <div className="absolute -bottom-8 left-6">
+                  <div className="border-4 border-surface-container-lowest rounded-2xl shadow-lg bg-surface-container-lowest">
+                    <Avatar vorname={akte.kind.vorname} nachname={akte.kind.nachname} size="lg" />
+                  </div>
+                </div>
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => startEdit(akte.kind)}>
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                  <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => setSelectedKindId(null)}>
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-12 px-6 pb-6 flex-1 overflow-y-auto space-y-8">
+                <div>
+                  <h3 className="text-2xl font-extrabold text-on-surface tracking-tight">{akte.kind.nachname}, {akte.kind.vorname}</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    {akte.kind.klasse && <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Klasse {akte.kind.klasse}</span>}
+                    <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+                    <span className="text-xs text-on-surface-variant font-medium">ID: #{akte.kind.id}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-surface-container-low rounded-xl p-3 text-center border border-outline-variant/5">
+                    <div className="text-xl font-bold text-primary">{akte.summary.total_anmeldungen}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Anmeldungen</div>
+                  </div>
+                  <div className="bg-surface-container-low rounded-xl p-3 text-center border border-outline-variant/5">
+                    <div className="text-xl font-bold text-emerald-600">{akte.summary.total_buchungen}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Buchungen</div>
+                  </div>
+                </div>
+
+                {akte.kind.notizen && (
+                  <div className="bg-amber-500/10 border-l-4 border-l-amber-500 p-3 rounded-r-xl">
+                    <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Notizen</p>
+                    <p className="text-sm text-amber-900">{akte.kind.notizen}</p>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-bold text-outline uppercase tracking-widest border-b border-outline-variant/10 pb-2">Verlauf / Enrollment</h4>
+                  {akte.blocks.length === 0 ? (
+                    <p className="text-xs text-on-surface-variant">Keine Einträge in den Listen vorhanden.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {akte.blocks.map(b => (
+                        <div key={b.ferienblock_id} className="p-3 bg-surface-container-low/50 rounded-xl border border-outline-variant/5">
+                          <div className="flex items-start gap-3 mb-2">
+                            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${b.match_status==='exact'||b.match_status==='fuzzy_accepted' ? 'bg-emerald-500' : 'bg-primary-container'}`}></div>
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-on-surface leading-tight">{b.block_name}</p>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</p>
+                            </div>
+                            {b.klasse && <span className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-outline-variant/20">Kl. {b.klasse}</span>}
+                          </div>
+                          
+                          <div className="pl-5 grid grid-cols-2 gap-2 mt-2">
+                             <div className="bg-white rounded-lg p-2 text-center shadow-sm">
+                                <div className="text-[10px] font-bold text-primary">{b.anmeldungen.length} Tage (A)</div>
+                             </div>
+                             <div className="bg-white rounded-lg p-2 text-center shadow-sm">
+                                <div className="text-[10px] font-bold text-emerald-600">{b.buchungen.length} Tage (B)</div>
+                             </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full min-h-[400px] border-2 border-dashed border-outline-variant/30 rounded-2xl flex flex-col items-center justify-center p-10 text-center bg-surface-container-lowest/50">
+               <span className="material-symbols-outlined text-5xl text-outline-variant/50 mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>person_search</span>
+               <p className="text-sm font-bold text-on-surface">Akte auswählen</p>
+               <p className="text-xs text-on-surface-variant mt-1">Klicke auf ein Kind in der Liste, um das Profil und den Verlauf zu sehen.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {editKind && (
-        <div className="modal-overlay" onClick={() => setEditKind(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>Kind bearbeiten</h3>
-            <div className="form-group">
-              <label>Nachname</label>
-              <input className="form-input" value={editForm.nachname} onChange={e => setEditForm({ ...editForm, nachname: e.target.value })} />
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setEditKind(null)}>
+          <div className="bg-surface-container-lowest rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-outline-variant/20" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-2"><span className="material-symbols-outlined text-primary">edit</span> Kind bearbeiten</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">Vorname</label>
+                  <input className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm" value={editForm.vorname} onChange={e => setEditForm({ ...editForm, vorname: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">Nachname</label>
+                  <input className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm" value={editForm.nachname} onChange={e => setEditForm({ ...editForm, nachname: e.target.value })} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">Klasse (optional)</label>
+                <input className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} placeholder="Klasse eintragen" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">System-Notizen</label>
+                <textarea className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm min-h-[80px]" value={editForm.notizen} onChange={e => setEditForm({ ...editForm, notizen: e.target.value })} placeholder="Zusätzliche Infos, Allergien etc." />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Vorname</label>
-              <input className="form-input" value={editForm.vorname} onChange={e => setEditForm({ ...editForm, vorname: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label>Klasse</label>
-              <input className="form-input" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label>Notizen</label>
-              <textarea className="textarea" style={{ minHeight: '80px' }} value={editForm.notizen} onChange={e => setEditForm({ ...editForm, notizen: e.target.value })} />
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setEditKind(null)}>Abbrechen</button>
-              <button className="btn btn-primary" style={{ width: 'auto' }} onClick={saveEdit}>Speichern</button>
+            <div className="flex justify-end gap-3 mt-8">
+              <button className="px-5 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors" onClick={() => setEditKind(null)}>Abbrechen</button>
+              <button className="px-6 py-2.5 text-sm font-bold bg-primary text-on-primary border border-primary-container/20 rounded-xl shadow-sm hover:opacity-90 hover:scale-[1.02] transition-all" onClick={saveEdit}>Speichern</button>
             </div>
           </div>
         </div>
