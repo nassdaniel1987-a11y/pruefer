@@ -1,26 +1,33 @@
 import React, { useState } from 'react';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
+import { confirmDialog } from '../utils/confirm';
 
 // EINSTELLUNGEN
 const EinstellungenPage = ({ user, onLogout }) => {
-  const [pw1, setPw1] = useState('');
-  const [pw2, setPw2] = useState('');
-  const [msg, setMsg] = useState('');
-  const [err, setErr] = useState('');
+  const [oldPw, setOldPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [regUser, setRegUser] = useState('');
+  const [regPw, setRegPw] = useState('');
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
 
-  const changePassword = async () => {
-    if (pw1 !== pw2) { setErr('Passwörter stimmen nicht überein'); return; }
-    if (pw1.length < 8) { setErr('Mindestens 8 Zeichen'); return; }
-    const res = await API.post('auth', { action: 'change-password', token: API.token(), newPassword: pw1 });
-    if (res.success) { setMsg('Passwort geändert!'); setPw1(''); setPw2(''); setErr(''); }
-    else setErr(res.error);
+  const changePw = async () => {
+    if (newPw !== confirmPw) { toast.error('Passwörter stimmen nicht überein'); return; }
+    if (newPw.length < 8) { toast.error('Mindestens 8 Zeichen'); return; }
+    const res = await API.post('auth', { action: 'change-password', token: API.token(), oldPassword: oldPw, newPassword: newPw });
+    if (res.success) { toast.success('Passwort geändert!'); setOldPw(''); setNewPw(''); setConfirmPw(''); }
+    else toast.error(res.error || 'Fehler beim Ändern');
   };
 
-  // ── Backup: Export ──
-  const exportBackup = async () => {
+  const register = async () => {
+    const res = await API.post('auth', { action: 'register', username: regUser, password: regPw });
+    if (res.success) { toast.success('Benutzer erstellt!'); setRegUser(''); setRegPw(''); }
+    else toast.error(res.error || 'Fehler');
+  };
+
+  const exportAll = async () => {
     setBackupLoading(true);
     try {
       const data = await API.get('backup');
@@ -42,38 +49,22 @@ const EinstellungenPage = ({ user, onLogout }) => {
     }
   };
 
-  // ── Backup: Import ──
   const importBackup = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     e.target.value = '';
-
-    const ok = await confirmDialog(
-      'Backup wiederherstellen',
-      'ACHTUNG: Alle bestehenden Daten werden ÜBERSCHRIEBEN! Ferienblöcke, Listen, Abgleiche und Kinder werden durch die Backup-Daten ersetzt. Diese Aktion kann nicht rückgängig gemacht werden.',
-      'Wiederherstellen'
-    );
+    const ok = await confirmDialog('Backup wiederherstellen', 'ACHTUNG: Alle bestehenden Daten werden ÜBERSCHRIEBEN!', 'Wiederherstellen');
     if (!ok) return;
-
     setRestoreLoading(true);
     try {
       const text = await file.text();
       const backup = JSON.parse(text);
-
-      if (!backup.data) {
-        toast.error('Ungültiges Backup-Format: "data"-Feld fehlt');
-        return;
-      }
-
+      if (!backup.data) { toast.error('Ungültiges Backup-Format'); return; }
       const res = await API.post('backup', { action: 'import', data: backup.data });
-      if (res.success) {
-        toast.success('Backup wiederhergestellt! Seite wird neu geladen…');
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        toast.error('Restore fehlgeschlagen: ' + (res.error || 'Unbekannter Fehler'));
-      }
+      if (res.success) { toast.success('Backup wiederhergestellt!'); setTimeout(() => window.location.reload(), 1500); }
+      else toast.error('Restore fehlgeschlagen: ' + (res.error || 'Fehler'));
     } catch (err) {
-      toast.error('Fehler beim Lesen der Datei: ' + err.message);
+      toast.error('Fehler beim Lesen: ' + err.message);
     } finally {
       setRestoreLoading(false);
     }
@@ -146,9 +137,13 @@ const EinstellungenPage = ({ user, onLogout }) => {
             </div>
           </div>
           <div className="space-y-3">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/10 transition-colors" onClick={() => exportAll()}>
-              <span className="material-symbols-outlined text-lg">download</span>Daten exportieren (JSON)
+            <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/10 transition-colors ${backupLoading ? 'opacity-50' : ''}`} onClick={exportAll} disabled={backupLoading}>
+              <span className="material-symbols-outlined text-lg">download</span>{backupLoading ? 'Exportiere...' : 'Backup exportieren (JSON)'}
             </button>
+            <label className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/10 transition-colors cursor-pointer ${restoreLoading ? 'opacity-50' : ''}`}>
+              <span className="material-symbols-outlined text-lg">upload</span>{restoreLoading ? 'Importiere...' : 'Backup importieren'}
+              <input type="file" accept=".json" className="hidden" onChange={importBackup} disabled={restoreLoading} />
+            </label>
             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-error hover:bg-error-container border border-outline-variant/10 transition-colors" onClick={onLogout}>
               <span className="material-symbols-outlined text-lg">logout</span>Abmelden
             </button>

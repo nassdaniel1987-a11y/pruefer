@@ -4,7 +4,7 @@ import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { confirmDialog } from '../utils/confirm';
 import { fmtDate } from '../utils/helpers';
-import { jaroWinkler, koelnerPhonetik, tokenizeName } from '../utils/matching';
+import { jaroWinkler, koelnerPhonetik, tokenizeName, calcScore } from '../utils/matching';
 import Spinner from './Spinner';
 import { Avatar } from './Avatar';
 
@@ -638,9 +638,9 @@ return (
               <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead>
                   <tr className="bg-surface-container-high/30 border-b border-outline-variant/10">
-                    <th className="px-5 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('nachname')}>Name {sIcon('nachname')}</th>
-                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('klasse')}>Klasse {sIcon('klasse')}</th>
-                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-center cursor-pointer select-none" onClick={() => toggleSort('bloecke')}>Ferienblöcke {sIcon('bloecke')}</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('nachname')}>Name {sortIndicator('nachname')}</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('klasse')}>Klasse {sortIndicator('klasse')}</th>
+                    <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-center cursor-pointer select-none" onClick={() => toggleSort('bloecke')}>Ferienblöcke {sortIndicator('bloecke')}</th>
                     <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-center">Buchungen</th>
                     <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-right">Aktionen</th>
                   </tr>
