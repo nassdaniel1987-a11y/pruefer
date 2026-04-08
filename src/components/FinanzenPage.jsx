@@ -22,27 +22,21 @@ const FinanzenPage = ({ blocks }) => {
   useEffect(() => { if (blockId) load(blockId); }, [blockId]);
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6">
+    <div className="space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">account_balance</span>
-            Finanzen
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">Kostenkalkulation: {data?.block?.preis_pro_tag || '3.50'} € pro Kind pro Tag</p>
+          <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Kostenkalkulation & Buchungen</span>
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Finanzen</h2>
+        </div>
+        <div className="flex items-center bg-surface-container-lowest px-4 py-1.5 rounded-xl border border-outline-variant/20 gap-4">
+          <select className="bg-transparent text-sm border-none focus:ring-0 outline-none font-bold text-on-surface py-2" value={blockId} onChange={e => setBlockId(e.target.value)}>
+            <option value="">– Block wählen –</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
         </div>
       </div>
 
-      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4">
-        <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Ferienblock</label>
-        <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-          value={blockId} onChange={e => setBlockId(e.target.value)}>
-          <option value="">– Block wählen –</option>
-          {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
-      </div>
-
-      {loading && <Spinner />}
+      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
 
       {!loading && data && data.statistik && (() => {
         const exportFinanzen = () => {
@@ -68,55 +62,75 @@ const FinanzenPage = ({ blocks }) => {
         };
 
         return <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-              <div className="text-xs text-on-surface-variant mb-1">Kinder mit Buchung</div>
-              <div className="text-2xl font-bold text-primary">{data.statistik.kinder_mit_buchung}</div>
+          {/* Stat Cards */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined text-3xl">child_care</span>
+                </div>
+              </div>
+              <p className="text-sm font-medium text-on-surface-variant">Kinder mit Buchung</p>
+              <h4 className="text-3xl font-extrabold text-on-surface mt-1">{data.statistik.kinder_mit_buchung}</h4>
             </div>
-            <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-              <div className="text-xs text-on-surface-variant mb-1">Gesamt Mahlzeiten</div>
-              <div className="text-2xl font-bold text-green-700">{data.statistik.gesamt_buchungen}</div>
+            <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                  <span className="material-symbols-outlined text-3xl">restaurant</span>
+                </div>
+              </div>
+              <p className="text-sm font-medium text-on-surface-variant">Gesamt Mahlzeiten</p>
+              <h4 className="text-3xl font-extrabold text-emerald-600 mt-1">{data.statistik.gesamt_buchungen}</h4>
             </div>
-            <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-              <div className="text-xs text-on-surface-variant mb-1">Gesamtbetrag</div>
-              <div className="text-2xl font-bold text-amber-700">{data.statistik.gesamt_betrag.toFixed(2)} €</div>
+            <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
+                  <span className="material-symbols-outlined text-3xl">account_balance_wallet</span>
+                </div>
+              </div>
+              <p className="text-sm font-medium text-on-surface-variant">Gesamtbetrag</p>
+              <h4 className="text-3xl font-extrabold text-amber-700 mt-1">{data.statistik.gesamt_betrag.toFixed(2)} €</h4>
             </div>
-            <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-              <div className="text-xs text-on-surface-variant mb-1">Ohne Buchung</div>
-              <div className="text-2xl font-bold text-error">{data.statistik.kinder_ohne_buchung}</div>
-              <div className="text-xs text-on-surface-variant mt-0.5">in A, nicht in B</div>
+            <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low relative overflow-hidden">
+              {data.statistik.kinder_ohne_buchung > 0 && <div className="absolute top-0 right-0 w-1.5 h-full bg-error"></div>}
+              <div className="flex justify-between items-start mb-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${data.statistik.kinder_ohne_buchung > 0 ? 'bg-error/10 text-error' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                  <span className="material-symbols-outlined text-3xl">person_off</span>
+                </div>
+              </div>
+              <p className="text-sm font-medium text-on-surface-variant">Ohne Buchung</p>
+              <h4 className={`text-3xl font-extrabold mt-1 ${data.statistik.kinder_ohne_buchung > 0 ? 'text-error' : 'text-on-surface'}`}>{data.statistik.kinder_ohne_buchung}</h4>
             </div>
-          </div>
+          </section>
 
-          <div className="flex justify-end mb-4">
-            <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/20 transition-colors" onClick={exportFinanzen}>
+          <div className="flex justify-end">
+            <button className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/20 transition-colors" onClick={exportFinanzen}>
               <span className="material-symbols-outlined text-base">download</span>Als Excel exportieren
             </button>
           </div>
 
+          {/* Fehlende Buchungen */}
           {data.fehlende_buchungen?.length > 0 && (
-            <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10">
-                <span className="material-symbols-outlined text-error text-base">person_off</span>
-                <span className="font-semibold text-error">Fehlende Buchungen</span>
-                <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{data.fehlende_buchungen.length}</span>
+            <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
+              <div className="flex items-center gap-2 px-6 py-4 border-b border-outline-variant/10 bg-red-50/50">
+                <span className="material-symbols-outlined text-error">warning</span>
+                <span className="font-bold text-error text-sm">{data.fehlende_buchungen.length} Kinder ohne Buchung</span>
               </div>
-              <p className="text-sm text-on-surface-variant px-5 py-3">Diese Kinder sind angemeldet, haben aber keine Buchung beim Caterer.</p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="bg-surface-container/50">
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Nachname</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Vorname</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Klasse</th>
-                    <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tage angemeldet</th>
+                  <thead><tr className="bg-surface-container-low">
+                    <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
+                    <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
+                    <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Klasse</th>
+                    <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Tage</th>
                   </tr></thead>
-                  <tbody className="divide-y divide-outline-variant/10">
+                  <tbody className="divide-y divide-outline-variant/5">
                     {data.fehlende_buchungen.map((k, i) => (
-                      <tr key={i} className="hover:bg-surface-container/30">
-                        <td className="px-4 py-2 text-on-surface">{k.nachname}</td>
-                        <td className="px-4 py-2 text-on-surface">{k.vorname}</td>
-                        <td className="px-4 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
-                        <td className="px-4 py-2">{k.tage_angemeldet}</td>
+                      <tr key={i} className="bg-red-50/30 hover:bg-red-100/30 transition-colors">
+                        <td className="px-4 py-3 font-bold text-on-surface">{k.nachname}</td>
+                        <td className="px-4 py-3 text-on-surface-variant">{k.vorname}</td>
+                        <td className="px-4 py-3 text-on-surface-variant">{k.klasse || '–'}</td>
+                        <td className="px-4 py-3"><span className="bg-error/10 text-error text-xs font-bold px-2 py-0.5 rounded-full">{k.tage_angemeldet}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -125,32 +139,32 @@ const FinanzenPage = ({ blocks }) => {
             </div>
           )}
 
+          {/* Buchungen pro Kind */}
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-            <div className="px-5 py-4 border-b border-outline-variant/10">
-              <span className="font-semibold text-on-surface flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-base text-primary">receipt_long</span>
-                Buchungen pro Kind
-              </span>
+            <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">receipt_long</span>
+              <span className="font-bold text-on-surface text-sm">Buchungen pro Kind</span>
+              <span className="text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-full ml-auto">{data.block?.preis_pro_tag || '3.50'} €/Tag</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead><tr className="bg-surface-container/50">
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Nachname</th>
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Vorname</th>
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Klasse</th>
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Tage</th>
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Gesamtbetrag</th>
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-on-surface-variant">Kontostand</th>
+                <thead><tr className="bg-surface-container-low">
+                  <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Klasse</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Tage</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Betrag</th>
+                  <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Kontostand</th>
                 </tr></thead>
-                <tbody className="divide-y divide-outline-variant/10">
+                <tbody className="divide-y divide-outline-variant/5">
                   {data.buchungen.map((k, i) => (
-                    <tr key={i} className="hover:bg-surface-container/30">
-                      <td className="px-4 py-2 text-on-surface">{k.nachname}</td>
-                      <td className="px-4 py-2 text-on-surface">{k.vorname}</td>
-                      <td className="px-4 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
-                      <td className="px-4 py-2 text-on-surface">{k.tage_gebucht}</td>
-                      <td className="px-4 py-2 font-semibold text-on-surface">{parseFloat(k.gesamtbetrag).toFixed(2)} €</td>
-                      <td className="px-4 py-2 text-on-surface-variant">{k.kontostand ? `${parseFloat(k.kontostand).toFixed(2)} €` : '–'}</td>
+                    <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
+                      <td className="px-4 py-3 font-bold text-on-surface">{k.nachname}</td>
+                      <td className="px-4 py-3 text-on-surface-variant">{k.vorname}</td>
+                      <td className="px-4 py-3 text-on-surface-variant">{k.klasse || '–'}</td>
+                      <td className="px-4 py-3 text-on-surface">{k.tage_gebucht}</td>
+                      <td className="px-4 py-3 font-bold text-on-surface">{parseFloat(k.gesamtbetrag).toFixed(2)} €</td>
+                      <td className="px-4 py-3 text-on-surface-variant">{k.kontostand ? `${parseFloat(k.kontostand).toFixed(2)} €` : '–'}</td>
                     </tr>
                   ))}
                 </tbody>

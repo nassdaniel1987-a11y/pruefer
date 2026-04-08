@@ -82,190 +82,157 @@ const FerienblockPage = ({ blocks, onReload }) => {
   };
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6">
+    <div className="space-y-8 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">beach_access</span>
-            Ferienblöcke
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">Verwalte Ferienblöcke, Daten und Einträge</p>
+          <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Buchungszeiträume</span>
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Ferienblöcke</h2>
         </div>
-        <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors" onClick={openNew}>
-          <span className="material-symbols-outlined text-base">add</span>Neuer Ferienblock
+        <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm shadow-xl shadow-primary/20 hover:-translate-y-0.5 transition-transform" onClick={openNew}>
+          <span className="material-symbols-outlined text-sm">add</span>Neuer Ferienblock
         </button>
       </div>
 
       {blocks.length === 0 ? (
-        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">calendar_month</span>
-          <p className="text-on-surface-variant">Noch kein Ferienblock vorhanden.</p>
-        </div>
-      ) : blocks.map(b => {
-        const isOpen = expanded === b.id;
-        const d = detail[b.id];
-        const loading = detailLoading[b.id];
-        return (
-          <div key={b.id} className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
-            <div className="flex justify-between items-center gap-3 p-5 flex-wrap">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap mb-1">
-                  <span className="font-semibold text-on-surface text-base">{b.name}</span>
-                  <span className="text-sm text-on-surface-variant">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</span>
-                  <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{parseFloat(b.preis_pro_tag).toFixed(2)} €/Tag</span>
+        <button className="w-full border-2 border-dashed border-outline-variant/30 rounded-2xl flex flex-col items-center justify-center p-12 gap-4 group hover:border-primary/40 hover:bg-surface-container-low transition-all" onClick={openNew}>
+          <div className="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-fixed transition-all">
+            <span className="material-symbols-outlined text-primary text-3xl">add</span>
+          </div>
+          <span className="text-sm font-black text-primary uppercase tracking-widest">Ersten Block erstellen</span>
+        </button>
+      ) : (
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {blocks.map(b => {
+            const isOpen = expanded === b.id;
+            const d = detail[b.id];
+            const loading = detailLoading[b.id];
+            return (
+              <article key={b.id} className="bg-surface-container-lowest p-6 rounded-2xl relative group hover:shadow-[0_24px_32px_rgba(28,27,31,0.06)] transition-all duration-300">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-bold text-primary tracking-tight">{b.name}</h3>
+                    <div className="flex items-center gap-2 text-on-surface-variant/60 text-sm">
+                      <span className="material-symbols-outlined text-sm">event</span>
+                      <span>{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</span>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-tertiary-container/20 text-on-tertiary-container text-[10px] font-black uppercase tracking-widest">Aktiv</span>
+                </div>
+                <div className="mb-6">
+                  <div className="text-3xl font-black text-on-surface tracking-tighter">{parseFloat(b.preis_pro_tag).toFixed(2)} € <span className="text-sm font-normal text-on-surface-variant">/ Tag</span></div>
                 </div>
                 {d && (
-                  <div className="flex gap-2 flex-wrap">
-                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.a.length} Anmeldungen</span>
-                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.b.length} Buchungen</span>
-                    {d.a.length > d.b.length && (
-                      <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.a.length - d.b.length} fehlend</span>
+                  <div className="flex items-center justify-between py-3 border-t border-outline-variant/10 text-xs text-on-surface-variant">
+                    <div className="flex items-center gap-1 font-medium">
+                      <span className="material-symbols-outlined text-sm">child_care</span>
+                      {d.a.length} Anmeldungen
+                    </div>
+                    <div className="flex items-center gap-1 font-medium">
+                      <span className="material-symbols-outlined text-sm">bookmark_added</span>
+                      {d.b.length} Buchungen
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-outline-variant/10">
+                  <button className="flex-1 bg-secondary-container text-on-secondary-container py-2.5 rounded-lg text-xs font-bold hover:opacity-80 transition-all" onClick={() => toggleExpand(b.id)}>
+                    {isOpen ? 'Zuklappen' : 'Details'}
+                  </button>
+                  <button className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors" onClick={() => openEdit(b)}>
+                    <span className="material-symbols-outlined text-lg">edit</span>
+                  </button>
+                  <button className="p-2 text-error hover:bg-error-container rounded-lg transition-colors" onClick={() => remove(b.id)}>
+                    <span className="material-symbols-outlined text-lg">delete</span>
+                  </button>
+                </div>
+
+                {isOpen && (
+                  <div className="mt-4 pt-4 border-t border-outline-variant/10">
+                    {loading ? <div className="py-4 text-center"><Spinner /></div> : (
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1"><span className="material-symbols-outlined text-xs">assignment</span>Liste A ({d?.a.length || 0})</span>
+                            <div className="flex gap-1">
+                              <button className="p-1 rounded text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => reloadDetail(b.id)}><span className="material-symbols-outlined text-sm">refresh</span></button>
+                              {d?.a.length > 0 && <button className="px-2 py-0.5 text-[10px] font-bold rounded text-error hover:bg-error/10 transition-colors" onClick={() => clearListe(b.id, 'A')}>Leeren</button>}
+                            </div>
+                          </div>
+                          {!d?.a.length ? (
+                            <p className="text-xs text-on-surface-variant/50 italic p-2">Keine Einträge</p>
+                          ) : (
+                            <div className="max-h-40 overflow-y-auto rounded-lg border border-outline-variant/10">
+                              <table className="w-full text-xs">
+                                <tbody className="divide-y divide-outline-variant/5">{d.a.map((k,i)=>(
+                                  <tr key={i} className="hover:bg-surface-container-low/50">
+                                    <td className="px-2 py-1.5 font-bold text-on-surface">{k.nachname}</td>
+                                    <td className="px-2 py-1.5 text-on-surface-variant">{k.vorname}</td>
+                                    <td className="px-2 py-1.5 text-on-surface-variant/60">{k.klasse||'–'}</td>
+                                  </tr>
+                                ))}</tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1"><span className="material-symbols-outlined text-xs">bookmark_added</span>Liste B ({d?.b.length || 0})</span>
+                            {d?.b.length > 0 && <button className="px-2 py-0.5 text-[10px] font-bold rounded text-error hover:bg-error/10 transition-colors" onClick={() => clearListe(b.id, 'B')}>Leeren</button>}
+                          </div>
+                          {!d?.b.length ? (
+                            <p className="text-xs text-on-surface-variant/50 italic p-2">Keine Einträge</p>
+                          ) : (
+                            <div className="max-h-40 overflow-y-auto rounded-lg border border-outline-variant/10">
+                              <table className="w-full text-xs">
+                                <tbody className="divide-y divide-outline-variant/5">{d.b.map((k,i)=>(
+                                  <tr key={i} className="hover:bg-surface-container-low/50">
+                                    <td className="px-2 py-1.5 font-bold text-on-surface">{k.nachname}</td>
+                                    <td className="px-2 py-1.5 text-on-surface-variant">{k.vorname}</td>
+                                    <td className="px-2 py-1.5 text-on-surface-variant/60">{k.datum ? fmtDate(k.datum) : '–'}</td>
+                                  </tr>
+                                ))}</tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => toggleExpand(b.id)}>
-                  <span className="material-symbols-outlined text-sm">{isOpen ? 'expand_less' : 'expand_more'}</span>
-                  {isOpen ? 'Zuklappen' : 'Details'}
-                </button>
-                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => openEdit(b)}>
-                  <span className="material-symbols-outlined text-sm">edit</span>Bearbeiten
-                </button>
-                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors" onClick={() => remove(b.id)}>
-                  <span className="material-symbols-outlined text-sm">delete</span>Löschen
-                </button>
-              </div>
-            </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
 
-            {isOpen && (
-              <div className="border-t border-outline-variant/10 p-5">
-                {loading ? <Spinner /> : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-semibold text-sm text-on-surface flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-base text-primary">assignment</span>
-                          Liste A – Anmeldungen ({d?.a.length || 0})
-                        </span>
-                        <div className="flex gap-1.5">
-                          <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => reloadDetail(b.id)}>
-                            <span className="material-symbols-outlined text-sm">refresh</span>
-                          </button>
-                          {d?.a.length > 0 && (
-                            <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors" onClick={() => clearListe(b.id, 'A')}>Alle löschen</button>
-                          )}
-                        </div>
-                      </div>
-                      {!d?.a.length ? (
-                        <p className="text-on-surface-variant text-sm">Keine Einträge vorhanden.</p>
-                      ) : (
-                        <div className="max-h-[300px] overflow-y-auto rounded-xl border border-outline-variant/10">
-                          <table className="w-full text-sm">
-                            <thead><tr className="bg-surface-container/50 sticky top-0">
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Nachname</th>
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Vorname</th>
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Klasse</th>
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Datum</th>
-                            </tr></thead>
-                            <tbody className="divide-y divide-outline-variant/10">
-                              {d.a.map(e => (
-                                <tr key={e.id} className="hover:bg-surface-container/30">
-                                  <td className="px-3 py-2 text-on-surface">{e.nachname}</td>
-                                  <td className="px-3 py-2 text-on-surface">{e.vorname}</td>
-                                  <td className="px-3 py-2 text-on-surface-variant">{e.klasse || '–'}</td>
-                                  <td className="px-3 py-2 text-on-surface-variant">{fmtDate(e.datum)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-semibold text-sm text-on-surface flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-base text-primary">restaurant</span>
-                          Liste B – Buchungen ({d?.b.length || 0})
-                        </span>
-                        <div className="flex gap-1.5">
-                          <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => reloadDetail(b.id)}>
-                            <span className="material-symbols-outlined text-sm">refresh</span>
-                          </button>
-                          {d?.b.length > 0 && (
-                            <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors" onClick={() => clearListe(b.id, 'B')}>Alle löschen</button>
-                          )}
-                        </div>
-                      </div>
-                      {!d?.b.length ? (
-                        <p className="text-on-surface-variant text-sm">Keine Einträge vorhanden.</p>
-                      ) : (
-                        <div className="max-h-[300px] overflow-y-auto rounded-xl border border-outline-variant/10">
-                          <table className="w-full text-sm">
-                            <thead><tr className="bg-surface-container/50 sticky top-0">
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Nachname</th>
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Vorname</th>
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Klasse</th>
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Datum</th>
-                              <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Menü</th>
-                            </tr></thead>
-                            <tbody className="divide-y divide-outline-variant/10">
-                              {d.b.map(e => (
-                                <tr key={e.id} className="hover:bg-surface-container/30">
-                                  <td className="px-3 py-2 text-on-surface">{e.nachname}</td>
-                                  <td className="px-3 py-2 text-on-surface">{e.vorname}</td>
-                                  <td className="px-3 py-2 text-on-surface-variant">{e.klasse || '–'}</td>
-                                  <td className="px-3 py-2 text-on-surface-variant">{fmtDate(e.datum)}</td>
-                                  <td className="px-3 py-2 text-on-surface-variant text-xs">{e.menu || '–'}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-on-surface mb-5">{editing ? 'Ferienblock bearbeiten' : 'Neuer Ferienblock'}</h3>
+        <div className="fixed inset-0 bg-black/40 z-[200] flex items-center justify-center" onClick={() => setShowModal(false)}>
+          <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-xl max-w-md w-full mx-4 space-y-5" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-extrabold text-on-surface">{editing ? 'Block bearbeiten' : 'Neuer Ferienblock'}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Name</label>
-                <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-                  value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="z.B. Winterferien 2026" autoFocus />
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Name</label>
+                <input className="w-full border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="z.B. Herbstferien 2026" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Startdatum</label>
-                  <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-                    type="date" value={form.startdatum} onChange={e => setForm({ ...form, startdatum: e.target.value })} />
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Start</label>
+                  <input type="date" className="w-full border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" value={form.startdatum} onChange={e => setForm({...form, startdatum: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Enddatum</label>
-                  <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-                    type="date" value={form.enddatum} onChange={e => setForm({ ...form, enddatum: e.target.value })} />
+                  <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Ende</label>
+                  <input type="date" className="w-full border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" value={form.enddatum} onChange={e => setForm({...form, enddatum: e.target.value})} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Preis pro Tag (€)</label>
-                <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-                  type="number" step="0.01" value={form.preis_pro_tag} onChange={e => setForm({ ...form, preis_pro_tag: e.target.value })} />
+                <label className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Preis / Tag (€)</label>
+                <input type="number" step="0.01" className="w-full border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" value={form.preis_pro_tag} onChange={e => setForm({...form, preis_pro_tag: e.target.value})} />
               </div>
             </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <button className="px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setShowModal(false)}>Abbrechen</button>
-              <button className="px-4 py-2 text-sm font-medium rounded-xl bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50"
-                disabled={saving || !form.name || !form.startdatum || !form.enddatum} onClick={save}>
-                {saving ? 'Speichern...' : 'Speichern'}
+            <div className="flex gap-3 justify-end pt-2">
+              <button className="px-5 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setShowModal(false)}>Abbrechen</button>
+              <button className="px-6 py-2 text-sm font-bold rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-transform disabled:opacity-50" disabled={saving || !form.name || !form.startdatum || !form.enddatum} onClick={save}>
+                {saving ? 'Speichern...' : editing ? 'Aktualisieren' : 'Erstellen'}
               </button>
             </div>
           </div>

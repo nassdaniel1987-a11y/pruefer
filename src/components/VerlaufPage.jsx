@@ -64,194 +64,109 @@ const VerlaufPage = ({ blocks }) => {
   ];
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6">
+    <div className="space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">history</span>
-            Verlauf
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">Gespeicherte Abgleiche einsehen</p>
+          <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Protokoll & Audit</span>
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Verlauf</h2>
         </div>
-      </div>
-
-      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4 flex items-center gap-3 flex-wrap">
-        <select className="flex-1 min-w-[200px] border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-          value={blockId} onChange={e => { setBlockId(e.target.value); setVerlauf([]); }}>
-          <option value="">– Block wählen –</option>
-          {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
-        </select>
-        {blockId && (
-          <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => loadVerlauf(blockId)}>
-            <span className="material-symbols-outlined text-sm">refresh</span>Neu laden
-          </button>
-        )}
-        {blockId && verlauf.length > 0 && (
-          <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-error hover:bg-error/10 transition-colors" onClick={async () => {
-            const ok = await confirmDialog('Alle Abgleiche löschen', `Alle ${verlauf.length} gespeicherten Abgleiche für diesen Block löschen?`, 'Alle löschen');
-            if (!ok) return;
-            const res = await API.post('abgleich', { action: 'delete_all', ferienblock_id: blockId });
-            toast.success(`${res.deleted} Abgleiche gelöscht`);
-            setVerlauf([]); setDetail({}); setOpenId(null);
-          }}><span className="material-symbols-outlined text-sm">delete</span>Alle löschen</button>
-        )}
-      </div>
-
-      {loading && <Spinner />}
-
-      {!loading && !blockId && (
-        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">history</span>
-          <p className="text-on-surface-variant">Bitte einen Ferienblock auswählen.</p>
-        </div>
-      )}
-
-      {!loading && blockId && verlauf.length === 0 && (
-        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">history</span>
-          <p className="text-on-surface-variant">Noch keine Abgleiche für diesen Block gespeichert.</p>
-        </div>
-      )}
-
-      {/* ── Vergleichsmodus ── */}
-      {!loading && blockId && verlauf.length >= 2 && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-4 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/10">
-            <span className="font-semibold text-on-surface flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-base text-primary">compare_arrows</span>
-              Abgleiche vergleichen
-            </span>
-            <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
-              onClick={() => { setCompareMode(!compareMode); setCompareData({ a: null, b: null }); setCompareA(''); setCompareB(''); }}>
-              <span className="material-symbols-outlined text-sm">{compareMode ? 'close' : 'compare_arrows'}</span>
-              {compareMode ? 'Schließen' : 'Vergleichen'}
-            </button>
-          </div>
-          {compareMode && (
-            <div className="p-5">
-              <div className="flex gap-3 items-end flex-wrap mb-4">
-                <div className="flex-1 min-w-[180px]">
-                  <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Alter Abgleich (vorher)</label>
-                  <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors text-sm"
-                    value={compareA} onChange={e => { setCompareA(e.target.value); setCompareData({ a: null, b: null }); }}>
-                    <option value="">– wählen –</option>
-                    {verlauf.map(v => (
-                      <option key={v.id} value={v.id} disabled={String(v.id) === String(compareB)}>
-                        {fmtDateTime(v.erstellt_am)} — {v.matches_count || 0} Treffer, {v.nur_in_a_count || 0} fehlend
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <span className="material-symbols-outlined text-on-surface-variant pb-1">arrow_forward</span>
-                <div className="flex-1 min-w-[180px]">
-                  <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Neuer Abgleich (nachher)</label>
-                  <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors text-sm"
-                    value={compareB} onChange={e => { setCompareB(e.target.value); setCompareData({ a: null, b: null }); }}>
-                    <option value="">– wählen –</option>
-                    {verlauf.map(v => (
-                      <option key={v.id} value={v.id} disabled={String(v.id) === String(compareA)}>
-                        {fmtDateTime(v.erstellt_am)} — {v.matches_count || 0} Treffer, {v.nur_in_a_count || 0} fehlend
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button className="px-4 py-2 text-sm font-semibold rounded-xl bg-primary text-on-primary hover:bg-primary/90 transition-colors disabled:opacity-50"
-                  disabled={!compareA || !compareB || compareA === compareB || compareLoading}
-                  onClick={loadComparison}>
-                  {compareLoading ? 'Lade…' : 'Vergleichen'}
-                </button>
-              </div>
-              {compareLoading && <Spinner />}
-              {!compareLoading && compareData.a?.matches && compareData.b?.matches && (
-                <VergleichView matchesOld={compareData.a.matches} matchesNew={compareData.b.matches} abgleichOld={compareData.a.abgleich} abgleichNew={compareData.b.abgleich} />
-              )}
-            </div>
+        <div className="flex items-center gap-3">
+          <select className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-2 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20" value={blockId} onChange={e => setBlockId(e.target.value)}>
+            <option value="">Alle Blöcke</option>
+            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          {compareMode && vergleich.length === 2 && (
+            <button className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-lg shadow-primary/20" onClick={doDiff}>Vergleichen</button>
           )}
+          <button className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${compareMode ? 'bg-error text-on-error' : 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container-low'}`} onClick={() => { setCompareMode(!compareMode); setVergleich([]); }}>
+            <span className="material-symbols-outlined text-sm mr-1">{compareMode ? 'close' : 'compare_arrows'}</span>{compareMode ? 'Abbrechen' : 'Vergleichen'}
+          </button>
+        </div>
+      </div>
+
+      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
+
+      {!loading && abgleiche.length === 0 && (
+        <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/10 text-center">
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-3">history</span>
+          <p className="text-lg font-bold text-on-surface">Keine Abgleiche vorhanden.</p>
+          <p className="text-sm text-on-surface-variant mt-1">Führe im Abgleich-Tool zuerst einen Abgleich durch.</p>
         </div>
       )}
 
-      {!loading && verlauf.map(v => {
-        const isOpen = openId === v.id;
-        const d = detail[v.id];
-        const dLoading = detailLoading[v.id];
-        const badgeCls = (key) => { if (key === 'exact' || key === 'fuzzy_accepted') return 'bg-green-100 text-green-700'; if (key === 'nur_in_b') return 'bg-blue-100 text-blue-700'; if (key === 'nur_in_a' || key === 'fuzzy_rejected') return 'bg-red-100 text-red-700'; return 'bg-gray-100 text-gray-600'; };
-        return (
-          <div key={v.id} className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
-            <div className="flex justify-between items-center p-5 flex-wrap gap-3">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <span className="font-semibold text-on-surface">Abgleich vom {fmtDateTime(v.erstellt_am)}</span>
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{v.status}</span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{v.matches_count} Treffer</span>
-                  {parseInt(v.nur_in_a_count) > 0 && <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{v.nur_in_a_count} nur in A</span>}
-                  {parseInt(v.nur_in_b_count) > 0 && <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{v.nur_in_b_count} nur in B</span>}
-                </div>
-              </div>
-              <div className="flex gap-2 items-center">
-                <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => toggleDetail(v.id)}>
-                  <span className="material-symbols-outlined text-sm">{isOpen ? 'expand_less' : 'expand_more'}</span>
-                  {isOpen ? 'Zuklappen' : 'Details'}
-                </button>
-                <button className="w-8 h-8 rounded-lg text-error hover:bg-error/10 transition-colors flex items-center justify-center" title="Abgleich löschen"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const ok = await confirmDialog('Abgleich löschen', `Abgleich vom ${fmtDateTime(v.erstellt_am)} löschen?`, 'Löschen');
-                    if (!ok) return;
-                    await API.post('abgleich', { action: 'delete', id: v.id });
-                    toast.success('Abgleich gelöscht');
-                    loadVerlauf(blockId);
-                  }}>
-                  <span className="material-symbols-outlined text-sm">delete</span>
-                </button>
-              </div>
-            </div>
-
-            {isOpen && (
-              <div className="border-t border-outline-variant/10 p-5">
-                {dLoading && <Spinner />}
-                {d && typConfig.map(({ key, label }) => {
-                  const items = d.matches?.filter(m => m.match_typ === key) || [];
-                  if (!items.length) return null;
-                  return (
-                    <div key={key} className="mb-5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold text-sm text-on-surface">{label}</span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeCls(key)}`}>{items.length}</span>
-                      </div>
-                      <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
-                        <table className="w-full text-sm">
-                          <thead><tr className="bg-surface-container/50">
-                            <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Name A</th>
-                            <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Datum A</th>
-                            {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Name B</th>}
-                            {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Datum B</th>}
-                            {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Score</th>}
-                            {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Grund</th>}
-                          </tr></thead>
-                          <tbody className="divide-y divide-outline-variant/10">
-                            {items.map(m => (
-                              <tr key={m.id} className="hover:bg-surface-container/30">
-                                <td className="px-3 py-2 text-on-surface">{m.a_vorname} {m.a_nachname}</td>
-                                <td className="px-3 py-2 text-on-surface-variant">{fmtDate(m.a_datum)}</td>
-                                {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td className="px-3 py-2 text-on-surface">{m.b_vorname} {m.b_nachname}</td>}
-                                {['exact', 'fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td className="px-3 py-2 text-on-surface-variant">{fmtDate(m.b_datum)}</td>}
-                                {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td className="px-3 py-2"><span className={`text-xs font-bold px-2 py-0.5 rounded-full ${m.score >= 90 ? 'bg-green-100 text-green-700' : m.score >= 75 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{m.score}%</span></td>}
-                                {['fuzzy_accepted', 'fuzzy_rejected'].includes(key) && <td className="px-3 py-2 text-xs text-on-surface-variant">{m.grund}</td>}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+      {!loading && abgleiche.length > 0 && (
+        <div className="space-y-3">
+          {abgleiche.map(a => {
+            const isOpen = expandedId === a.id;
+            return (
+              <div key={a.id} className={`bg-surface-container-lowest rounded-2xl shadow-sm border transition-all ${compareMode && vergleich.includes(a.id) ? 'border-primary border-l-4 shadow-md' : 'border-outline-variant/10'}`}>
+                <div className="flex items-center gap-4 p-5 cursor-pointer" onClick={() => {
+                  if (compareMode) { setVergleich(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : prev.length < 2 ? [...prev, a.id] : prev); return; }
+                  if (isOpen) { setExpandedId(null); return; }
+                  setExpandedId(a.id);
+                  if (!expandedData[a.id]) loadDetail(a.id);
+                }}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${compareMode && vergleich.includes(a.id) ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
+                    <span className="material-symbols-outlined text-xl">sync</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-on-surface text-sm">{a.block_name || 'Block'}</span>
+                      <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase">{new Date(a.erstellt_am).toLocaleDateString('de-DE')} {new Date(a.erstellt_am).toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'})}</span>
                     </div>
-                  );
-                })}
+                    <div className="flex gap-2 mt-1 flex-wrap">
+                      <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {a.matches}</span>
+                      {a.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {a.nur_in_a}</span>}
+                      {a.nur_in_b > 0 && <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {a.nur_in_b}</span>}
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-on-surface-variant/50">{isOpen ? 'expand_less' : 'expand_more'}</span>
+                </div>
+                {isOpen && expandedData[a.id] && (
+                  <div className="border-t border-outline-variant/10 p-5">
+                    <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                      <table className="w-full text-sm">
+                        <thead><tr className="bg-surface-container-low">
+                          <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Typ</th>
+                          <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
+                          <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
+                          <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Datum</th>
+                        </tr></thead>
+                        <tbody className="divide-y divide-outline-variant/5">
+                          {expandedData[a.id].matches?.map((m,i) => (
+                            <tr key={i} className={`${m.match_typ === 'nur_in_a' ? 'bg-red-50/50' : m.match_typ === 'nur_in_b' ? 'bg-amber-50/50' : ''}`}>
+                              <td className="px-3 py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.match_typ === 'match' ? 'bg-emerald-100 text-emerald-700' : m.match_typ === 'nur_in_a' ? 'bg-error/10 text-error' : 'bg-amber-100 text-amber-700'}`}>{m.match_typ === 'match' ? 'OK' : m.match_typ === 'nur_in_a' ? 'Fehlt' : 'Nur B'}</span></td>
+                              <td className="px-3 py-2 font-bold text-on-surface">{m.a_nachname || m.b_nachname || '–'}</td>
+                              <td className="px-3 py-2 text-on-surface-variant">{m.a_vorname || m.b_vorname || '–'}</td>
+                              <td className="px-3 py-2 text-on-surface-variant/60 text-xs">{m.a_datum ? fmtDate(m.a_datum) : m.b_datum ? fmtDate(m.b_datum) : '–'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                {isOpen && loadingDetail[a.id] && <div className="p-5 text-center border-t border-outline-variant/10"><Spinner /></div>}
               </div>
-            )}
+            );
+          })}
+        </div>
+      )}
+
+      {/* Diff Modal */}
+      {diffResult && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center" onClick={() => setDiffResult(null)}>
+          <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-extrabold text-on-surface">Abgleich-Vergleich</h3>
+              <button className="p-1 text-on-surface-variant hover:text-error transition-colors" onClick={() => setDiffResult(null)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <pre className="text-xs font-mono bg-surface-container-low p-4 rounded-xl overflow-x-auto whitespace-pre-wrap">{diffResult}</pre>
           </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 };

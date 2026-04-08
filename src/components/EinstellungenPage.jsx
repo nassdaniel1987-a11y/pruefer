@@ -80,85 +80,78 @@ const EinstellungenPage = ({ user, onLogout }) => {
   };
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">settings</span>
-            Einstellungen
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">Konto, Sicherheit und Datensicherung</p>
-        </div>
+    <div className="space-y-8 pb-20">
+      <div>
+        <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Konfiguration</span>
+        <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Einstellungen</h2>
       </div>
 
-      <div className="grid gap-4 max-w-lg">
-        {/* Passwort */}
-        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="material-symbols-outlined text-base text-primary">lock</span>
-            <span className="font-semibold text-on-surface">Passwort ändern</span>
-          </div>
-          <p className="text-sm text-on-surface-variant mb-4">Angemeldet als: <strong className="text-on-surface">{user?.username}</strong></p>
-          {err && (
-            <div className="flex items-center gap-2 bg-error-container text-on-error-container text-sm rounded-xl px-4 py-3 mb-4">
-              <span className="material-symbols-outlined text-base">error</span>{err}
-            </div>
-          )}
-          {msg && (
-            <div className="flex items-center gap-2 bg-green-50 text-green-800 text-sm rounded-xl px-4 py-3 mb-4">
-              <span className="material-symbols-outlined text-base">check_circle</span>{msg}
-            </div>
-          )}
-          <div className="space-y-4 mb-5">
-            <div>
-              <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Neues Passwort</label>
-              <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-                type="password" value={pw1} onChange={e => setPw1(e.target.value)} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Profil */}
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-2xl">person</span>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">Passwort wiederholen</label>
-              <input className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-                type="password" value={pw2} onChange={e => setPw2(e.target.value)} />
+              <h3 className="text-lg font-extrabold text-on-surface">Profil</h3>
+              <p className="text-xs text-on-surface-variant">Benutzerkonto & Sicherheit</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button className="px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
-              onClick={changePassword} disabled={!pw1 || !pw2}>
-              <span className="material-symbols-outlined text-sm align-middle mr-1">key</span>Passwort ändern
-            </button>
-            <button className="flex items-center gap-1 px-4 py-2 rounded-xl text-error hover:bg-error/10 font-semibold text-sm transition-colors" onClick={onLogout}>
-              <span className="material-symbols-outlined text-sm">logout</span>Abmelden
-            </button>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-3 border-b border-outline-variant/10">
+              <span className="text-sm font-medium text-on-surface-variant">Benutzername</span>
+              <span className="text-sm font-bold text-on-surface">{user?.username}</span>
+            </div>
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Passwort ändern</h4>
+              <input type="password" placeholder="Aktuelles Passwort" className="w-full border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={oldPw} onChange={e => setOldPw(e.target.value)} />
+              <input type="password" placeholder="Neues Passwort" className="w-full border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={newPw} onChange={e => setNewPw(e.target.value)} />
+              <input type="password" placeholder="Passwort bestätigen" className="w-full border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} />
+              <button className="px-5 py-2.5 text-sm font-bold rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-transform disabled:opacity-50" disabled={!oldPw || !newPw || newPw !== confirmPw} onClick={changePw}>Passwort ändern</button>
+            </div>
           </div>
         </div>
 
-        {/* Backup */}
-        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="material-symbols-outlined text-base text-primary">backup</span>
-            <span className="font-semibold text-on-surface">Datensicherung (Backup)</span>
+        {/* Benutzerverwaltung */}
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
+              <span className="material-symbols-outlined text-2xl">group</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-on-surface">Benutzerverwaltung</h3>
+              <p className="text-xs text-on-surface-variant">Benutzer erstellen & verwalten</p>
+            </div>
           </div>
-          <p className="text-sm text-on-surface-variant mb-4">
-            Erstelle ein vollständiges Backup aller Daten (Ferienblöcke, Listen, Abgleiche, Kinder) als JSON-Datei.
-          </p>
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Neuer Benutzer</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <input placeholder="Benutzername" className="border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={regUser} onChange={e => setRegUser(e.target.value)} />
+              <input type="password" placeholder="Passwort" className="border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={regPw} onChange={e => setRegPw(e.target.value)} />
+            </div>
+            <button className="px-5 py-2.5 text-sm font-bold rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-transform disabled:opacity-50" disabled={!regUser || !regPw} onClick={register}>Benutzer erstellen</button>
+          </div>
+        </div>
 
-          <div className="flex gap-2 flex-wrap mb-4">
-            <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
-              onClick={exportBackup} disabled={backupLoading}>
-              <span className="material-symbols-outlined text-sm">download</span>
-              {backupLoading ? 'Exportiere…' : 'Backup herunterladen'}
+        {/* System */}
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
+              <span className="material-symbols-outlined text-2xl">settings</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-on-surface">System</h3>
+              <p className="text-xs text-on-surface-variant">Aktionen & Verwaltung</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/10 transition-colors" onClick={() => exportAll()}>
+              <span className="material-symbols-outlined text-lg">download</span>Daten exportieren (JSON)
             </button>
-
-            <label className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant font-semibold text-sm hover:bg-surface-container transition-colors ${restoreLoading ? 'cursor-wait opacity-50' : 'cursor-pointer'}`}>
-              <span className="material-symbols-outlined text-sm">upload</span>
-              {restoreLoading ? 'Wiederherstelle…' : 'Backup wiederherstellen'}
-              <input type="file" accept=".json" onChange={importBackup} className="hidden" disabled={restoreLoading} />
-            </label>
-          </div>
-
-          <div className="flex items-start gap-2 bg-surface-container rounded-xl px-4 py-3 text-xs text-on-surface-variant">
-            <span className="material-symbols-outlined text-sm mt-0.5">info</span>
-            <span><strong>Hinweis:</strong> Beim Wiederherstellen werden alle bestehenden Daten überschrieben. Erstelle vorher ein frisches Backup, falls du die aktuellen Daten behalten möchtest.</span>
+            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-error hover:bg-error-container border border-outline-variant/10 transition-colors" onClick={onLogout}>
+              <span className="material-symbols-outlined text-lg">logout</span>Abmelden
+            </button>
           </div>
         </div>
       </div>
