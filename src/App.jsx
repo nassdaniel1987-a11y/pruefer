@@ -15,11 +15,38 @@ import EinstellungenPage from './components/EinstellungenPage';
 import KinderVerzeichnis from './components/KinderVerzeichnis';
 import AngebotePage from './components/AngebotePage';
 
+const NAV_ITEMS = [
+  { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { id: 'ferienblock', icon: 'calendar_month', label: 'Ferienblöcke' },
+  { id: 'kinder', icon: 'child_care', label: 'Kinder' },
+  { id: 'angebote', icon: 'local_offer', label: 'Angebote' },
+  { id: 'abgleich', icon: 'sync_alt', label: 'Abgleich' },
+  { id: 'tagesansicht', icon: 'today', label: 'Tagesansicht' },
+  { id: 'klassen', icon: 'groups', label: 'Klassen' },
+  { id: 'finanzen', icon: 'payments', label: 'Finanzen' },
+  { id: 'verlauf', icon: 'history', label: 'Verlauf' },
+  { id: 'einstellungen', icon: 'settings', label: 'Einstellungen' },
+];
+
+const VALID_PAGES = NAV_ITEMS.map(n => n.id);
+
+const parseUrl = () => {
+  const parts = window.location.pathname.replace(/^\//, '').split('/');
+  const p = parts[0] || 'dashboard';
+  const param = parts[1] || null;
+  return { page: VALID_PAGES.includes(p) ? p : 'dashboard', param };
+};
+
+const toUrl = (p, param) => {
+  if (p === 'dashboard') return '/';
+  return param ? `/${p}/${param}` : `/${p}`;
+};
+
 const App = () => {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
-  const [page, setPage] = useState('dashboard');
-  const [navParam, setNavParam] = useState(null);
+  const [page, setPage] = useState(() => parseUrl().page);
+  const [navParam, setNavParam] = useState(() => parseUrl().param);
   const [blocks, setBlocks] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
@@ -74,23 +101,29 @@ const App = () => {
   }, [user, resetTimer]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = (p, param = null) => { setPage(p); setNavParam(param); setSidebarOpen(false); };
+
+  const navigate = useCallback((p, param = null) => {
+    setPage(p);
+    setNavParam(param);
+    setSidebarOpen(false);
+    window.history.pushState({ page: p, param }, '', toUrl(p, param));
+  }, []);
+
+  useEffect(() => {
+    const onPop = (e) => {
+      const state = e.state || parseUrl();
+      setPage(state.page || 'dashboard');
+      setNavParam(state.param || null);
+    };
+    window.addEventListener('popstate', onPop);
+    window.history.replaceState({ page, param: navParam }, '', toUrl(page, navParam));
+    return () => window.removeEventListener('popstate', onPop);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (checking) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spinner /></div>;
   if (!user) return <LoginPage onLogin={handleLogin} />;
 
-  const navItems = [
-    { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
-    { id: 'ferienblock', icon: 'calendar_month', label: 'Ferienblöcke' },
-    { id: 'kinder', icon: 'child_care', label: 'Kinder' },
-    { id: 'angebote', icon: 'local_offer', label: 'Angebote' },
-    { id: 'abgleich', icon: 'sync_alt', label: 'Abgleich' },
-    { id: 'tagesansicht', icon: 'today', label: 'Tagesansicht' },
-    { id: 'klassen', icon: 'groups', label: 'Klassen' },
-    { id: 'finanzen', icon: 'payments', label: 'Finanzen' },
-    { id: 'verlauf', icon: 'history', label: 'Verlauf' },
-    { id: 'einstellungen', icon: 'settings', label: 'Einstellungen' },
-  ];
+  const navItems = NAV_ITEMS;
 
   return (
     <div className="flex h-full overflow-hidden">
