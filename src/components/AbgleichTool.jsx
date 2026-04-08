@@ -355,16 +355,14 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
   const ColMapper = ({ raw, colMap, onChange, label }) => {
     if (!raw) return (
-      <div className="upload-zone">
-        <div className="icon">📂</div>
-        <p>Noch keine Datei für Liste {label}</p>
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-2">folder_open</span>
+        <p className="text-sm text-on-surface-variant">Noch keine Datei für Liste {label}</p>
       </div>
     );
 
-    // Zellwert für Vorschau lesbar machen (Datum konvertieren)
     const previewCell = (val, colName) => {
       if (val === null || val === undefined || val === '') return '–';
-      // Ist es die Datumsspalte?
       if (colName === colMap.date && typeof val === 'number' && val > 40000 && val < 60000) {
         return fmtDate(normalizeDate(val)) + ' ✓';
       }
@@ -373,53 +371,42 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
     return (
       <div>
-        <p style={{ marginBottom: '0.5rem', fontSize: '0.88rem', color: 'var(--text2)' }}>
-          <strong>{raw.data.length}</strong> Zeilen gefunden
-        </p>
+        <p className="text-sm text-on-surface-variant mb-3"><strong>{raw.data.length}</strong> Zeilen gefunden</p>
         {!raw.hasTextHeader && (
-          <div style={{ background: 'rgba(220,53,69,0.1)', border: '1px solid var(--danger)', borderRadius: '8px', padding: '0.6rem 0.9rem', marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--danger)' }}>
-            ⚠️ <strong>Keine Headerzeile erkannt!</strong> Die Spalten wurden automatisch benannt (Spalte A, B, C...).
-            Am besten füge in deiner Excel-Datei eine erste Zeile mit Spaltenüberschriften ein (z.B. <em>Vorname | Nachname | Datum</em>).
+          <div className="bg-error/10 border border-error/30 rounded-xl px-4 py-3 mb-3 text-sm text-error">
+            <span className="material-symbols-outlined text-sm mr-1">warning</span>
+            <strong>Keine Headerzeile erkannt!</strong> Die Spalten wurden automatisch benannt.
           </div>
         )}
 
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <div>
-            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
-              Nachname-Spalte *
-            </label>
-            <select className="select-input" style={{ width: '100%' }} value={colMap.nachname}
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Nachname *</label>
+            <select className="w-full border border-outline-variant/30 rounded-xl px-3 py-2 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={colMap.nachname}
               onChange={e => onChange({ ...colMap, nachname: e.target.value })}>
               <option value="">– wählen –</option>
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
-              Vorname-Spalte
-            </label>
-            <select className="select-input" style={{ width: '100%' }} value={colMap.vorname}
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Vorname</label>
+            <select className="w-full border border-outline-variant/30 rounded-xl px-3 py-2 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={colMap.vorname}
               onChange={e => onChange({ ...colMap, vorname: e.target.value })}>
               <option value="">– optional –</option>
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
-              Datums-Spalte *
-            </label>
-            <select className="select-input" style={{ width: '100%' }} value={colMap.date}
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Datum *</label>
+            <select className="w-full border border-outline-variant/30 rounded-xl px-3 py-2 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={colMap.date}
               onChange={e => onChange({ ...colMap, date: e.target.value })}>
               <option value="">– wählen –</option>
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
-              Klasse
-            </label>
-            <select className="select-input" style={{ width: '100%' }} value={colMap.klasse}
+            <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Klasse</label>
+            <select className="w-full border border-outline-variant/30 rounded-xl px-3 py-2 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={colMap.klasse}
               onChange={e => onChange({ ...colMap, klasse: e.target.value })}>
               <option value="">– optional –</option>
               {raw.headers.map(h => <option key={h} value={h}>{h}</option>)}
@@ -427,29 +414,24 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           </div>
         </div>
 
-        <p style={{ fontSize: '0.8rem', color: 'var(--text2)', marginBottom: '0.5rem' }}>Vorschau (erste 3 Zeilen):</p>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>{raw.headers.map(h => (
-                <th key={h} style={{
-                  color: (h === colMap.nachname || h === colMap.vorname) ? 'var(--success)' : h === colMap.date ? 'var(--primary)' : h === colMap.klasse ? 'var(--warning)' : undefined
-                }}>
+        <p className="text-xs text-on-surface-variant mb-2">Vorschau (erste 3 Zeilen):</p>
+        <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-surface-container-low">
+              {raw.headers.map(h => (
+                <th key={h} className={`text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider ${(h === colMap.nachname || h === colMap.vorname) ? 'text-emerald-600' : h === colMap.date ? 'text-primary' : h === colMap.klasse ? 'text-amber-600' : 'text-outline'}`}>
                   {h}
                   {h === colMap.nachname && ' 👤'}
                   {h === colMap.vorname && ' 👤'}
                   {h === colMap.date && ' 📅'}
                   {h === colMap.klasse && ' 🏫'}
                 </th>
-              ))}</tr>
-            </thead>
-            <tbody>
+              ))}
+            </tr></thead>
+            <tbody className="divide-y divide-outline-variant/5">
               {raw.data.slice(0, 3).map((row, i) => (
                 <tr key={i}>{raw.headers.map((h, j) => (
-                  <td key={j} style={{
-                    fontWeight: (h === colMap.nachname || h === colMap.vorname || h === colMap.date || h === colMap.klasse) ? 700 : undefined,
-                    color: (h === colMap.nachname || h === colMap.vorname) ? 'var(--success)' : h === colMap.date ? 'var(--primary)' : h === colMap.klasse ? 'var(--warning)' : undefined
-                  }}>
+                  <td key={j} className={`px-3 py-2 ${(h === colMap.nachname || h === colMap.vorname || h === colMap.date || h === colMap.klasse) ? 'font-bold' : ''} ${(h === colMap.nachname || h === colMap.vorname) ? 'text-emerald-600' : h === colMap.date ? 'text-primary' : h === colMap.klasse ? 'text-amber-600' : ''}`}>
                     {previewCell(row[j], h)}
                   </td>
                 ))}</tr>
@@ -462,14 +444,12 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   };
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6">
+    <div className="space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">compare_arrows</span>
-            Abgleich-Tool
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">Vergleiche Anmeldungen (A) mit Essensbuchungen (B)</p>
+          <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Daten-Vergleich</span>
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Abgleich-Tool</h2>
+          <p className="text-sm text-on-surface-variant mt-1">Vergleiche Anmeldungen (A) mit Essensbuchungen (B)</p>
         </div>
       </div>
 
@@ -486,10 +466,10 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       {blockId && (
         <>
           {/* Wizard */}
-          <div className="wizard-bar">
+          <div className="flex items-center gap-2 bg-surface-container-lowest rounded-2xl p-3 shadow-sm border border-outline-variant/10">
             {['Daten laden', 'Spalten zuordnen', 'Prüfen', 'Ergebnis'].map((n, i) => (
-              <div key={i} className={`wiz-step ${step === i + 1 ? 'active' : step > i + 1 ? 'done' : ''}`}>
-                <span className="wiz-num">{i + 1}</span>{n}
+              <div key={i} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${step === i + 1 ? 'bg-primary text-on-primary shadow-sm' : step > i + 1 ? 'bg-emerald-100 text-emerald-700' : 'text-on-surface-variant'}`}>
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${step === i + 1 ? 'bg-white/20' : step > i + 1 ? 'bg-emerald-200' : 'bg-surface-container-high'}`}>{step > i + 1 ? '✓' : i + 1}</span>{n}
               </div>
             ))}
           </div>
@@ -627,14 +607,17 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
             <div>
               {/* Datenquelle-Warnung: DB statt Upload */}
               {(usedDbForA || usedDbForB) && (
-                <div className="info-box" style={{ marginBottom: '1rem', background: 'rgba(230,168,23,0.1)', border: '1px solid var(--warning)' }}>
-                  ⚠️ <strong>Hinweis:</strong>{' '}
-                  {usedDbForA && usedDbForB
-                    ? 'Beide Listen stammen aus der Datenbank (kein neuer Upload).'
-                    : usedDbForA
-                      ? 'Liste A stammt aus der Datenbank — nur Liste B wurde neu hochgeladen.'
-                      : 'Liste B stammt aus der Datenbank — nur Liste A wurde neu hochgeladen.'}
-                  {' '}Für einen komplett frischen Vergleich beide Listen hochladen.
+                <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-sm text-amber-800">
+                  <span className="material-symbols-outlined text-amber-600 mt-0.5">warning</span>
+                  <div>
+                    <strong>Hinweis:</strong>{' '}
+                    {usedDbForA && usedDbForB
+                      ? 'Beide Listen stammen aus der Datenbank (kein neuer Upload).'
+                      : usedDbForA
+                        ? 'Liste A stammt aus der Datenbank — nur Liste B wurde neu hochgeladen.'
+                        : 'Liste B stammt aus der Datenbank — nur Liste A wurde neu hochgeladen.'}
+                    {' '}Für einen komplett frischen Vergleich beide Listen hochladen.
+                  </div>
                 </div>
               )}
 
