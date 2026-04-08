@@ -53,7 +53,8 @@ const App = () => {
     setPage('dashboard');
   };
 
-  const navigate = (p, param = null) => { setPage(p); setNavParam(param); };
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = (p, param = null) => { setPage(p); setNavParam(param); setSidebarOpen(false); };
 
   if (checking) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spinner /></div>;
   if (!user) return <LoginPage onLogin={handleLogin} />;
@@ -74,7 +75,7 @@ const App = () => {
   return (
     <div className="flex h-full overflow-hidden">
       {/* Indigo Dark Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-[240px] bg-indigo-950 flex flex-col p-4 space-y-2 z-50">
+      <aside className={`fixed left-0 top-0 h-full w-[240px] bg-indigo-950 flex flex-col p-4 space-y-2 z-50 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="mb-8 px-2">
           <h1 className="text-2xl font-bold tracking-tight text-white">Prüfer</h1>
           <p className="text-[10px] text-indigo-300/60 uppercase tracking-[0.2em] font-semibold">Verwaltungssystem</p>
@@ -118,9 +119,20 @@ const App = () => {
         </div>
       </aside>
 
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 ml-[240px] flex flex-col h-full overflow-hidden">
-        <div className="flex-1 overflow-y-auto px-8 pb-12 pt-6 space-y-8 no-scrollbar">
+      <main className="flex-1 md:ml-[240px] flex flex-col h-full overflow-hidden">
+        <div className="md:hidden flex items-center px-4 pt-4 pb-2 border-b border-outline-variant/10">
+          <button className="p-2 rounded-lg text-on-surface hover:bg-surface-container transition-colors" onClick={() => setSidebarOpen(v => !v)}>
+            <span className="material-symbols-outlined">menu</span>
+          </button>
+          <span className="ml-3 font-bold text-on-surface text-lg">Prüfer</span>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-12 pt-4 md:pt-6 space-y-6 md:space-y-8 no-scrollbar">
           {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
           {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
           {page === 'angebote' && <AngebotePage blocks={blocks} />}
