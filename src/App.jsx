@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { API } from './utils/api';
 import { ToastContainer } from './utils/toast';
 import { ConfirmDialog } from './utils/confirm';
@@ -46,12 +46,32 @@ const App = () => {
 
   const handleLogin = (u) => { setUser(u); loadBlocks(); };
 
-  const handleLogout = async () => {
+  const inactivityTimer = useRef(null);
+  const INACTIVITY_MS = 30 * 60 * 1000; // 30 Minuten
+
+  const handleLogout = useCallback(async () => {
+    if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
     await API.post('auth', { action: 'logout', token: API.token() });
     localStorage.removeItem('token');
     setUser(null);
     setPage('dashboard');
-  };
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    inactivityTimer.current = setTimeout(handleLogout, INACTIVITY_MS);
+  }, [handleLogout]);
+
+  useEffect(() => {
+    if (!user) return;
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    };
+  }, [user, resetTimer]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = (p, param = null) => { setPage(p); setNavParam(param); setSidebarOpen(false); };
