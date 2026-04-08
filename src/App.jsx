@@ -59,57 +59,79 @@ const App = () => {
   if (!user) return <LoginPage onLogin={handleLogin} />;
 
   const navItems = [
-    { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
-    { id: 'kinder', icon: '👦', label: 'Kinder' },
-    { id: 'angebote', icon: '🎯', label: 'Angebote' },
-    { id: 'abgleich', icon: '🔍', label: 'Abgleich' },
-    { id: 'tagesansicht', icon: '🗓️', label: 'Tagesansicht' },
-    { id: 'klassen', icon: '🏫', label: 'Klassen' },
-    { id: 'finanzen', icon: '💶', label: 'Finanzen' },
-    { id: 'verlauf', icon: '📋', label: 'Verlauf' },
-    { id: 'ferienblock', icon: '📅', label: 'Ferienblöcke' },
-    { id: 'einstellungen', icon: '⚙️', label: 'Einstellungen' },
+    { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
+    { id: 'ferienblock', icon: 'calendar_month', label: 'Ferienblöcke' },
+    { id: 'kinder', icon: 'child_care', label: 'Kinder' },
+    { id: 'angebote', icon: 'local_offer', label: 'Angebote' },
+    { id: 'abgleich', icon: 'sync_alt', label: 'Abgleich' },
+    { id: 'tagesansicht', icon: 'today', label: 'Tagesansicht' },
+    { id: 'klassen', icon: 'groups', label: 'Klassen' },
+    { id: 'finanzen', icon: 'payments', label: 'Finanzen' },
+    { id: 'verlauf', icon: 'history', label: 'Verlauf' },
+    { id: 'einstellungen', icon: 'settings', label: 'Einstellungen' },
   ];
 
   return (
-    <div className="app-layout">
-      <div className="sidebar">
-        <div className="sidebar-header">
-          <h2>Prüfer</h2>
-          <p>Ferienversorgung</p>
+    <div className="flex h-full overflow-hidden">
+      {/* Indigo Dark Sidebar */}
+      <aside className="fixed left-0 top-0 h-full w-[240px] bg-indigo-950 flex flex-col p-4 space-y-2 z-50">
+        <div className="mb-8 px-2">
+          <h1 className="text-2xl font-bold tracking-tight text-white">Prüfer</h1>
+          <p className="text-[10px] text-indigo-300/60 uppercase tracking-[0.2em] font-semibold">Verwaltungssystem</p>
         </div>
-        <nav className="sidebar-nav">
+        <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar">
           {navItems.map(n => (
-            <button key={n.id} className={`nav-item ${page === n.id ? 'active' : ''}`} onClick={() => navigate(n.id)}>
-              <span className="nav-icon">{n.icon}</span>
-              {n.label}
+            <button
+              key={n.id}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left ${
+                page === n.id
+                  ? 'bg-indigo-800 text-white font-semibold'
+                  : 'text-indigo-300/70 hover:text-white hover:bg-indigo-900/50'
+              }`}
+              onClick={() => navigate(n.id)}
+            >
+              <span className="material-symbols-outlined text-xl">{n.icon}</span>
+              <span className="text-sm">{n.label}</span>
             </button>
           ))}
         </nav>
-        <div className="sidebar-footer">
-          <div className="user-info">{user.username}</div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="theme-toggle" onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}>
-              {theme === 'dark' ? '☀️ Hell' : '🌙 Dunkel'}
-            </button>
-            <button className="theme-toggle" onClick={handleLogout} title="Abmelden">
-              🚪 Logout
+        <div className="pt-4 mt-auto border-t border-indigo-900/50 space-y-2">
+          <button
+            className="w-full flex items-center gap-3 px-3 py-2 text-indigo-300/70 hover:text-white hover:bg-indigo-900/50 rounded-lg transition-all"
+            onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+          >
+            <span className="material-symbols-outlined text-xl">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+            <span className="text-sm">{theme === 'dark' ? 'Hell' : 'Dunkel'}</span>
+          </button>
+          <div className="flex items-center gap-3 px-3 py-2">
+            <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-white text-sm font-bold">
+              {(user.username || 'A').charAt(0).toUpperCase()}
+            </div>
+            <div className="flex flex-col flex-1 min-w-0">
+              <span className="text-sm font-semibold text-white truncate">{user.username}</span>
+              <span className="text-[10px] text-indigo-400">Verwaltung</span>
+            </div>
+            <button onClick={handleLogout} className="text-indigo-400 hover:text-white transition-colors" title="Abmelden">
+              <span className="material-symbols-outlined text-lg">logout</span>
             </button>
           </div>
         </div>
-      </div>
+      </aside>
 
-      <main className="main-content">
-        {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
-        {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
-        {page === 'angebote' && <AngebotePage blocks={blocks} />}
-        {page === 'abgleich' && <AbgleichTool blocks={blocks} initialBlockId={navParam} onReload={loadBlocks} />}
-        {page === 'tagesansicht' && <TagesansichtPage blocks={blocks} />}
-        {page === 'klassen' && <KlassenPage blocks={blocks} />}
-        {page === 'finanzen' && <FinanzenPage blocks={blocks} />}
-        {page === 'verlauf' && <VerlaufPage blocks={blocks} />}
-        {page === 'ferienblock' && <FerienblockPage blocks={blocks} onReload={loadBlocks} />}
-        {page === 'einstellungen' && <EinstellungenPage user={user} onLogout={handleLogout} />}
+      {/* Main Content */}
+      <main className="flex-1 ml-[240px] flex flex-col h-full overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-8 pb-12 pt-6 space-y-8 no-scrollbar">
+          {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
+          {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
+          {page === 'angebote' && <AngebotePage blocks={blocks} />}
+          {page === 'abgleich' && <AbgleichTool blocks={blocks} initialBlockId={navParam} onReload={loadBlocks} />}
+          {page === 'tagesansicht' && <TagesansichtPage blocks={blocks} />}
+          {page === 'klassen' && <KlassenPage blocks={blocks} />}
+          {page === 'finanzen' && <FinanzenPage blocks={blocks} />}
+          {page === 'verlauf' && <VerlaufPage blocks={blocks} />}
+          {page === 'ferienblock' && <FerienblockPage blocks={blocks} onReload={loadBlocks} />}
+          {page === 'einstellungen' && <EinstellungenPage user={user} onLogout={handleLogout} />}
+        </div>
       </main>
     </div>
   );

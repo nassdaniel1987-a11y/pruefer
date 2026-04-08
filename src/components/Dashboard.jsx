@@ -114,68 +114,72 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
   };
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-on-surface font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">dashboard</span>
-            Dashboard
-          </h1>
-          <p className="text-on-surface-variant text-sm mt-1">Übersicht aller Ferienblöcke und aktueller Status</p>
+    <div className="space-y-8 pb-20">
+      {/* Hero Welcome */}
+      <section>
+        <div className="relative p-8 rounded-3xl bg-gradient-to-br from-primary to-primary-container text-white overflow-hidden">
+          <div className="relative z-10">
+            <h3 className="text-3xl font-extrabold tracking-tight mb-2">Willkommen zurück.</h3>
+            <p className="text-white/80 max-w-md font-medium">
+              {blocks.length > 0
+                ? `${blocks.length} Ferienblöcke angelegt. ${hatAbgleich && gesamtFehltInB > 0 ? `${gesamtFehltInB} Kinder ohne Buchung.` : 'Alle Systeme laufen stabil.'}`
+                : 'Noch kein Ferienblock angelegt. Erstelle jetzt deinen ersten Block.'}
+            </p>
+          </div>
+          <span className="material-symbols-outlined absolute -right-8 -bottom-8 text-[180px] text-white/5 opacity-20 rotate-12">shield</span>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-xl text-primary hover:bg-primary/10 transition-colors" onClick={onReload}>
-          <span className="material-symbols-outlined text-base">refresh</span>Aktualisieren
-        </button>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-          <div className="text-xs text-on-surface-variant font-medium mb-1">Ferienblöcke</div>
-          <div className="text-3xl font-bold text-primary">{blocks.length}</div>
-          <div className="text-xs text-on-surface-variant mt-0.5">gesamt angelegt</div>
-        </div>
-        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-          <div className="text-xs text-on-surface-variant font-medium mb-1">Kinder in A</div>
-          <div className="text-3xl font-bold text-primary">{gesamtKinderA}</div>
-          <div className="text-xs text-on-surface-variant mt-0.5">verschiedene Kinder angemeldet</div>
-        </div>
-        <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-          <div className="text-xs text-on-surface-variant font-medium mb-1">Kinder in B</div>
-          <div className="text-3xl font-bold text-green-700">{gesamtKinderB}</div>
-          <div className="text-xs text-on-surface-variant mt-0.5">verschiedene Kinder gebucht</div>
-        </div>
-        {hatAbgleich ? (<>
-          <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-            <div className="text-xs text-on-surface-variant font-medium mb-1">Übereinstimmung</div>
-            <div className="text-3xl font-bold text-green-700">{gesamtMatches}</div>
-            <div className="text-xs text-on-surface-variant mt-0.5">Kinder mit Buchung</div>
+      {/* Stat Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-3xl">calendar_today</span>
+            </div>
+            {blocks.length > 0 && <span className="text-[10px] font-bold text-primary px-2 py-1 bg-primary/10 rounded-full">LIVE</span>}
           </div>
-          <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-            <div className="text-xs text-on-surface-variant font-medium mb-1">Fehlt in B</div>
-            <div className={`text-3xl font-bold ${gesamtFehltInB > 0 ? 'text-error' : 'text-green-700'}`}>{gesamtFehltInB}</div>
-            <div className="text-xs text-on-surface-variant mt-0.5">{gesamtFehltInB > 0 ? 'Kinder ohne Buchung' : 'alle gebucht'}</div>
+          <p className="text-sm font-medium text-on-surface-variant">Ferienblöcke</p>
+          <h4 className="text-3xl font-extrabold text-on-surface mt-1">{blocks.length}</h4>
+        </div>
+        <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-12 h-12 rounded-xl bg-tertiary-container/10 flex items-center justify-center text-tertiary">
+              <span className="material-symbols-outlined text-3xl">diversity_3</span>
+            </div>
           </div>
-        </>) : (
-          <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-            <div className="text-xs text-on-surface-variant font-medium mb-1">Abgleich</div>
-            <div className="text-3xl font-bold text-on-surface-variant">–</div>
-            <div className="text-xs text-on-surface-variant mt-0.5">noch keiner durchgeführt</div>
+          <p className="text-sm font-medium text-on-surface-variant">Kinder in A</p>
+          <h4 className="text-3xl font-extrabold text-on-surface mt-1">{gesamtKinderA}</h4>
+        </div>
+        <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default">
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <span className="material-symbols-outlined text-3xl">check_circle</span>
+            </div>
           </div>
-        )}
-      </div>
+          <p className="text-sm font-medium text-on-surface-variant">{hatAbgleich ? 'Übereinstimmung' : 'Kinder in B'}</p>
+          <h4 className="text-3xl font-extrabold text-on-surface mt-1">{hatAbgleich ? gesamtMatches : gesamtKinderB}</h4>
+        </div>
+        <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default relative overflow-hidden">
+          {hatAbgleich && gesamtFehltInB > 0 && <div className="absolute top-0 right-0 w-1.5 h-full bg-error"></div>}
+          <div className="flex justify-between items-start mb-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hatAbgleich && gesamtFehltInB > 0 ? 'bg-error/10 text-error' : 'bg-primary/10 text-primary'}`}>
+              <span className="material-symbols-outlined text-3xl">{hatAbgleich ? 'warning' : 'account_balance_wallet'}</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-on-surface-variant">{hatAbgleich ? 'Fehlt in B' : 'Abgleich'}</p>
+          <h4 className={`text-3xl font-extrabold mt-1 ${hatAbgleich && gesamtFehltInB > 0 ? 'text-error' : 'text-on-surface'}`}>{hatAbgleich ? gesamtFehltInB : '–'}</h4>
+        </div>
+      </section>
 
-      {blocks.length === 0 ? (
-        <div className="bg-surface-container-lowest rounded-2xl p-10 shadow-sm border border-outline-variant/10 text-center">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3 block">calendar_month</span>
-          <p className="text-on-surface-variant mb-4">Noch kein Ferienblock angelegt.</p>
-          <button className="px-5 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors" onClick={() => onNavigate('ferienblock')}>
-            Ersten Block anlegen
-          </button>
-        </div>
-      ) : (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/10">
-            <span className="font-semibold text-on-surface">Alle Ferienblöcke</span>
+      {/* Block Cards */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+        <div className="xl:col-span-2 space-y-6">
+          <div className="flex justify-between items-end px-2">
+            <div>
+              <h3 className="text-xl font-extrabold text-indigo-900">Aktuelle Ferienblöcke</h3>
+              <p className="text-sm text-on-surface-variant">Status der laufenden Buchungszeiträume</p>
+            </div>
             <div className="flex gap-2">
               {hatAbgleich && gesamtFehltInB > 0 && <>
                 <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={printAllFehlende}>
@@ -185,204 +189,148 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                   <span className="material-symbols-outlined text-sm">download</span>Excel
                 </button>
               </>}
-              <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-primary hover:bg-primary/10 transition-colors" onClick={() => onNavigate('ferienblock')}>
-                <span className="material-symbols-outlined text-sm">add</span>Neu / Verwalten
-              </button>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-surface-container/50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Name</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Zeitraum</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">€/Tag</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Angemeldet (A)</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Gebucht (B)</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">OK</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Fehlt in B</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Nur in B</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Abgleiche</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/10">
-                {blocks.map(b => {
-                  const d = blockDetail[b.id];
-                  const loading = loadingDetail[b.id];
-                  const hatErgebnis = d?.letzter_abgleich != null;
-                  return (
-                    <React.Fragment key={b.id}>
-                      <tr className="hover:bg-surface-container/30 transition-colors">
-                        <td className="px-4 py-3 font-semibold text-on-surface">{b.name}</td>
-                        <td className="px-4 py-3 text-on-surface-variant whitespace-nowrap">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</td>
-                        <td className="px-4 py-3 text-on-surface-variant">{parseFloat(b.preis_pro_tag).toFixed(2)} €</td>
-                        <td className="px-4 py-3">
-                          {loading ? '…' : <><span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d?.kinder_a ?? 0}</span>
-                            <span className="text-[0.65rem] text-on-surface-variant ml-1">({d?.eintraege_a ?? 0} Tage)</span></>}
-                        </td>
-                        <td className="px-4 py-3">
-                          {loading ? '…' : <><span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d?.kinder_b ?? 0}</span>
-                            <span className="text-[0.65rem] text-on-surface-variant ml-1">({d?.eintraege_b ?? 0} Tage)</span></>}
-                        </td>
-                        <td className="px-4 py-3">
-                          {loading ? '…' : hatErgebnis
-                            ? <><span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.matches}</span>
-                              <span className="text-[0.65rem] text-on-surface-variant ml-1">({d.matches_zeilen} Tage)</span></>
-                            : <span className="text-on-surface-variant">–</span>}
-                        </td>
-                        <td className="px-4 py-3">
-                          {loading ? '…' : hatErgebnis
-                            ? <><span className={`text-xs font-bold px-2 py-0.5 rounded-full ${d.nur_in_a > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{d.nur_in_a}</span>
-                              {d.nur_in_a > 0 && <span className="text-[0.65rem] text-on-surface-variant ml-1">({d.nur_in_a_zeilen} Tage)</span>}</>
-                            : <span className="text-on-surface-variant">–</span>}
-                        </td>
-                        <td className="px-4 py-3">
-                          {loading ? '…' : hatErgebnis
-                            ? <><span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{d.nur_in_b}</span>
-                              {d.nur_in_b > 0 && <span className="text-[0.65rem] text-on-surface-variant ml-1">({d.nur_in_b_zeilen} Tage)</span>}</>
-                            : <span className="text-on-surface-variant">–</span>}
-                        </td>
-                        <td className="px-4 py-3">{loading ? '…' : <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{d?.abgleich_count ?? 0}</span>}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1.5 flex-wrap justify-end">
-                            {hatErgebnis && d.nur_in_a > 0 && (
-                              <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors" onClick={() => {
-                                if (expandedBlock === b.id) { setExpandedBlock(null); return; }
-                                setExpandedBlock(b.id);
-                                if (!abgleichDetail[b.id] && d.letzter_abgleich) {
-                                  setLoadingAbgleich(prev => ({ ...prev, [b.id]: true }));
-                                  API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
-                                    setAbgleichDetail(prev => ({ ...prev, [b.id]: res }));
-                                    setLoadingAbgleich(prev => ({ ...prev, [b.id]: false }));
-                                  });
-                                }
-                              }}>
-                                Fehlende anzeigen
-                              </button>
-                            )}
-                            <button className="px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors" onClick={() => onNavigate('abgleich', b.id)}>
-                              Abgleich starten
-                            </button>
+
+          {blocks.length === 0 ? (
+            <div className="border-2 border-dashed border-outline-variant/30 p-12 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-surface-container-low transition-colors" onClick={() => onNavigate('ferienblock')}>
+              <span className="material-symbols-outlined text-5xl text-outline-variant">add_circle</span>
+              <span className="text-sm font-bold text-on-surface-variant">Ersten Block anlegen</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {blocks.map(b => {
+                const d = blockDetail[b.id];
+                const loading = loadingDetail[b.id];
+                const hatErgebnis = d?.letzter_abgleich != null;
+                return (
+                  <div key={b.id} className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-5">
+                      <div>
+                        <h5 className="text-lg font-bold text-on-surface">{b.name}</h5>
+                        <p className="text-sm text-on-surface-variant flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">calendar_month</span>
+                          {fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-3 py-1 rounded-full">{parseFloat(b.preis_pro_tag).toFixed(2)} €/Tag</span>
+                    </div>
+                    {loading ? (
+                      <div className="py-4 text-center"><Spinner /></div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-surface-container-low p-3 rounded-xl">
+                            <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Angemeldet</div>
+                            <div className="text-lg font-extrabold text-primary">{d?.kinder_a ?? 0} <span className="text-xs font-medium text-on-surface-variant">Kinder</span></div>
                           </div>
-                        </td>
-                      </tr>
-                      {expandedBlock === b.id && (
-                        <tr key={b.id + '-detail'}>
-                          <td colSpan="10" className="px-4 py-4 bg-surface-container/30">
-                            {loadingAbgleich[b.id] ? <Spinner /> : abgleichDetail[b.id]?.matches ? (() => {
-                              const am = abgleichDetail[b.id].matches;
-                              const fehlende = am.filter(m => m.match_typ === 'nur_in_a');
-                              const nurInB = am.filter(m => m.match_typ === 'nur_in_b');
-                              const matched = am.filter(m => m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted');
-
-                              const groupEntries = (entries, prefix) => {
-                                const map = {};
-                                entries.forEach(m => {
-                                  const key = ((m[prefix + '_nachname'] || '') + '|' + (m[prefix + '_vorname'] || '')).toLowerCase();
-                                  if (!map[key]) map[key] = { nachname: m[prefix + '_nachname'], vorname: m[prefix + '_vorname'], klasse: m[prefix + '_klasse'] || '', dateSet: new Set() };
-                                  map[key].dateSet.add(m[prefix + '_datum']);
+                          <div className="bg-surface-container-low p-3 rounded-xl">
+                            <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Gebucht</div>
+                            <div className="text-lg font-extrabold text-emerald-600">{d?.kinder_b ?? 0} <span className="text-xs font-medium text-on-surface-variant">Kinder</span></div>
+                          </div>
+                        </div>
+                        {hatErgebnis && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {d.matches} OK</span>
+                            {d.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {d.nur_in_a} fehlt</span>}
+                            {d.nur_in_b > 0 && <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {d.nur_in_b} nur B</span>}
+                          </div>
+                        )}
+                        <div className="flex gap-2 pt-1">
+                          {hatErgebnis && d.nur_in_a > 0 && (
+                            <button className="px-3 py-1.5 text-xs font-bold rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors" onClick={() => {
+                              if (expandedBlock === b.id) { setExpandedBlock(null); return; }
+                              setExpandedBlock(b.id);
+                              if (!abgleichDetail[b.id] && d.letzter_abgleich) {
+                                setLoadingAbgleich(prev => ({ ...prev, [b.id]: true }));
+                                API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
+                                  setAbgleichDetail(prev => ({ ...prev, [b.id]: res }));
+                                  setLoadingAbgleich(prev => ({ ...prev, [b.id]: false }));
                                 });
-                                return Object.values(map).map(k => ({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse, dates: [...k.dateSet] })).sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
-                              };
-                              const fehlendeGrp = groupEntries(fehlende, 'a');
-                              const nurInBGrp = groupEntries(nurInB, 'b');
-
-                              return (
-                                <div className="space-y-4">
-                                  {fehlendeGrp.length > 0 && (() => {
-                                    const sorted = sortDetailList(fehlendeGrp);
-                                    const thCls = "cursor-pointer select-none whitespace-nowrap text-left px-3 py-2 text-xs font-semibold text-on-surface-variant uppercase tracking-wide";
-                                    return <div>
-                                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                        <h4 className="font-semibold text-error flex items-center gap-1 text-sm">
-                                          <span className="material-symbols-outlined text-base">warning</span>
-                                          {fehlendeGrp.length} Kinder OHNE Buchung ({fehlende.length} Tage)
-                                        </h4>
-                                        <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-1"
-                                          onClick={() => printFehlendeKinder('Fehlende Kinder — OHNE Buchung', sorted, b.name)}>
-                                          <span className="material-symbols-outlined text-sm">print</span>Drucken
-                                        </button>
-                                      </div>
-                                      <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
-                                        <table className="w-full text-sm">
-                                          <thead><tr className="bg-red-50">
-                                            <th className={thCls}>#</th>
-                                            <th className={thCls} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
-                                            <th className={thCls} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
-                                            <th className={thCls} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
-                                            <th className={thCls} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
-                                            <th className={thCls}>Daten</th>
-                                          </tr></thead>
-                                          <tbody className="divide-y divide-outline-variant/10">
-                                            {sorted.map((k, i) => (<tr key={i} className="bg-red-50/50">
-                                              <td className="px-3 py-2 text-on-surface-variant">{i + 1}</td>
-                                              <td className="px-3 py-2 font-semibold text-on-surface">{k.nachname}</td>
-                                              <td className="px-3 py-2 text-on-surface">{k.vorname}</td>
-                                              <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
-                                              <td className="px-3 py-2"><span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
-                                              <td className="px-3 py-2 text-xs text-on-surface-variant">{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                                            </tr>))}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </div>;
-                                  })()}
-                                  {nurInBGrp.length > 0 && (() => {
-                                    const sorted = sortDetailList(nurInBGrp);
-                                    const thCls = "cursor-pointer select-none whitespace-nowrap text-left px-3 py-2 text-xs font-semibold text-on-surface-variant uppercase tracking-wide";
-                                    return <div>
-                                      <h4 className="font-semibold text-amber-700 flex items-center gap-1 text-sm mb-2">
-                                        <span className="material-symbols-outlined text-base">info</span>
-                                        {nurInBGrp.length} Kinder NUR in Liste B ({nurInB.length} Tage)
-                                      </h4>
-                                      <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
-                                        <table className="w-full text-sm">
-                                          <thead><tr className="bg-amber-50">
-                                            <th className={thCls}>#</th>
-                                            <th className={thCls} onClick={() => toggleDetailSort('nachname')}>Nachname{sortIcon('nachname')}</th>
-                                            <th className={thCls} onClick={() => toggleDetailSort('vorname')}>Vorname{sortIcon('vorname')}</th>
-                                            <th className={thCls} onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
-                                            <th className={thCls} onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
-                                            <th className={thCls}>Daten</th>
-                                          </tr></thead>
-                                          <tbody className="divide-y divide-outline-variant/10">
-                                            {sorted.map((k, i) => (<tr key={i} className="bg-amber-50/50">
-                                              <td className="px-3 py-2 text-on-surface-variant">{i + 1}</td>
-                                              <td className="px-3 py-2 font-semibold text-on-surface">{k.nachname}</td>
-                                              <td className="px-3 py-2 text-on-surface">{k.vorname}</td>
-                                              <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
-                                              <td className="px-3 py-2"><span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
-                                              <td className="px-3 py-2 text-xs text-on-surface-variant">{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
-                                            </tr>))}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </div>;
-                                  })()}
-                                  {matched.length > 0 && (
-                                    <div>
-                                      <h4 className="font-semibold text-green-700 flex items-center gap-1 text-sm mb-1">
-                                        <span className="material-symbols-outlined text-base">check_circle</span>
-                                        {new Set(matched.map(m => (m.a_nachname + '|' + m.a_vorname).toLowerCase())).size} Kinder übereinstimmend ({matched.length} Tage)
-                                      </h4>
-                                      <p className="text-xs text-on-surface-variant">Alle Kinder mit Anmeldung und Buchung stimmen überein.</p>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })() : <p className="text-on-surface-variant text-sm">Keine Abgleich-Daten verfügbar</p>}
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                              }
+                            }}>Fehlende</button>
+                          )}
+                          <button className="px-3 py-1.5 text-xs font-bold rounded-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors" onClick={() => onNavigate('abgleich', b.id)}>Abgleich</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="border-2 border-dashed border-outline-variant/30 p-6 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-surface-container-low transition-colors" onClick={() => onNavigate('ferienblock')}>
+                <span className="material-symbols-outlined text-4xl text-outline-variant hover:text-primary transition-colors">add_circle</span>
+                <span className="text-sm font-bold text-on-surface-variant">Neuen Block</span>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Expanded Detail (right column or below) */}
+        <div className="space-y-6">
+          {expandedBlock && abgleichDetail[expandedBlock]?.matches ? (() => {
+            const am = abgleichDetail[expandedBlock].matches;
+            const fehlende = am.filter(m => m.match_typ === 'nur_in_a');
+            const groupEntries = (entries, prefix) => {
+              const map = {};
+              entries.forEach(m => {
+                const key = ((m[prefix + '_nachname'] || '') + '|' + (m[prefix + '_vorname'] || '')).toLowerCase();
+                if (!map[key]) map[key] = { nachname: m[prefix + '_nachname'], vorname: m[prefix + '_vorname'], klasse: m[prefix + '_klasse'] || '', dateSet: new Set() };
+                map[key].dateSet.add(m[prefix + '_datum']);
+              });
+              return Object.values(map).map(k => ({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse, dates: [...k.dateSet] })).sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
+            };
+            const fehlendeGrp = groupEntries(fehlende, 'a');
+
+            return fehlendeGrp.length > 0 ? (
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
+                <div className="px-5 py-4 border-b border-outline-variant/10 flex items-center justify-between">
+                  <h4 className="font-bold text-error flex items-center gap-2 text-sm">
+                    <span className="material-symbols-outlined text-base">warning</span>
+                    {fehlendeGrp.length} Kinder ohne Buchung
+                  </h4>
+                  <div className="flex gap-1">
+                    <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-1"
+                      onClick={() => printFehlendeKinder('Fehlende Kinder', sortDetailList(fehlendeGrp), blocks.find(blk => blk.id === expandedBlock)?.name)}>
+                      <span className="material-symbols-outlined text-sm">print</span>
+                    </button>
+                    <button className="p-1 text-on-surface-variant hover:text-error transition-colors" onClick={() => setExpandedBlock(null)}>
+                      <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-red-50">
+                      <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase cursor-pointer" onClick={() => toggleDetailSort('nachname')}>Name{sortIcon('nachname')}</th>
+                      <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase cursor-pointer" onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
+                      <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase cursor-pointer" onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-outline-variant/10">
+                      {sortDetailList(fehlendeGrp).map((k, i) => (
+                        <tr key={i} className="bg-red-50/50 hover:bg-red-100/50 transition-colors">
+                          <td className="px-3 py-2"><span className="font-bold text-on-surface">{k.nachname}</span>, <span className="text-on-surface-variant">{k.vorname}</span></td>
+                          <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
+                          <td className="px-3 py-2"><span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : null;
+          })() : loadingAbgleich[expandedBlock] ? (
+            <div className="bg-surface-container-lowest rounded-2xl p-8 text-center"><Spinner /></div>
+          ) : (
+            <div className="bg-surface-container-low/50 rounded-3xl p-6">
+              <h3 className="text-xl font-extrabold text-indigo-900 mb-2">Quick Info</h3>
+              <p className="text-sm text-on-surface-variant mb-4">Wähle "Fehlende" bei einem Block, um die Details hier zu sehen.</p>
+              <button className="w-full py-3 bg-surface-container-highest rounded-xl text-xs font-extrabold uppercase tracking-widest text-on-surface-variant hover:bg-outline-variant/20 transition-colors" onClick={onReload}>
+                Daten aktualisieren
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
