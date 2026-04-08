@@ -16,8 +16,8 @@ const confirmDialog = (title, message, dangerLabel = 'Löschen') => {
 const ConfirmDialog = () => {
   const [state, setState] = useState(null);
   useEffect(() => { _confirmListeners.push(setState); return () => { _confirmListeners = _confirmListeners.filter(f => f !== setState); }; }, []);
-  if (!state) return null;
   const close = (val) => { setState(null); _confirmState = null; if (_confirmResolver) { _confirmResolver(val); _confirmResolver = null; } };
+  if (!state) return null;
   return (
     <div className="fixed inset-0 bg-black/40 z-[300] flex items-center justify-center" onClick={() => close(false)}>
       <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
