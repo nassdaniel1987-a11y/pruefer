@@ -287,202 +287,6 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   });
 
   // ═══════════════════════════════════════
-  // AKTE-DETAILANSICHT (Design-Upgrade)
-  // ═══════════════════════════════════════
-  if (selectedKindId) {
-    if (akteLoading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Spinner /></div>;
-    if (!akte) return <div className="card"><p style={{ color: 'var(--danger)', padding: '2rem', textAlign: 'center' }}>Kind nicht gefunden</p><button className="btn btn-ghost btn-sm" onClick={() => setSelectedKindId(null)}>← Zurück zur Liste</button></div>;
-
-    const { kind, aliases, blocks: akteBlocks, summary } = akte;
-
-    // Kurzer Wochentag aus Datum
-    const weekday = (d) => {
-      try { return new Date(d).toLocaleDateString('de-DE', { weekday: 'short' }); } catch { return ''; }
-    };
-
-    return (
-      <div>
-        {/* Zurück-Link */}
-        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedKindId(null)} style={{ marginBottom: '1rem' }}>
-          ← Zurück zur Übersicht
-        </button>
-
-        {/* ── PROFIL-KARTE ── */}
-        <div className="akte-profile">
-          <div className="akte-profile-actions">
-            <button className="btn btn-sm" onClick={() => startEdit(kind)}>✎ Bearbeiten</button>
-          </div>
-          <div className="akte-profile-top">
-            <Avatar vorname={kind.vorname} nachname={kind.nachname} size="lg" />
-            <div>
-              <div className="akte-profile-name">{kind.vorname} {kind.nachname}</div>
-              {kind.klasse && <span className="akte-profile-klasse">Klasse {kind.klasse}</span>}
-              {aliases && aliases.length > 0 && (
-                <div className="akte-profile-aliases">Auch bekannt als: {aliases.join(', ')}</div>
-              )}
-            </div>
-          </div>
-          <div className="akte-stats-row">
-            <div className="akte-stat">
-              <div className="val">{summary.total_blocks}</div>
-              <div className="lbl">Ferienblöcke</div>
-            </div>
-            <div className="akte-stat">
-              <div className="val">{summary.total_anmeldungen}</div>
-              <div className="lbl">Tage angemeldet</div>
-            </div>
-            <div className="akte-stat">
-              <div className="val">{summary.total_buchungen}</div>
-              <div className="lbl">Tage gebucht</div>
-            </div>
-            <div className="akte-stat">
-              <div className="val">{summary.total_kosten.toFixed(0)} €</div>
-              <div className="lbl">Gesamtkosten</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── NOTIZEN ── */}
-        {kind.notizen && (
-          <div className="akte-notes">
-            <span className="akte-notes-icon">📝</span>
-            <div className="akte-notes-text">{kind.notizen}</div>
-          </div>
-        )}
-
-        {/* ── FERIENBLÖCKE TIMELINE ── */}
-        {akteBlocks.length === 0 ? (
-          <div className="card">
-            <div className="empty-state">
-              <div className="icon">📭</div>
-              <p>Keine Einträge in den Listen gefunden.</p>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text2)' }}>
-              Verlauf ({akteBlocks.length} {akteBlocks.length === 1 ? 'Block' : 'Blöcke'})
-            </h3>
-            <div className="akte-timeline">
-              {akteBlocks.map(b => {
-                const aDates = new Set(b.anmeldungen.map(a => String(a.datum).split('T')[0]));
-                const bDates = new Set(b.buchungen.map(x => String(x.datum).split('T')[0]));
-                const allDates = [...new Set([...aDates, ...bDates])].sort();
-                const matchedDays = allDates.filter(d => aDates.has(d) && bDates.has(d)).length;
-                const missingDays = [...aDates].filter(d => !bDates.has(d)).length;
-                const extraDays = [...bDates].filter(d => !aDates.has(d)).length;
-
-                // Block-Status für Timeline-Punkt
-                const statusClass = missingDays > 0 ? 'status-miss' : extraDays > 0 ? 'status-warn' : 'status-ok';
-
-                return (
-                  <div className={`akte-block ${statusClass}`} key={b.ferienblock_id}>
-                    <div className="akte-block-card">
-                      <div className="akte-block-head">
-                        <div>
-                          <h3>{b.block_name}</h3>
-                          <div className="meta">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</div>
-                        </div>
-                        <div className="akte-block-badges">
-                          {b.klasse && <span className="badge badge-blue">Klasse {b.klasse}</span>}
-                          {b.match_status && (
-                            <span className={`badge ${b.match_status === 'exact' || b.match_status === 'fuzzy_accepted' ? 'badge-green'
-                                : b.match_status === 'nur_in_a' ? 'badge-red' : 'badge-orange'
-                              }`}>
-                              {b.match_status === 'exact' ? '✓ Exakt' : b.match_status === 'fuzzy_accepted' ? '≈ Fuzzy' : b.match_status === 'nur_in_a' ? '✗ Fehlt in B' : b.match_status === 'nur_in_b' ? '⚠ Nur in B' : b.match_status}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Anmeldungen (A) */}
-                      <div className="days-section">
-                        <div className="days-section-title">
-                          Anmeldungen (A) <span className="count">{b.anmeldungen.length} Tage</span>
-                        </div>
-                        <div className="days-grid">
-                          {[...aDates].sort().map(d => {
-                            const inB = bDates.has(d);
-                            return (
-                              <div key={'a' + d} className={`day-chip ${inB ? 'matched' : 'missing'}`}>
-                                <span className="day-icon">{inB ? '✓' : '✗'}</span>
-                                <span>{weekday(d)} {fmtDate(d)}</span>
-                              </div>
-                            );
-                          })}
-                          {b.anmeldungen.length === 0 && <span style={{ fontSize: '0.82rem', color: 'var(--text2)' }}>Keine Anmeldungen</span>}
-                        </div>
-                      </div>
-
-                      {/* Buchungen (B) */}
-                      <div className="days-section">
-                        <div className="days-section-title">
-                          Buchungen (B) <span className="count">{b.buchungen.length} Tage</span>
-                        </div>
-                        <div className="days-grid">
-                          {[...bDates].sort().map(d => {
-                            const inA = aDates.has(d);
-                            const buchung = b.buchungen.find(x => String(x.datum).split('T')[0] === d);
-                            return (
-                              <div key={'b' + d} className={`day-chip ${inA ? 'matched' : 'extra'}`} title={buchung?.menu || ''}>
-                                <span className="day-icon">{inA ? '✓' : '⚠'}</span>
-                                <span>{weekday(d)} {fmtDate(d)}</span>
-                                {buchung?.menu && <span style={{ opacity: 0.7, fontSize: '0.7rem' }}>({buchung.menu})</span>}
-                              </div>
-                            );
-                          })}
-                          {b.buchungen.length === 0 && <span style={{ fontSize: '0.82rem', color: 'var(--text2)' }}>Keine Buchungen</span>}
-                        </div>
-                      </div>
-
-                      {/* Block-Zusammenfassung */}
-                      <div className="block-summary-row">
-                        <span>✓ <strong>{matchedDays}</strong> übereinstimmend</span>
-                        {missingDays > 0 && <span style={{ color: 'var(--danger)' }}>✗ <strong>{missingDays}</strong> ohne Buchung</span>}
-                        {extraDays > 0 && <span style={{ color: 'var(--warning)' }}>⚠ <strong>{extraDays}</strong> ohne Anmeldung</span>}
-                        <span style={{ marginLeft: 'auto' }}><strong>{b.kosten.toFixed(2)} €</strong></span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Edit Modal */}
-        {editKind && (
-          <div className="modal-overlay" onClick={() => setEditKind(null)}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
-              <h3>Kind bearbeiten</h3>
-              <div className="form-group">
-                <label>Nachname</label>
-                <input className="form-input" value={editForm.nachname} onChange={e => setEditForm({ ...editForm, nachname: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label>Vorname</label>
-                <input className="form-input" value={editForm.vorname} onChange={e => setEditForm({ ...editForm, vorname: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label>Klasse</label>
-                <input className="form-input" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label>Notizen</label>
-                <textarea className="textarea" style={{ minHeight: '80px' }} value={editForm.notizen} onChange={e => setEditForm({ ...editForm, notizen: e.target.value })} />
-              </div>
-              <div className="modal-actions">
-                <button className="btn btn-ghost" onClick={() => setEditKind(null)}>Abbrechen</button>
-                <button className="btn btn-primary" style={{ width: 'auto' }} onClick={saveEdit}>Speichern</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ═══════════════════════════════════════
   // LISTENANSICHT (Design-Upgrade)
   // ═══════════════════════════════════════
   const mitBuchung = kinder.filter(k => parseInt(k.buchungen_count) > 0).length;
@@ -539,8 +343,7 @@ return (
         </div>
       </div>
 
-      <div className="flex gap-4 flex-col lg:flex-row items-start">
-        <div className="flex-1 w-full space-y-4">
+        <div className="w-full space-y-4">
           <div className="flex items-center flex-wrap gap-2 mb-2 bg-surface-container-low p-2 rounded-2xl border border-outline-variant/20">
             <div className="flex-1 flex items-center bg-surface-container-lowest rounded-xl pl-3 pr-2 py-1.5 focus-within:ring-2 ring-primary/30 min-w-[200px]">
               <span className="material-symbols-outlined text-outline text-sm mr-2">search</span>
@@ -652,8 +455,8 @@ return (
                     <tr key={k.id} className={`hover:bg-surface-container-low transition-colors group cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`} onClick={() => setSelectedKindId(k.id)}>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <Avatar vorname={k.vorname} nachname={k.nachname} size="sm" />
-                          <span className={`font-bold ${isSelected ? 'text-primary' : 'text-on-surface'}`}>{k.nachname}, {k.vorname}</span>
+                           <Avatar vorname={k.vorname} nachname={k.nachname} size="sm" />
+                           <span className={`font-bold ${isSelected ? 'text-primary' : 'text-on-surface'}`}>{k.nachname}, {k.vorname}</span>
                         </div>
                       </td>
                       <td className="px-4 py-4 font-medium text-on-surface-variant">{k.klasse || '—'}</td>
@@ -687,94 +490,96 @@ return (
           </div>
         </div>
 
-        <div className="w-full lg:w-96 shrink-0 lg:sticky lg:top-24">
-          {selectedKindId && akte ? (
-            <div className="bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/10 overflow-hidden flex flex-col h-[calc(100vh-8rem)]">
-              <div className="relative h-28 bg-gradient-to-br from-primary-container to-primary shrink-0">
-                <div className="absolute -bottom-8 left-6">
-                  <div className="border-4 border-surface-container-lowest rounded-2xl shadow-lg bg-surface-container-lowest">
-                    <Avatar vorname={akte.kind.vorname} nachname={akte.kind.nachname} size="lg" />
+      {selectedKindId && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedKindId(null)}>
+          <div className="bg-surface-container-lowest rounded-3xl w-full max-w-2xl shadow-2xl border border-outline-variant/20 overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            {akteLoading ? (
+              <div className="p-32 flex justify-center"><Spinner /></div>
+            ) : akte ? (
+              <>
+                <div className="relative h-28 bg-gradient-to-br from-primary-container to-primary shrink-0">
+                  <div className="absolute -bottom-8 left-6">
+                    <div className="border-4 border-surface-container-lowest rounded-2xl shadow-lg bg-surface-container-lowest">
+                      <Avatar vorname={akte.kind.vorname} nachname={akte.kind.nachname} size="lg" />
+                    </div>
                   </div>
-                </div>
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => startEdit(akte.kind)}>
-                    <span className="material-symbols-outlined text-[18px]">edit</span>
-                  </button>
-                  <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => setSelectedKindId(null)}>
-                    <span className="material-symbols-outlined text-[18px]">close</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-12 px-6 pb-6 flex-1 overflow-y-auto space-y-8">
-                <div>
-                  <h3 className="text-2xl font-extrabold text-on-surface tracking-tight">{akte.kind.nachname}, {akte.kind.vorname}</h3>
-                  <div className="flex items-center gap-2 mt-2">
-                    {akte.kind.klasse && <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Klasse {akte.kind.klasse}</span>}
-                    <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
-                    <span className="text-xs text-on-surface-variant font-medium">ID: #{akte.kind.id}</span>
+                  <div className="absolute top-4 right-4 flex gap-2">
+                    <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => startEdit(akte.kind)}>
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => setSelectedKindId(null)}>
+                      <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-surface-container-low rounded-xl p-3 text-center border border-outline-variant/5">
-                    <div className="text-xl font-bold text-primary">{akte.summary.total_anmeldungen}</div>
-                    <div className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Anmeldungen</div>
+                <div className="pt-12 px-6 pb-8 flex-1 overflow-y-auto space-y-8">
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-on-surface tracking-tight">{akte.kind.vorname} {akte.kind.nachname}</h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      {akte.kind.klasse && <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">Klasse {akte.kind.klasse}</span>}
+                      <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+                      <span className="text-xs text-on-surface-variant font-medium">ID: #{akte.kind.id}</span>
+                    </div>
                   </div>
-                  <div className="bg-surface-container-low rounded-xl p-3 text-center border border-outline-variant/5">
-                    <div className="text-xl font-bold text-emerald-600">{akte.summary.total_buchungen}</div>
-                    <div className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Buchungen</div>
-                  </div>
-                </div>
 
-                {akte.kind.notizen && (
-                  <div className="bg-amber-500/10 border-l-4 border-l-amber-500 p-3 rounded-r-xl">
-                    <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Notizen</p>
-                    <p className="text-sm text-amber-900">{akte.kind.notizen}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-surface-container-low rounded-xl p-3 text-center border border-outline-variant/5">
+                      <div className="text-xl font-bold text-primary">{akte.summary?.total_anmeldungen || 0}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Anmeldungen</div>
+                    </div>
+                    <div className="bg-surface-container-low rounded-xl p-3 text-center border border-outline-variant/5">
+                      <div className="text-xl font-bold text-emerald-600">{akte.summary?.total_buchungen || 0}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-on-surface-variant">Buchungen</div>
+                    </div>
                   </div>
-                )}
 
-                <div className="space-y-4">
-                  <h4 className="text-[11px] font-bold text-outline uppercase tracking-widest border-b border-outline-variant/10 pb-2">Verlauf / Enrollment</h4>
-                  {akte.blocks.length === 0 ? (
-                    <p className="text-xs text-on-surface-variant">Keine Einträge in den Listen vorhanden.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {akte.blocks.map(b => (
-                        <div key={b.ferienblock_id} className="p-3 bg-surface-container-low/50 rounded-xl border border-outline-variant/5">
-                          <div className="flex items-start gap-3 mb-2">
-                            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${b.match_status==='exact'||b.match_status==='fuzzy_accepted' ? 'bg-emerald-500' : 'bg-primary-container'}`}></div>
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-on-surface leading-tight">{b.block_name}</p>
-                              <p className="text-[10px] text-on-surface-variant mt-0.5">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</p>
-                            </div>
-                            {b.klasse && <span className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-outline-variant/20">Kl. {b.klasse}</span>}
-                          </div>
-                          
-                          <div className="pl-5 grid grid-cols-2 gap-2 mt-2">
-                             <div className="bg-white rounded-lg p-2 text-center shadow-sm">
-                                <div className="text-[10px] font-bold text-primary">{b.anmeldungen.length} Tage (A)</div>
-                             </div>
-                             <div className="bg-white rounded-lg p-2 text-center shadow-sm">
-                                <div className="text-[10px] font-bold text-emerald-600">{b.buchungen.length} Tage (B)</div>
-                             </div>
-                          </div>
-                        </div>
-                      ))}
+                  {akte.kind.notizen && (
+                    <div className="bg-amber-500/10 border-l-4 border-l-amber-500 p-3 rounded-r-xl">
+                      <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Notizen</p>
+                      <p className="text-sm text-amber-900">{akte.kind.notizen}</p>
                     </div>
                   )}
+
+                  <div className="space-y-4 pb-4">
+                    <h4 className="text-[11px] font-bold text-outline uppercase tracking-widest border-b border-outline-variant/10 pb-2">Verlauf / Enrollment</h4>
+                    {!akte.blocks || akte.blocks.length === 0 ? (
+                      <p className="text-xs text-on-surface-variant">Keine Einträge in den Listen vorhanden.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {akte.blocks.map(b => (
+                          <div key={b.ferienblock_id} className="p-4 bg-surface-container-low/50 rounded-xl border border-outline-variant/5">
+                            <div className="flex items-start gap-3 mb-2">
+                              <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${b.match_status==='exact'||b.match_status==='fuzzy_accepted' ? 'bg-emerald-500' : 'bg-primary-container'}`}></div>
+                              <div className="flex-1">
+                                <p className="text-sm font-bold text-on-surface leading-tight">{b.block_name}</p>
+                                <p className="text-[10px] text-on-surface-variant mt-0.5 text-xs">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</p>
+                              </div>
+                              {b.klasse && <span className="text-[10px] bg-white dark:bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/20">Kl. {b.klasse}</span>}
+                            </div>
+                            <div className="pl-5 grid grid-cols-2 gap-2 mt-3">
+                               <div className="bg-white dark:bg-surface-container px-3 py-2 rounded-lg text-left shadow-sm border border-outline-variant/5">
+                                  <div className="text-[10px] font-bold uppercase text-on-surface-variant mb-1">Anmeldungen (A)</div>
+                                  <div className="text-sm font-bold text-primary">{b.anmeldungen.length} Tage</div>
+                               </div>
+                               <div className="bg-white dark:bg-surface-container px-3 py-2 rounded-lg text-left shadow-sm border border-outline-variant/5">
+                                  <div className="text-[10px] font-bold uppercase text-on-surface-variant mb-1">Buchungen (B)</div>
+                                  <div className="text-sm font-bold text-emerald-600">{b.buchungen.length} Tage</div>
+                               </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="h-full min-h-[400px] border-2 border-dashed border-outline-variant/30 rounded-2xl flex flex-col items-center justify-center p-10 text-center bg-surface-container-lowest/50">
-               <span className="material-symbols-outlined text-5xl text-outline-variant/50 mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>person_search</span>
-               <p className="text-sm font-bold text-on-surface">Akte auswählen</p>
-               <p className="text-xs text-on-surface-variant mt-1">Klicke auf ein Kind in der Liste, um das Profil und den Verlauf zu sehen.</p>
-            </div>
-          )}
+              </>
+            ) : (
+              <div className="p-20 text-center text-error font-bold">Akte konnte nicht geladen werden.</div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {editKind && (
         <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setEditKind(null)}>
