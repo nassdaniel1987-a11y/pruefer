@@ -419,7 +419,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           <table className="w-full text-sm">
             <thead><tr className="bg-surface-container-low">
               {raw.headers.map(h => (
-                <th key={h} className={`text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider ${(h === colMap.nachname || h === colMap.vorname) ? 'text-emerald-600' : h === colMap.date ? 'text-primary' : h === colMap.klasse ? 'text-amber-600' : 'text-outline'}`}>
+                <th key={h} className={`text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider ${(h === colMap.nachname || h === colMap.vorname) ? 'text-emerald-500' : h === colMap.date ? 'text-primary' : h === colMap.klasse ? 'text-tertiary' : 'text-outline'}`}>
                   {h}
                   {h === colMap.nachname && ' 👤'}
                   {h === colMap.vorname && ' 👤'}
@@ -431,7 +431,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
             <tbody className="divide-y divide-outline-variant/5">
               {raw.data.slice(0, 3).map((row, i) => (
                 <tr key={i}>{raw.headers.map((h, j) => (
-                  <td key={j} className={`px-3 py-2 ${(h === colMap.nachname || h === colMap.vorname || h === colMap.date || h === colMap.klasse) ? 'font-bold' : ''} ${(h === colMap.nachname || h === colMap.vorname) ? 'text-emerald-600' : h === colMap.date ? 'text-primary' : h === colMap.klasse ? 'text-amber-600' : ''}`}>
+                  <td key={j} className={`px-3 py-2 ${(h === colMap.nachname || h === colMap.vorname || h === colMap.date || h === colMap.klasse) ? 'font-bold' : ''} ${(h === colMap.nachname || h === colMap.vorname) ? 'text-emerald-500' : h === colMap.date ? 'text-primary' : h === colMap.klasse ? 'text-tertiary' : ''}`}>
                     {previewCell(row[j], h)}
                   </td>
                 ))}</tr>
@@ -468,8 +468,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           {/* Wizard */}
           <div className="flex items-center gap-2 bg-surface-container-lowest rounded-2xl p-3 shadow-sm border border-outline-variant/10">
             {['Daten laden', 'Spalten zuordnen', 'Prüfen', 'Ergebnis'].map((n, i) => (
-              <div key={i} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${step === i + 1 ? 'bg-primary text-on-primary shadow-sm' : step > i + 1 ? 'bg-emerald-100 text-emerald-700' : 'text-on-surface-variant'}`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${step === i + 1 ? 'bg-white/20' : step > i + 1 ? 'bg-emerald-200' : 'bg-surface-container-high'}`}>{step > i + 1 ? '✓' : i + 1}</span>{n}
+              <div key={i} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${step === i + 1 ? 'bg-primary text-on-primary shadow-sm' : step > i + 1 ? 'bg-emerald-500/10 text-emerald-500' : 'text-on-surface-variant'}`}>
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${step === i + 1 ? 'bg-white/20' : step > i + 1 ? 'bg-emerald-500/20' : 'bg-surface-container-high'}`}>{step > i + 1 ? '✓' : i + 1}</span>{n}
               </div>
             ))}
           </div>
@@ -519,7 +519,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   </div>
                   {rawA ? (
                     <div className="text-center py-4">
-                      <span className="material-symbols-outlined text-3xl text-green-600 mb-2 block">check_circle</span>
+                      <span className="material-symbols-outlined text-3xl text-emerald-500 mb-2 block">check_circle</span>
                       <p className="text-on-surface font-medium mb-2">{rawA.data.length} Zeilen geladen</p>
                       <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => { setRawA(null); setColMapA({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
                     </div>
@@ -545,7 +545,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   </div>
                   {rawB ? (
                     <div className="text-center py-4">
-                      <span className="material-symbols-outlined text-3xl text-green-600 mb-2 block">check_circle</span>
+                      <span className="material-symbols-outlined text-3xl text-emerald-500 mb-2 block">check_circle</span>
                       <p className="text-on-surface font-medium mb-2">{rawB.data.length} Zeilen geladen</p>
                       <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => { setRawB(null); setColMapB({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
                     </div>
@@ -607,8 +607,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
             <div>
               {/* Datenquelle-Warnung: DB statt Upload */}
               {(usedDbForA || usedDbForB) && (
-                <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-sm text-amber-800">
-                  <span className="material-symbols-outlined text-amber-600 mt-0.5">warning</span>
+                <div className="flex items-start gap-3 bg-secondary-container/20 border border-secondary-container/30 rounded-xl px-4 py-3 mb-4 text-sm text-on-secondary-container">
+                  <span className="material-symbols-outlined text-secondary-container mt-0.5">warning</span>
                   <div>
                     <strong>Hinweis:</strong>{' '}
                     {usedDbForA && usedDbForB
@@ -626,12 +626,12 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
                     <div className="text-xs text-on-surface-variant mb-1">Exakte Treffer</div>
-                    <div className="text-2xl font-bold text-green-700">{comparisonSummary.exact}</div>
+                    <div className="text-2xl font-bold text-emerald-500">{comparisonSummary.exact}</div>
                     <div className="text-xs text-on-surface-variant mt-0.5">{comparisonSummary.exactKinder} Kinder · automatisch</div>
                   </div>
                   <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
                     <div className="text-xs text-on-surface-variant mb-1">Ähnliche Namen</div>
-                    <div className="text-2xl font-bold text-amber-700">{potentialMatches.length}</div>
+                    <div className="text-2xl font-bold text-tertiary">{potentialMatches.length}</div>
                     <div className="text-xs text-on-surface-variant mt-0.5">Vorschläge zur Prüfung</div>
                   </div>
                   <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
@@ -651,8 +651,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   </h3>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button className="px-4 py-2 text-xs font-bold rounded-lg text-primary bg-white border border-outline-variant/20 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm" onClick={() => bulkAction('accept', 90)}>Alle &gt;90% akzeptieren</button>
-                  <button className="px-4 py-2 text-xs font-bold rounded-lg text-on-surface-variant bg-white border border-outline-variant/20 hover:bg-error/10 hover:text-error hover:border-error/20 transition-colors shadow-sm" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
+                  <button className="px-4 py-2 text-xs font-bold rounded-lg text-primary bg-surface-container-lowest border border-outline-variant/20 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm" onClick={() => bulkAction('accept', 90)}>Alle &gt;90% akzeptieren</button>
+                  <button className="px-4 py-2 text-xs font-bold rounded-lg text-on-surface-variant bg-surface-container-lowest border border-outline-variant/20 hover:bg-error/10 hover:text-error hover:border-error/20 transition-colors shadow-sm" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
                 </div>
               </div>
 
@@ -662,9 +662,9 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   <p className="text-on-surface-variant text-sm">Keine ähnlichen Namen gefunden — alle Einträge wurden exakt zugeordnet oder haben keine Entsprechung.</p>
                 )}
                 {openGroups.length === 0 && potentialMatches.length > 0 && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center">
+                  <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-8 text-center">
                     <span className="material-symbols-outlined text-4xl text-emerald-500 mb-2">task_alt</span>
-                    <p className="text-emerald-800 font-bold text-lg">Alle Vorschläge erfolgreich überprüft.</p>
+                    <p className="text-emerald-500 font-bold text-lg">Alle Vorschläge erfolgreich überprüft.</p>
                   </div>
                 )}
                 
@@ -672,8 +672,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   const analysis = analyzeMatch(group.nameA, group.nameB);
                   let bc = 'border-error'; let tc = 'text-error'; let bgc = 'bg-error-container'; let cc = 'text-on-error-container';
                   let scoreTxt = group.score + '%';
-                  if (group.score >= 90) { bc = 'border-tertiary-container'; tc = 'text-tertiary-container'; bgc = 'bg-tertiary-container'; cc = 'text-on-tertiary-container'; }
-                  else if (group.score >= 75) { bc = 'border-amber-400'; tc = 'text-amber-600'; bgc = 'bg-amber-100'; cc = 'text-amber-800'; }
+                  if (group.score >= 90) { bc = 'border-emerald-500'; tc = 'text-emerald-500'; bgc = 'bg-emerald-500/10'; cc = 'text-emerald-500'; }
+                  else if (group.score >= 75) { bc = 'border-tertiary-container'; tc = 'text-tertiary'; bgc = 'bg-tertiary-container'; cc = 'text-on-tertiary-container'; }
 
                   return (
                     <div key={group.nameA + group.nameB} className={`bg-surface-container-lowest p-6 rounded-xl transition-all shadow-sm hover:shadow-md border-l-4 ${bc} flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative group`}>
@@ -703,7 +703,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                         <div className="space-y-1 md:text-right">
                           <span className="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste B (Neu)</span>
                           <h3 className="text-lg font-bold text-on-surface truncate" title={group.nameB}>
-                            {analysis.tokensB.map((t, i) => <span key={i} className={t.matched ? '' : 'text-amber-600 underline decoration-2'}>{t.token}{' '}</span>)}
+                            {analysis.tokensB.map((t, i) => <span key={i} className={t.matched ? '' : 'text-tertiary underline decoration-2'}>{t.token}{' '}</span>)}
                           </h3>
                           <div className="flex gap-3 text-xs text-outline font-medium md:justify-end">
                             <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs">bookmark</span> {group.entries[0]?.entryB?.klasse || '–'}</span>
@@ -751,7 +751,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
                     <div className="text-xs text-on-surface-variant mb-1">Übereinstimmung</div>
-                    <div className="text-2xl font-bold text-green-700">{matchedKinder.length}</div>
+                    <div className="text-2xl font-bold text-emerald-500">{matchedKinder.length}</div>
                     <div className="text-xs text-on-surface-variant mt-0.5">{matchedKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.matches.length} Tage</div>
                   </div>
                   <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
@@ -761,7 +761,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   </div>
                   <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
                     <div className="text-xs text-on-surface-variant mb-1">Nur in B</div>
-                    <div className="text-2xl font-bold text-amber-700">{nurInBKinder.length}</div>
+                    <div className="text-2xl font-bold text-tertiary">{nurInBKinder.length}</div>
                     <div className="text-xs text-on-surface-variant mt-0.5">{nurInBKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInB.length} Tage</div>
                   </div>
                 </div>
@@ -771,7 +771,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                     <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10 flex-wrap">
                       <span className="material-symbols-outlined text-error text-base">warning</span>
                       <span className="font-semibold text-error">Fehlt in Liste B</span>
-                      <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
+                      <span className="bg-error-container text-on-error-container text-xs font-bold px-2 py-0.5 rounded-full">{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
                       <button className="ml-auto flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
                         onClick={() => {
                           const bName = blocks.find(bl => String(bl.id) === String(blockId))?.name || '';
@@ -788,9 +788,9 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                         </tr></thead>
                         <tbody className="divide-y divide-outline-variant/10">
                           {fehlendeKinder.map(k => (
-                            <tr key={k.name} className="bg-red-50/40">
+                            <tr key={k.name} className="bg-error-container/5 hover:bg-error-container/10 transition-colors">
                               <td className="px-4 py-2 font-semibold text-on-surface">{k.name}</td>
-                              <td className="px-4 py-2"><span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                              <td className="px-4 py-2"><span className="bg-error-container text-on-error-container text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
                               <td className="px-4 py-2 text-xs text-on-surface-variant">{k.dates.sort().map(d => fmtDate(d)).join(', ')}</td>
                             </tr>
                           ))}

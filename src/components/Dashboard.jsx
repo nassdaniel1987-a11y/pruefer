@@ -153,7 +153,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
         </div>
         <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default">
           <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
               <span className="material-symbols-outlined text-3xl">check_circle</span>
             </div>
           </div>
@@ -177,7 +177,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
         <div className="xl:col-span-2 space-y-6">
           <div className="flex justify-between items-end px-2">
             <div>
-              <h3 className="text-xl font-extrabold text-indigo-900">Aktuelle Ferienblöcke</h3>
+              <h3 className="text-xl font-extrabold text-on-surface">Aktuelle Ferienblöcke</h3>
               <p className="text-sm text-on-surface-variant">Status der laufenden Buchungszeiträume</p>
             </div>
             <div className="flex gap-2">
@@ -226,14 +226,14 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                           </div>
                           <div className="bg-surface-container-low p-3 rounded-xl">
                             <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Gebucht</div>
-                            <div className="text-lg font-extrabold text-emerald-600">{d?.kinder_b ?? 0} <span className="text-xs font-medium text-on-surface-variant">Kinder</span></div>
+                            <div className="text-lg font-extrabold text-emerald-500">{d?.kinder_b ?? 0} <span className="text-xs font-medium text-on-surface-variant">Kinder</span></div>
                           </div>
                         </div>
                         {hatErgebnis && (
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {d.matches} OK</span>
+                            <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {d.matches} OK</span>
                             {d.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {d.nur_in_a} fehlt</span>}
-                            {d.nur_in_b > 0 && <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {d.nur_in_b} nur B</span>}
+                            {d.nur_in_b > 0 && <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {d.nur_in_b} nur B</span>}
                           </div>
                         )}
                         <div className="flex gap-2 pt-1">
@@ -300,17 +300,17 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="bg-red-50">
+                    <thead><tr className="bg-error-container/10 border-b border-outline-variant/10">
                       <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase cursor-pointer" onClick={() => toggleDetailSort('nachname')}>Name{sortIcon('nachname')}</th>
                       <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase cursor-pointer" onClick={() => toggleDetailSort('klasse')}>Klasse{sortIcon('klasse')}</th>
                       <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase cursor-pointer" onClick={() => toggleDetailSort('tage')}>Tage{sortIcon('tage')}</th>
                     </tr></thead>
                     <tbody className="divide-y divide-outline-variant/10">
                       {sortDetailList(fehlendeGrp).map((k, i) => (
-                        <tr key={i} className="bg-red-50/50 hover:bg-red-100/50 transition-colors">
+                        <tr key={i} className="hover:bg-error-container/5 transition-colors">
                           <td className="px-3 py-2"><span className="font-bold text-on-surface">{k.nachname}</span>, <span className="text-on-surface-variant">{k.vorname}</span></td>
                           <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
-                          <td className="px-3 py-2"><span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                          <td className="px-3 py-2"><span className="bg-error-container text-on-error-container text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -322,7 +322,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
             <div className="bg-surface-container-lowest rounded-2xl p-8 text-center"><Spinner /></div>
           ) : (
             <div className="bg-surface-container-low/50 rounded-3xl p-6">
-              <h3 className="text-xl font-extrabold text-indigo-900 mb-2">Quick Info</h3>
+              <h3 className="text-xl font-extrabold text-on-surface mb-2">Quick Info</h3>
               <p className="text-sm text-on-surface-variant mb-4">Wähle "Fehlende" bei einem Block, um die Details hier zu sehen.</p>
               <button className="w-full py-3 bg-surface-container-highest rounded-xl text-xs font-extrabold uppercase tracking-widest text-on-surface-variant hover:bg-outline-variant/20 transition-colors" onClick={onReload}>
                 Daten aktualisieren

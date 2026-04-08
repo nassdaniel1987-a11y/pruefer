@@ -245,15 +245,15 @@ const TagesansichtPage = ({ blocks }) => {
                     <div className="grid grid-cols-3 gap-4 mb-8">
                       <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
                         <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">OK (Abgleich)</p>
-                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-emerald-600">{dayDetail.filter(k => k.inA && k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-emerald-500">{dayDetail.filter(k => k.inA && k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
                       <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
                         <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Fehlt in B</p>
-                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-error">{dayDetail.filter(k => k.inA && !k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-error">{dayDetail.filter(k => k.inA && !k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
                       <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
-                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">Nur in B</p>
-                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-amber-600">{dayDetail.filter(k => !k.inA && k.inB).length}</span><span className="text-xs font-medium text-slate-400 mb-1">Kind.</span></div>
+                        <p className="text-[10px] font-bold text-tertiary uppercase tracking-wider mb-1">Nur in B</p>
+                        <div className="flex items-end gap-1"><span className="text-2xl font-black text-tertiary">{dayDetail.filter(k => !k.inA && k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
                     </div>
                   )}
@@ -271,7 +271,7 @@ const TagesansichtPage = ({ blocks }) => {
                       </thead>
                       <tbody className="divide-y divide-outline-variant/5">
                         {sortedDetail.map((k, i) => (
-                           <tr key={i} className={`hover:bg-surface-container transition-colors group ${hasAbgleich && k.inA && !k.inB ? 'bg-error-container/20' : hasAbgleich && !k.inA && k.inB ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
+                           <tr key={i} className={`hover:bg-surface-container transition-colors group ${hasAbgleich && k.inA && !k.inB ? 'bg-error-container/20' : hasAbgleich && !k.inA && k.inB ? 'bg-tertiary-container/10' : ''}`}>
                              <td className="px-4 py-3 text-sm font-bold text-on-surface">{k.nachname}</td>
                              <td className="px-4 py-3 text-sm font-medium text-on-surface-variant">{k.vorname}</td>
                              <td className="px-4 py-3 text-sm font-medium text-on-surface-variant">
@@ -280,14 +280,14 @@ const TagesansichtPage = ({ blocks }) => {
                              <td className="px-4 py-3 text-center">
                                {hasAbgleich ? (
                                  <div className="flex justify-center flex-wrap gap-1">
-                                   {k.inA && k.inB && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px]">check</span>OK</span>}
-                                   {k.inA && !k.inB && <span className="bg-error font-bold text-white text-[10px] px-2 py-0.5 rounded-full">Fehlt (B)</span>}
-                                   {!k.inA && k.inB && <span className="bg-amber-500 font-bold text-white text-[10px] px-2 py-0.5 rounded-full">Nur (B)</span>}
+                                   {k.inA && k.inB && <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px]">check</span>OK</span>}
+                                   {k.inA && !k.inB && <span className="bg-error font-bold text-on-error text-[10px] px-2 py-0.5 rounded-full">Fehlt (B)</span>}
+                                   {!k.inA && k.inB && <span className="bg-tertiary font-bold text-on-tertiary text-[10px] px-2 py-0.5 rounded-full">Nur (B)</span>}
                                  </div>
                                ) : (
                                   <div className="flex gap-1 justify-center">
-                                    {k.inA && <span className="font-bold text-blue-600 bg-blue-100 text-[10px] px-2 py-0.5 rounded-md">Liste A</span>}
-                                    {k.inB && <span className="font-bold text-emerald-600 bg-emerald-100 text-[10px] px-2 py-0.5 rounded-md">Liste B</span>}
+                                    {k.inA && <span className="font-bold text-on-primary-fixed-variant bg-primary-fixed text-[10px] px-2 py-0.5 rounded-md">Liste A</span>}
+                                    {k.inB && <span className="font-bold text-emerald-500 bg-emerald-500/10 text-[10px] px-2 py-0.5 rounded-md">Liste B</span>}
                                   </div>
                                )}
                              </td>

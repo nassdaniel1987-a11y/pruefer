@@ -329,9 +329,9 @@ return (
         <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex justify-between items-start">
           <div>
             <p className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">{filterBlock ? 'Mit Buchung (B)' : 'Mind. eine Buchung'}</p>
-            <h3 className="text-3xl font-extrabold text-emerald-600">{loading ? '…' : mitBuchung}</h3>
+            <h3 className="text-3xl font-extrabold text-emerald-500">{loading ? '…' : mitBuchung}</h3>
           </div>
-          <span className="material-symbols-outlined text-emerald-600 bg-emerald-100 p-3 rounded-xl text-2xl">check_circle</span>
+          <span className="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-3 rounded-xl text-2xl">check_circle</span>
         </div>
         <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 flex justify-between items-start relative overflow-hidden">
           {ohneBuchung > 0 && <div className="absolute top-0 right-0 w-2 h-full bg-error"></div>}
@@ -419,7 +419,7 @@ return (
                         <div key={j} className="flex items-center gap-3 py-2 flex-wrap border-b border-dashed border-outline-variant/10 last:border-0">
                           <strong className="text-sm w-48 truncate">{e.kind.vorname} {e.kind.nachname}</strong>
                           <span className="text-xs bg-surface-container-high px-2 py-0.5 rounded">A: {parseInt(e.kind.anmeldungen_count)||0} | B: {parseInt(e.kind.buchungen_count)||0}</span>
-                          <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{e.reason}</span>
+                          <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">{e.reason}</span>
                           <div className="ml-auto flex gap-1">
                             {j>0 && <button className="px-2 py-1 bg-primary text-white text-[10px] font-bold rounded-lg" onClick={() => mergeKind(Math.min(g.kind.id, e.kind.id), Math.max(g.kind.id, e.kind.id))}>Merge</button>}
                             <button className="px-2 py-1 bg-error text-white text-[10px] font-bold rounded-lg" onClick={() => deleteKind(e.kind.id)}>Löschen</button>
@@ -465,8 +465,8 @@ return (
                       </td>
                       <td className="px-4 py-4 text-center">
                         <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold">
-                           <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">A:{parseInt(k.anmeldungen_count)||0}</span>
-                           <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">B:{parseInt(k.buchungen_count)||0}</span>
+                           <span className="bg-primary-fixed text-on-primary-fixed-variant px-1.5 py-0.5 rounded">A:{parseInt(k.anmeldungen_count)||0}</span>
+                           <span className="bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded">B:{parseInt(k.buchungen_count)||0}</span>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-right">
@@ -535,9 +535,9 @@ return (
                   </div>
 
                   {akte.kind.notizen && (
-                    <div className="bg-amber-500/10 border-l-4 border-l-amber-500 p-3 rounded-r-xl">
-                      <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Notizen</p>
-                      <p className="text-sm text-amber-900">{akte.kind.notizen}</p>
+                    <div className="bg-tertiary-container/20 border-l-4 border-l-tertiary p-3 rounded-r-xl">
+                      <p className="text-[10px] font-bold text-tertiary uppercase tracking-wider mb-1">Notizen</p>
+                      <p className="text-sm text-on-surface-variant">{akte.kind.notizen}</p>
                     </div>
                   )}
 
@@ -579,7 +579,7 @@ return (
                                     {[...aDates].sort().map(d => {
                                       const inB = bDates.has(d);
                                       return (
-                                        <div key={'a' + d} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${inB ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-error-container/20 text-error border-error-container/30'}`}>
+                                        <div key={'a' + d} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${inB ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-error-container/20 text-error border-error-container/30'}`}>
                                            <span className="material-symbols-outlined text-[10px]">{inB ? 'check' : 'close'}</span>
                                            <span>{weekday(d)} {fmtDate(d)}</span>
                                         </div>
@@ -599,7 +599,7 @@ return (
                                       const inA = aDates.has(d);
                                       const buchung = b.buchungen.find(x => String(x.datum).split('T')[0] === d);
                                       return (
-                                        <div key={'b' + d} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${inA ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`} title={buchung?.menu || ''}>
+                                        <div key={'b' + d} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${inA ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-tertiary-container/20 text-tertiary border-tertiary-container/30'}`} title={buchung?.menu || ''}>
                                            <span className="material-symbols-outlined text-[10px]">{inA ? 'check' : 'warning'}</span>
                                            <span>{weekday(d)} {fmtDate(d)}</span>
                                         </div>

@@ -75,21 +75,21 @@ const FinanzenPage = ({ blocks }) => {
             </div>
             <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low">
               <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                   <span className="material-symbols-outlined text-3xl">restaurant</span>
                 </div>
               </div>
               <p className="text-sm font-medium text-on-surface-variant">Gesamt Mahlzeiten</p>
-              <h4 className="text-3xl font-extrabold text-emerald-600 mt-1">{data.statistik.gesamt_buchungen}</h4>
+              <h4 className="text-3xl font-extrabold text-emerald-500 mt-1">{data.statistik.gesamt_buchungen}</h4>
             </div>
             <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low">
               <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
+                <div className="w-12 h-12 rounded-xl bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
                   <span className="material-symbols-outlined text-3xl">account_balance_wallet</span>
                 </div>
               </div>
               <p className="text-sm font-medium text-on-surface-variant">Gesamtbetrag</p>
-              <h4 className="text-3xl font-extrabold text-amber-700 mt-1">{data.statistik.gesamt_betrag.toFixed(2)} €</h4>
+              <h4 className="text-3xl font-extrabold text-tertiary mt-1">{data.statistik.gesamt_betrag.toFixed(2)} €</h4>
             </div>
             <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low relative overflow-hidden">
               {data.statistik.kinder_ohne_buchung > 0 && <div className="absolute top-0 right-0 w-1.5 h-full bg-error"></div>}
@@ -112,7 +112,7 @@ const FinanzenPage = ({ blocks }) => {
           {/* Fehlende Buchungen */}
           {data.fehlende_buchungen?.length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-              <div className="flex items-center gap-2 px-6 py-4 border-b border-outline-variant/10 bg-red-50/50">
+              <div className="flex items-center gap-2 px-6 py-4 border-b border-outline-variant/10 bg-error-container/10">
                 <span className="material-symbols-outlined text-error">warning</span>
                 <span className="font-bold text-error text-sm">{data.fehlende_buchungen.length} Kinder ohne Buchung</span>
               </div>
@@ -126,11 +126,11 @@ const FinanzenPage = ({ blocks }) => {
                   </tr></thead>
                   <tbody className="divide-y divide-outline-variant/5">
                     {data.fehlende_buchungen.map((k, i) => (
-                      <tr key={i} className="bg-red-50/30 hover:bg-red-100/30 transition-colors">
+                      <tr key={i} className="hover:bg-error-container/5 transition-colors">
                         <td className="px-4 py-3 font-bold text-on-surface">{k.nachname}</td>
                         <td className="px-4 py-3 text-on-surface-variant">{k.vorname}</td>
                         <td className="px-4 py-3 text-on-surface-variant">{k.klasse || '–'}</td>
-                        <td className="px-4 py-3"><span className="bg-error/10 text-error text-xs font-bold px-2 py-0.5 rounded-full">{k.tage_angemeldet}</span></td>
+                        <td className="px-4 py-3"><span className="bg-error-container text-on-error-container text-xs font-bold px-2 py-0.5 rounded-full">{k.tage_angemeldet}</span></td>
                       </tr>
                     ))}
                   </tbody>

@@ -116,9 +116,9 @@ const VerlaufPage = ({ blocks }) => {
                       <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase">{new Date(a.erstellt_am).toLocaleDateString('de-DE')} {new Date(a.erstellt_am).toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'})}</span>
                     </div>
                     <div className="flex gap-2 mt-1 flex-wrap">
-                      <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {a.matches}</span>
+                      <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {a.matches}</span>
                       {a.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {a.nur_in_a}</span>}
-                      {a.nur_in_b > 0 && <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {a.nur_in_b}</span>}
+                      {a.nur_in_b > 0 && <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {a.nur_in_b}</span>}
                     </div>
                   </div>
                   <span className="material-symbols-outlined text-on-surface-variant/50">{isOpen ? 'expand_less' : 'expand_more'}</span>
@@ -135,8 +135,8 @@ const VerlaufPage = ({ blocks }) => {
                         </tr></thead>
                         <tbody className="divide-y divide-outline-variant/5">
                           {detail[a.id].matches?.map((m,i) => (
-                            <tr key={i} className={`${m.match_typ === 'nur_in_a' ? 'bg-red-50/50' : m.match_typ === 'nur_in_b' ? 'bg-amber-50/50' : ''}`}>
-                              <td className="px-3 py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'bg-emerald-100 text-emerald-700' : m.match_typ === 'nur_in_a' ? 'bg-error/10 text-error' : 'bg-amber-100 text-amber-700'}`}>{(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'OK' : m.match_typ === 'nur_in_a' ? 'Fehlt' : 'Nur B'}</span></td>
+                            <tr key={i} className={`${m.match_typ === 'nur_in_a' ? 'bg-error-container/10' : m.match_typ === 'nur_in_b' ? 'bg-tertiary-container/10' : ''}`}>
+                              <td className="px-3 py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'bg-emerald-500/10 text-emerald-500' : m.match_typ === 'nur_in_a' ? 'bg-error text-on-error' : 'bg-tertiary text-on-tertiary'}`}>{(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'OK' : m.match_typ === 'nur_in_a' ? 'Fehlt' : 'Nur B'}</span></td>
                               <td className="px-3 py-2 font-bold text-on-surface">{m.a_nachname || m.b_nachname || '–'}</td>
                               <td className="px-3 py-2 text-on-surface-variant">{m.a_vorname || m.b_vorname || '–'}</td>
                               <td className="px-3 py-2 text-on-surface-variant/60 text-xs">{m.a_datum ? fmtDate(m.a_datum) : m.b_datum ? fmtDate(m.b_datum) : '–'}</td>
