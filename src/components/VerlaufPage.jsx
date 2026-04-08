@@ -136,7 +136,7 @@ const VerlaufPage = ({ blocks }) => {
                         <tbody className="divide-y divide-outline-variant/5">
                           {detail[a.id].matches?.map((m,i) => (
                             <tr key={i} className={`${m.match_typ === 'nur_in_a' ? 'bg-red-50/50' : m.match_typ === 'nur_in_b' ? 'bg-amber-50/50' : ''}`}>
-                              <td className="px-3 py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted' ? 'bg-emerald-100 text-emerald-700' : m.match_typ === 'nur_in_a' ? 'bg-error/10 text-error' : 'bg-amber-100 text-amber-700'}`}>{m.match_typ === 'exact' ? 'OK' : m.match_typ === 'fuzzy_accepted' ? 'Fuzzy' : m.match_typ === 'nur_in_a' ? 'Fehlt' : 'Nur B'}</span></td>
+                              <td className="px-3 py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'bg-emerald-100 text-emerald-700' : m.match_typ === 'nur_in_a' ? 'bg-error/10 text-error' : 'bg-amber-100 text-amber-700'}`}>{(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'OK' : m.match_typ === 'nur_in_a' ? 'Fehlt' : 'Nur B'}</span></td>
                               <td className="px-3 py-2 font-bold text-on-surface">{m.a_nachname || m.b_nachname || '–'}</td>
                               <td className="px-3 py-2 text-on-surface-variant">{m.a_vorname || m.b_vorname || '–'}</td>
                               <td className="px-3 py-2 text-on-surface-variant/60 text-xs">{m.a_datum ? fmtDate(m.a_datum) : m.b_datum ? fmtDate(m.b_datum) : '–'}</td>
