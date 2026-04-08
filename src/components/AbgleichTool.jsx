@@ -7,6 +7,7 @@ import { fmtDate, normalizeDate, scoreClass } from '../utils/helpers';
 import { calcScore, tokenizeName, analyzeMatch } from '../utils/matching';
 import Spinner from './Spinner';
 import MiniExcel from './MiniExcel';
+import FirebaseImportModal from './FirebaseImportModal';
 
 const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const [blockId, setBlockId] = useState(initialBlockId || (blocks[0]?.id || ''));
@@ -27,6 +28,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const [usedDbForA, setUsedDbForA] = useState(false);
   const [usedDbForB, setUsedDbForB] = useState(false);
   const [showPasteModal, setShowPasteModal] = useState(null); // 'A', 'B' oder null
+  const [showFirebaseModal, setShowFirebaseModal] = useState(false);
+  const [firebaseImportInfo, setFirebaseImportInfo] = useState(null); // { count, blockName, eintraege }
 
   // Listen aus DB laden wenn Block gewählt
   useEffect(() => {
@@ -91,6 +94,26 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     // Tabulator-getrennte Tabelle parsen
     const json = rawRows.map(row => row.split('\t').map(c => c.trim()));
     processImportArray(json, which);
+  };
+
+  const handleFirebaseImport = async (eintraege, blockName) => {
+    setShowFirebaseModal(false);
+    setIsLoading(true);
+    try {
+      const res = await API.post('listen', { ferienblock_id: blockId, liste: 'A', eintraege });
+      if (res.error) { toast.error('Import fehlgeschlagen: ' + res.error); setIsLoading(false); return; }
+      toast.success(`${eintraege.length} Einträge aus Firebase importiert`);
+      const freshA = await API.get('listen', { ferienblock_id: blockId, liste: 'A' });
+      setListADb(Array.isArray(freshA) ? freshA : []);
+      setFirebaseImportInfo({ count: eintraege.length, blockName, eintraege });
+      try {
+        const sync = await API.post('kinder', { action: 'sync' });
+        if (sync.inserted > 0) toast.success(`${sync.inserted} neue Kinder ins Verzeichnis übernommen`);
+      } catch (_) {}
+    } catch (err) {
+      toast.error('Fehler beim Firebase-Import');
+    }
+    setIsLoading(false);
   };
 
   const processAndUpload = async () => {
@@ -523,6 +546,37 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                       <p className="text-on-surface font-medium mb-2">{rawA.data.length} Zeilen geladen</p>
                       <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => { setRawA(null); setColMapA({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
                     </div>
+                  ) : firebaseImportInfo ? (
+                    <div className="py-2">
+                      <div className="text-center mb-3">
+                        <span className="material-symbols-outlined text-3xl text-emerald-500 mb-1 block">cloud_done</span>
+                        <p className="text-on-surface font-medium">{firebaseImportInfo.count} Einträge aus Firebase</p>
+                        <p className="text-xs text-on-surface-variant">{firebaseImportInfo.blockName}</p>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto rounded-lg border border-outline-variant/20 mb-3">
+                        <table className="w-full text-xs">
+                          <thead className="bg-surface-container sticky top-0">
+                            <tr>
+                              <th className="px-2 py-1 text-on-surface-variant font-medium text-left">Name</th>
+                              <th className="px-2 py-1 text-on-surface-variant font-medium text-left">Datum</th>
+                              <th className="px-2 py-1 text-on-surface-variant font-medium text-left">Kl.</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {firebaseImportInfo.eintraege.map((e, i) => (
+                              <tr key={i} className="border-t border-outline-variant/10">
+                                <td className="px-2 py-1">{e.vorname} {e.nachname}</td>
+                                <td className="px-2 py-1">{fmtDate(e.datum)}</td>
+                                <td className="px-2 py-1">{e.klasse}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <button className="w-full px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setFirebaseImportInfo(null)}>
+                        Löschen / Neu laden
+                      </button>
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-2">
                       <label className="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-xl p-6 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
@@ -532,6 +586,10 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                       </label>
                       <button className="w-full py-2.5 rounded-xl border-2 border-primary/30 text-primary font-semibold text-sm hover:bg-primary/10 transition-colors" onClick={() => setShowPasteModal('A')}>
                         oder Tabelle einfügen (Strg+V)
+                      </button>
+                      <button className="w-full py-2.5 rounded-xl border-2 border-secondary/30 text-secondary font-semibold text-sm hover:bg-secondary/10 transition-colors flex items-center justify-center gap-1.5" onClick={() => setShowFirebaseModal(true)}>
+                        <span className="material-symbols-outlined text-sm">cloud_download</span>
+                        Von Firebase laden
                       </button>
                     </div>
                   )}
@@ -896,6 +954,13 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
             </div>
           </div>
         </div>
+      )}
+      {showFirebaseModal && (
+        <FirebaseImportModal
+          onClose={() => setShowFirebaseModal(false)}
+          onImport={handleFirebaseImport}
+          ferienblock={blocks.find(b => String(b.id) === String(blockId))}
+        />
       )}
     </div>
   );
