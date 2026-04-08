@@ -546,29 +546,72 @@ return (
                     {!akte.blocks || akte.blocks.length === 0 ? (
                       <p className="text-xs text-on-surface-variant">Keine Einträge in den Listen vorhanden.</p>
                     ) : (
-                      <div className="space-y-3">
-                        {akte.blocks.map(b => (
-                          <div key={b.ferienblock_id} className="p-4 bg-surface-container-low/50 rounded-xl border border-outline-variant/5">
-                            <div className="flex items-start gap-3 mb-2">
-                              <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${b.match_status==='exact'||b.match_status==='fuzzy_accepted' ? 'bg-emerald-500' : 'bg-primary-container'}`}></div>
-                              <div className="flex-1">
-                                <p className="text-sm font-bold text-on-surface leading-tight">{b.block_name}</p>
-                                <p className="text-[10px] text-on-surface-variant mt-0.5 text-xs">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</p>
+                      <div className="space-y-4">
+                        {akte.blocks.map(b => {
+                          const aDates = new Set(b.anmeldungen.map(a => String(a.datum).split('T')[0]));
+                          const bDates = new Set(b.buchungen.map(x => String(x.datum).split('T')[0]));
+                          const allDates = [...new Set([...aDates, ...bDates])].sort();
+                          
+                          const weekday = (d) => {
+                            try { return new Date(d).toLocaleDateString('de-DE', { weekday: 'short' }); } catch { return ''; }
+                          };
+
+                          return (
+                            <div key={b.ferienblock_id} className="p-4 bg-surface-container-low/50 rounded-2xl border border-outline-variant/10">
+                              <div className="flex items-start justify-between gap-3 mb-4">
+                                <div className="flex items-start gap-2.5">
+                                  <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${b.match_status==='exact'||b.match_status==='fuzzy_accepted' ? 'bg-emerald-500' : 'bg-primary-container'}`}></div>
+                                  <div>
+                                    <p className="text-sm font-bold text-on-surface leading-tight">{b.block_name}</p>
+                                    <p className="text-[10px] text-on-surface-variant mt-0.5 font-medium">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</p>
+                                  </div>
+                                </div>
+                                {b.klasse && <span className="text-[10px] bg-white dark:bg-surface-container-high px-2 py-0.5 rounded-lg border border-outline-variant/20 font-bold">Kl. {b.klasse}</span>}
                               </div>
-                              {b.klasse && <span className="text-[10px] bg-white dark:bg-surface-container-high px-1.5 py-0.5 rounded border border-outline-variant/20">Kl. {b.klasse}</span>}
+
+                              <div className="space-y-4">
+                                <div>
+                                  <p className="text-[9px] font-black uppercase text-on-surface-variant tracking-wider mb-2 flex items-center gap-1.5">
+                                    <span className="w-1 h-1 rounded-full bg-primary/40"></span>
+                                    Anmeldungen (A) <span className="text-primary ml-1">{b.anmeldungen.length} Tage</span>
+                                  </p>
+                                  <div className="flex flex-wrap gap-1.5 pl-2.5">
+                                    {[...aDates].sort().map(d => {
+                                      const inB = bDates.has(d);
+                                      return (
+                                        <div key={'a' + d} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${inB ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-error-container/20 text-error border-error-container/30'}`}>
+                                           <span className="material-symbols-outlined text-[10px]">{inB ? 'check' : 'close'}</span>
+                                           <span>{weekday(d)} {fmtDate(d)}</span>
+                                        </div>
+                                      );
+                                    })}
+                                    {b.anmeldungen.length === 0 && <span className="text-[10px] text-on-surface-variant italic">Keine Anmeldungen</span>}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <p className="text-[9px] font-black uppercase text-on-surface-variant tracking-wider mb-2 flex items-center gap-1.5">
+                                    <span className="w-1 h-1 rounded-full bg-emerald-500/40"></span>
+                                    Buchungen (B) <span className="text-emerald-600 ml-1">{b.buchungen.length} Tage</span>
+                                  </p>
+                                  <div className="flex flex-wrap gap-1.5 pl-2.5">
+                                    {[...bDates].sort().map(d => {
+                                      const inA = aDates.has(d);
+                                      const buchung = b.buchungen.find(x => String(x.datum).split('T')[0] === d);
+                                      return (
+                                        <div key={'b' + d} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${inA ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`} title={buchung?.menu || ''}>
+                                           <span className="material-symbols-outlined text-[10px]">{inA ? 'check' : 'warning'}</span>
+                                           <span>{weekday(d)} {fmtDate(d)}</span>
+                                        </div>
+                                      );
+                                    })}
+                                    {b.buchungen.length === 0 && <span className="text-[10px] text-on-surface-variant italic">Keine Buchungen</span>}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="pl-5 grid grid-cols-2 gap-2 mt-3">
-                               <div className="bg-white dark:bg-surface-container px-3 py-2 rounded-lg text-left shadow-sm border border-outline-variant/5">
-                                  <div className="text-[10px] font-bold uppercase text-on-surface-variant mb-1">Anmeldungen (A)</div>
-                                  <div className="text-sm font-bold text-primary">{b.anmeldungen.length} Tage</div>
-                               </div>
-                               <div className="bg-white dark:bg-surface-container px-3 py-2 rounded-lg text-left shadow-sm border border-outline-variant/5">
-                                  <div className="text-[10px] font-bold uppercase text-on-surface-variant mb-1">Buchungen (B)</div>
-                                  <div className="text-sm font-bold text-emerald-600">{b.buchungen.length} Tage</div>
-                               </div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
