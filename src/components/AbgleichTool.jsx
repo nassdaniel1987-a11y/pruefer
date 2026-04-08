@@ -642,56 +642,87 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 </div>
               )}
 
-              <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-4">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-outline-variant/10">
-                  <span className="font-semibold text-on-surface flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-base text-primary">fact_check</span>
+              {/* SCHRITT 3: Prüfen: Header und Bulk Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-container-low p-4 rounded-xl mb-6">
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
                     Mögliche Übereinstimmungen
-                    <span className="bg-surface-container text-on-surface-variant text-xs font-bold px-2 py-0.5 rounded-full ml-1">{openGroups.length} offen</span>
-                  </span>
-                  <div className="flex gap-2">
-                    <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => bulkAction('accept', 90)}>Alle &gt;90% akzeptieren</button>
-                    <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
-                  </div>
+                    <span className="bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{openGroups.length} offen</span>
+                  </h3>
                 </div>
-                <div className="p-5">
-                  {openGroups.length === 0 && potentialMatches.length === 0 && (
-                    <p className="text-on-surface-variant text-sm">Keine ähnlichen Namen gefunden — alle Einträge wurden exakt zugeordnet oder haben keine Entsprechung.</p>
-                  )}
-                  {openGroups.length === 0 && potentialMatches.length > 0 && (
-                    <p className="text-on-surface-variant text-sm">Alle Vorschläge überprüft.</p>
-                  )}
-                  <div className="space-y-2">
-                    {openGroups.map(group => {
-                      const cls = scoreClass(group.score);
-                      const analysis = analyzeMatch(group.nameA, group.nameB);
-                      const scoreBg = group.score >= 90 ? 'bg-green-100 text-green-700' : group.score >= 75 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
-                      return (
-                        <div key={group.nameA + group.nameB} className="flex items-center gap-3 p-3 rounded-xl bg-surface-container/50 border border-outline-variant/10 flex-wrap">
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${scoreBg}`}>{group.score}%</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1 flex-wrap text-sm">
-                              <strong className="text-on-surface-variant text-xs">A:</strong>
-                              {analysis.tokensA.map((t, i) => <span key={i} className={`px-1.5 py-0.5 rounded text-xs font-medium ${t.matched ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>{t.token}</span>)}
-                              <span className="material-symbols-outlined text-sm text-on-surface-variant">swap_horiz</span>
-                              <strong className="text-on-surface-variant text-xs">B:</strong>
-                              {analysis.tokensB.map((t, i) => <span key={i} className={`px-1.5 py-0.5 rounded text-xs font-medium ${t.matched ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>{t.token}</span>)}
-                            </div>
-                            <div className="text-xs text-on-surface-variant mt-0.5">{group.reason} · {group.entries.length} Einträge · {fmtDate(group.entries[0]?.entryA.date)}</div>
-                          </div>
-                          <div className="flex gap-1.5">
-                            <button className="w-8 h-8 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors flex items-center justify-center" onClick={() => handleGroupAction(group, 'accept')}>
-                              <span className="material-symbols-outlined text-sm">check</span>
-                            </button>
-                            <button className="w-8 h-8 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors flex items-center justify-center" onClick={() => handleGroupAction(group, 'reject')}>
-                              <span className="material-symbols-outlined text-sm">close</span>
-                            </button>
+                <div className="flex gap-2 shrink-0">
+                  <button className="px-4 py-2 text-xs font-bold rounded-lg text-primary bg-white border border-outline-variant/20 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm" onClick={() => bulkAction('accept', 90)}>Alle &gt;90% akzeptieren</button>
+                  <button className="px-4 py-2 text-xs font-bold rounded-lg text-on-surface-variant bg-white border border-outline-variant/20 hover:bg-error/10 hover:text-error hover:border-error/20 transition-colors shadow-sm" onClick={() => bulkAction('reject')}>Alle übrigen ablehnen</button>
+                </div>
+              </div>
+
+              {/* Match Cards List */}
+              <div className="space-y-4 mb-4">
+                {openGroups.length === 0 && potentialMatches.length === 0 && (
+                  <p className="text-on-surface-variant text-sm">Keine ähnlichen Namen gefunden — alle Einträge wurden exakt zugeordnet oder haben keine Entsprechung.</p>
+                )}
+                {openGroups.length === 0 && potentialMatches.length > 0 && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-8 text-center">
+                    <span className="material-symbols-outlined text-4xl text-emerald-500 mb-2">task_alt</span>
+                    <p className="text-emerald-800 font-bold text-lg">Alle Vorschläge erfolgreich überprüft.</p>
+                  </div>
+                )}
+                
+                {openGroups.map(group => {
+                  const analysis = analyzeMatch(group.nameA, group.nameB);
+                  let bc = 'border-error'; let tc = 'text-error'; let bgc = 'bg-error-container'; let cc = 'text-on-error-container';
+                  let scoreTxt = group.score + '%';
+                  if (group.score >= 90) { bc = 'border-tertiary-container'; tc = 'text-tertiary-container'; bgc = 'bg-tertiary-container'; cc = 'text-on-tertiary-container'; }
+                  else if (group.score >= 75) { bc = 'border-amber-400'; tc = 'text-amber-600'; bgc = 'bg-amber-100'; cc = 'text-amber-800'; }
+
+                  return (
+                    <div key={group.nameA + group.nameB} className={`bg-surface-container-lowest p-6 rounded-xl transition-all shadow-sm hover:shadow-md border-l-4 ${bc} flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative group`}>
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr,auto,1fr] items-center gap-6 md:gap-12">
+                        {/* Liste A */}
+                        <div className="space-y-1 text-left">
+                          <span className="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste A (Bestehend)</span>
+                          <h3 className="text-lg font-bold text-on-surface truncate" title={group.nameA}>
+                            {analysis.tokensA.map((t, i) => <span key={i} className={t.matched ? '' : 'text-error line-through decoration-2 opacity-80'}>{t.token}{' '}</span>)}
+                          </h3>
+                          <div className="flex gap-3 text-xs text-outline font-medium">
+                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs">bookmark</span> {group.entries[0]?.entryA?.klasse || '–'}</span>
+                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs">calendar_today</span> Erste Buchung: {fmtDate(group.entries[0]?.entryA?.date)}</span>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+
+                        {/* Center Connection */}
+                        <div className="flex flex-col items-center">
+                          <div className={`h-px w-24 bg-gradient-to-r from-transparent via-current to-transparent mb-2 ${tc}`}></div>
+                          <div className={`${bgc} ${cc} font-bold text-sm px-4 py-1.5 rounded-full shadow-sm whitespace-nowrap`}>
+                            {scoreTxt} Ähnlichkeit
+                          </div>
+                          <div className="text-[10px] text-outline mt-2 font-semibold">({group.entries.length} Buchungen)</div>
+                        </div>
+
+                        {/* Liste B */}
+                        <div className="space-y-1 md:text-right">
+                          <span className="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste B (Neu)</span>
+                          <h3 className="text-lg font-bold text-on-surface truncate" title={group.nameB}>
+                            {analysis.tokensB.map((t, i) => <span key={i} className={t.matched ? '' : 'text-amber-600 underline decoration-2'}>{t.token}{' '}</span>)}
+                          </h3>
+                          <div className="flex gap-3 text-xs text-outline font-medium md:justify-end">
+                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-xs">bookmark</span> {group.entries[0]?.entryB?.klasse || '–'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-3 shrink-0 lg:ml-12">
+                        <button className="w-10 h-10 rounded-full flex items-center justify-center text-error border-2 border-error/20 hover:bg-error/10 hover:border-error transition-all" onClick={() => handleGroupAction(group, 'reject')} title="Ablehnen">
+                          <span className="material-symbols-outlined">close</span>
+                        </button>
+                        <button className="bg-primary hover:bg-primary-container hover:text-on-primary-container text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-all flex items-center gap-2" onClick={() => handleGroupAction(group, 'accept')}>
+                          Akzeptieren
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex justify-between mt-4">
                 <button className="px-4 py-2 text-sm font-medium rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setStep(1)}>Zurück</button>

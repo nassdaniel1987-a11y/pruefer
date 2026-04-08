@@ -50,11 +50,19 @@ const VerlaufPage = ({ blocks }) => {
       API.get('abgleich', { abgleich_id: compareIds[0] }),
       API.get('abgleich', { abgleich_id: compareIds[1] })
     ]);
-    // Simple text diff
-    const fmtMatch = (m) => `${m.match_typ}: ${m.a_nachname || m.b_nachname || '?'}, ${m.a_vorname || m.b_vorname || '?'} — ${m.a_datum ? fmtDate(m.a_datum) : m.b_datum ? fmtDate(m.b_datum) : '?'}`;
-    const textA = (resA?.matches || []).map(fmtMatch).sort().join('\n');
-    const textB = (resB?.matches || []).map(fmtMatch).sort().join('\n');
-    setDiffResult(`─── Abgleich #${compareIds[0]} ───\n${textA}\n\n─── Abgleich #${compareIds[1]} ───\n${textB}`);
+    
+    const abgA = verlauf.find(a => a.id === compareIds[0]);
+    const abgB = verlauf.find(a => a.id === compareIds[1]);
+
+    // Ensure older Abgleich is "old" and newer is "new"
+    const isAOlder = new Date(abgA.erstellt_am) < new Date(abgB.erstellt_am);
+    
+    setDiffResult({
+      matchesOld: isAOlder ? resA.matches : resB.matches,
+      matchesNew: isAOlder ? resB.matches : resA.matches,
+      abgleichOld: isAOlder ? abgA : abgB,
+      abgleichNew: isAOlder ? abgB : abgA
+    });
     setCompareLoading(false);
   };
 
@@ -147,16 +155,24 @@ const VerlaufPage = ({ blocks }) => {
       )}
 
       {/* Diff Modal */}
-      {diffResult && (
-        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center" onClick={() => setDiffResult(null)}>
-          <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-extrabold text-on-surface">Abgleich-Vergleich</h3>
-              <button className="p-1 text-on-surface-variant hover:text-error transition-colors" onClick={() => setDiffResult(null)}>
+      {diffResult && typeof diffResult === 'object' && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 xl:p-8" onClick={() => setDiffResult(null)}>
+          <div className="bg-surface-container-lowest rounded-2xl shadow-xl w-full max-w-6xl h-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-6 border-b border-outline-variant/10 shrink-0 bg-surface-container-low">
+              <div>
+                <h3 className="text-xl font-extrabold text-on-surface">Vergleichs-Analyse</h3>
+                <p className="text-sm text-on-surface-variant font-medium mt-1">Änderungen zwischen {new Date(diffResult.abgleichOld.erstellt_am).toLocaleDateString()} und {new Date(diffResult.abgleichNew.erstellt_am).toLocaleDateString()}</p>
+              </div>
+              <button className="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 hover:bg-error/10 hover:text-error hover:border-error/20 transition-all" onClick={() => setDiffResult(null)}>
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <pre className="text-xs font-mono bg-surface-container-low p-4 rounded-xl overflow-x-auto whitespace-pre-wrap">{diffResult}</pre>
+            <div className="flex-1 overflow-y-auto p-6 bg-surface">
+              <VergleichView 
+                matchesOld={diffResult.matchesOld} matchesNew={diffResult.matchesNew} 
+                abgleichOld={diffResult.abgleichOld} abgleichNew={diffResult.abgleichNew} 
+              />
+            </div>
           </div>
         </div>
       )}

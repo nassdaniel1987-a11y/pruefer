@@ -175,7 +175,6 @@ const TagesansichtPage = ({ blocks }) => {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Audit-Zeitplan & Übersicht</span>
           <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Tagesansicht</h2>
         </div>
         <div className="flex items-center bg-surface-container-lowest px-4 py-1.5 rounded-xl border border-outline-variant/20 gap-4">
