@@ -16,18 +16,18 @@ const lightColors = {
 };
 
 const darkColors = {
-  "background": "#141218", "on-background": "#e5e1e6", "surface": "#141218", "surface-dim": "#141218",
-  "surface-bright": "#3a383f", "surface-container-lowest": "#0f0d13", "surface-container-low": "#1c1b1f",
-  "surface-container": "#211f26", "surface-container-high": "#2b2930", "surface-container-highest": "#36343b",
-  "on-surface": "#e5e1e6", "on-surface-variant": "#c8c5d0", "outline": "#938f99", "outline-variant": "#47464f",
-  "inverse-surface": "#e5e1e6", "inverse-on-surface": "#313034", "inverse-primary": "#5a598b",
-  "primary": "#c3c1f9", "on-primary": "#2c2b59", "primary-container": "#424271", "on-primary-container": "#e2dfff",
-  "primary-fixed": "#e2dfff", "on-primary-fixed": "#161543", "primary-fixed-dim": "#c3c1f9", "on-primary-fixed-variant": "#424271",
-  "secondary": "#c6c4dd", "on-secondary": "#2f2e41", "secondary-container": "#454559", "on-secondary-container": "#e0ddf6",
-  "secondary-fixed": "#e3e0f9", "on-secondary-fixed": "#1a1a2c", "secondary-fixed-dim": "#c6c4dd", "on-secondary-fixed-variant": "#464559",
-  "tertiary": "#dcc578", "on-tertiary": "#3c3000", "tertiary-container": "#544600", "on-tertiary-container": "#f9e191",
-  "tertiary-fixed": "#f9e191", "on-tertiary-fixed": "#221b00", "tertiary-fixed-dim": "#dcc578", "on-tertiary-fixed-variant": "#554603",
-  "error": "#ffb4ab", "on-error": "#690005", "error-container": "#93000a", "on-error-container": "#ffdad6", "surface-tint": "#c3c1f9"
+  "background": "#0f172a", "on-background": "#f8fafc", "surface": "#0f172a", "surface-dim": "#020617",
+  "surface-bright": "#1e293b", "surface-container-lowest": "#020617", "surface-container-low": "#0f172a",
+  "surface-container": "#1e293b", "surface-container-high": "#334155", "surface-container-highest": "#475569",
+  "on-surface": "#f8fafc", "on-surface-variant": "#cbd5e1", "outline": "#94a3b8", "outline-variant": "#475569",
+  "inverse-surface": "#f8fafc", "inverse-on-surface": "#0f172a", "inverse-primary": "#4f46e5",
+  "primary": "#818cf8", "on-primary": "#1e1b4b", "primary-container": "#3730a3", "on-primary-container": "#e0e7ff",
+  "primary-fixed": "#e0e7ff", "on-primary-fixed": "#1e1b4b", "primary-fixed-dim": "#a5b4fc", "on-primary-fixed-variant": "#312e81",
+  "secondary": "#94a3b8", "on-secondary": "#0f172a", "secondary-container": "#334155", "on-secondary-container": "#f1f5f9",
+  "secondary-fixed": "#f1f5f9", "on-secondary-fixed": "#0f172a", "secondary-fixed-dim": "#94a3b8", "on-secondary-fixed-variant": "#334155",
+  "tertiary": "#fcd34d", "on-tertiary": "#422006", "tertiary-container": "#92400e", "on-tertiary-container": "#fef3c7",
+  "tertiary-fixed": "#fef3c7", "on-tertiary-fixed": "#451a03", "tertiary-fixed-dim": "#fcd34d", "on-tertiary-fixed-variant": "#b45309",
+  "error": "#fca5a5", "on-error": "#450a0a", "error-container": "#991b1b", "on-error-container": "#fee2e2", "surface-tint": "#818cf8"
 };
 
 let cssContent = `:root {\n`;
