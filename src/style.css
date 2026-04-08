@@ -141,12 +141,12 @@
 .badge-grey { background: #e5e1e6; color: #47464f; }
 
 /* ── TABLES ── */
-.table-wrap { overflow-x: auto; border-radius: 0.75rem; border: 1px solid rgba(200,197,208,0.1); }
+.table-wrap { overflow-x: auto; border-radius: 0.75rem; border: 1px solid var(--color-outline-variant); }
 table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-th { background: #f6f2f7; color: #5a598b; font-weight: 900; text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(200,197,208,0.1); font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.05em; }
-td { padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(200,197,208,0.05); color: #1c1b1f; }
+th { background: var(--color-surface-container-low); color: var(--color-primary); font-weight: 900; text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-outline-variant); font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.05em; }
+td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-outline-variant); color: var(--color-on-surface); }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(246,242,247,0.5); }
+tr:hover td { background: var(--color-surface-container); }
 
 /* ── FORMS ── */
 .form-group { margin-bottom: 1rem; }

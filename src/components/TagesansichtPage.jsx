@@ -265,16 +265,17 @@ const TagesansichtPage = ({ blocks }) => {
                         <tr className="bg-surface-container-low border-b border-outline-variant/10">
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline text-center">Status</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline text-center cursor-pointer" onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-outline-variant/5">
                         {sortedDetail.map((k, i) => (
-                           <tr key={i} className={`hover:bg-surface-container-low/50 transition-colors group ${hasAbgleich && k.inA && !k.inB ? 'bg-error-container/20' : hasAbgleich && !k.inA && k.inB ? 'bg-amber-100/30' : ''}`}>
+                           <tr key={i} className={`hover:bg-surface-container transition-colors group ${hasAbgleich && k.inA && !k.inB ? 'bg-error-container/20' : hasAbgleich && !k.inA && k.inB ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}>
                              <td className="px-4 py-3 text-sm font-bold text-on-surface">{k.nachname}</td>
-                             <td className="px-4 py-3 text-sm font-medium text-on-surface-variant flex items-center gap-2">
-                               {k.vorname}
-                               {k.klasse && <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-outline font-bold">Kl. {k.klasse}</span>}
+                             <td className="px-4 py-3 text-sm font-medium text-on-surface-variant">{k.vorname}</td>
+                             <td className="px-4 py-3 text-sm font-medium text-on-surface-variant">
+                               {k.klasse ? <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container-high text-outline font-bold">Kl. {k.klasse}</span> : <span className="opacity-50">–</span>}
                              </td>
                              <td className="px-4 py-3 text-center">
                                {hasAbgleich ? (
