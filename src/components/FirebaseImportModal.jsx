@@ -80,9 +80,12 @@ const buildEintraege = (specialDay, klassen, ferienblock) => {
       const personId = key.slice(0, -11);
       const fullName = peopleMap[personId];
       if (!fullName) continue;
-      const spaceIdx = fullName.lastIndexOf(' ');
-      const vorname = spaceIdx > 0 ? fullName.slice(0, spaceIdx).trim() : fullName;
-      const nachname = spaceIdx > 0 ? fullName.slice(spaceIdx + 1).trim() : '';
+      // Format: "Vorname Nachname" — letztes Wort = Nachname, Rest = Vorname
+      // Kommas entfernen falls vorhanden (z.B. "Alexandru, Dita" → "Alexandru Dita")
+      const cleanName = fullName.replace(/,/g, '').replace(/\s+/g, ' ').trim();
+      const spaceIdx = cleanName.lastIndexOf(' ');
+      const vorname = spaceIdx > 0 ? cleanName.slice(0, spaceIdx).trim() : cleanName;
+      const nachname = spaceIdx > 0 ? cleanName.slice(spaceIdx + 1).trim() : '';
       if (!nachname) continue;
       eintraege.push({ nachname, vorname, datum: date, klasse });
     }
