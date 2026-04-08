@@ -111,20 +111,20 @@ const FinanzenPage = ({ blocks }) => {
 
           {/* Fehlende Buchungen */}
           {data.fehlende_buchungen?.length > 0 && (
-            <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-              <div className="flex items-center gap-2 px-6 py-4 border-b border-outline-variant/10 bg-error-container/10">
+            <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
+              <div className="flex items-center gap-2 px-6 py-4 border-b border-outline-variant/30 bg-error-container/10">
                 <span className="material-symbols-outlined text-error">warning</span>
                 <span className="font-bold text-error text-sm">{data.fehlende_buchungen.length} Kinder ohne Buchung</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead><tr className="bg-surface-container-low">
+                  <thead><tr className="bg-surface-container-low border-b border-outline-variant/30">
                     <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
                     <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
                     <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Klasse</th>
                     <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Tage</th>
                   </tr></thead>
-                  <tbody className="divide-y divide-outline-variant/5">
+                  <tbody className="divide-y divide-outline-variant/25">
                     {data.fehlende_buchungen.map((k, i) => (
                       <tr key={i} className="hover:bg-error-container/5 transition-colors">
                         <td className="px-4 py-3 font-bold text-on-surface">{k.nachname}</td>
@@ -140,15 +140,15 @@ const FinanzenPage = ({ blocks }) => {
           )}
 
           {/* Buchungen pro Kind */}
-          <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden">
-            <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center gap-2">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/30 overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant/30 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">receipt_long</span>
               <span className="font-bold text-on-surface text-sm">Buchungen pro Kind</span>
               <span className="text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-full ml-auto">{data.block?.preis_pro_tag || '3.50'} €/Tag</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead><tr className="bg-surface-container-low">
+                <thead><tr className="bg-surface-container-low border-b border-outline-variant/30">
                   <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
                   <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
                   <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Klasse</th>
@@ -156,7 +156,7 @@ const FinanzenPage = ({ blocks }) => {
                   <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Betrag</th>
                   <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Kontostand</th>
                 </tr></thead>
-                <tbody className="divide-y divide-outline-variant/5">
+                <tbody className="divide-y divide-outline-variant/25">
                   {data.buchungen.map((k, i) => (
                     <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
                       <td className="px-4 py-3 font-bold text-on-surface">{k.nachname}</td>

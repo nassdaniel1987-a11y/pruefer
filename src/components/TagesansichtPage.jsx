@@ -188,7 +188,7 @@ const TagesansichtPage = ({ blocks }) => {
       {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
       
       {!loading && dayStats.length === 0 && blockId && (
-        <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/10 text-center">
+        <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/30 text-center">
           <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-3">event_busy</span>
           <p className="text-lg font-bold text-on-surface">Keine Daten für diesen Block vorhanden.</p>
         </div>
@@ -211,7 +211,7 @@ const TagesansichtPage = ({ blocks }) => {
                       <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-on-surface-variant group-hover:text-primary'}`}>{weekday(d.date).substring(0,2)}</span>
                     </div>
                     
-                    <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-surface-container-lowest p-4 rounded-xl shadow-sm border transition-all ${isActive ? 'border-primary border-l-4 shadow-md scale-[1.02]' : 'border-outline-variant/10 hover:border-primary/30'}`}>
+                    <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-surface-container-lowest p-4 rounded-xl shadow-sm border transition-all ${isActive ? 'border-primary border-l-4 shadow-md scale-[1.02]' : 'border-outline-variant/30 hover:border-primary/50'}`}>
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm font-bold text-on-surface">{fmtDate(d.date)}</span>
                         {hasAbgleich && d.missingInB > 0 && <span className="flex w-2 h-2 rounded-full bg-error"></span>}
@@ -230,7 +230,7 @@ const TagesansichtPage = ({ blocks }) => {
           <div className="lg:col-span-8">
             <div className="sticky top-24">
               {selectedDate && dayDetail ? (
-                <div className="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/15 shadow-xl">
+                <div className="bg-surface-container-lowest rounded-2xl p-6 md:p-8 border border-outline-variant/30 shadow-xl">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-3 bg-primary-container rounded-xl text-white shadow-sm">
                       <span className="material-symbols-outlined text-2xl">group</span>
@@ -243,33 +243,33 @@ const TagesansichtPage = ({ blocks }) => {
 
                   {hasAbgleich && (
                     <div className="grid grid-cols-3 gap-4 mb-8">
-                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
                         <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">OK (Abgleich)</p>
                         <div className="flex items-end gap-1"><span className="text-2xl font-black text-emerald-500">{dayDetail.filter(k => k.inA && k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
-                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
                         <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Fehlt in B</p>
                         <div className="flex items-end gap-1"><span className="text-2xl font-black text-error">{dayDetail.filter(k => k.inA && !k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
-                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/5">
+                      <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
                         <p className="text-[10px] font-bold text-tertiary uppercase tracking-wider mb-1">Nur in B</p>
                         <div className="flex items-end gap-1"><span className="text-2xl font-black text-tertiary">{dayDetail.filter(k => !k.inA && k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
                     </div>
                   )}
 
-                  <h4 className="text-xs font-bold text-primary uppercase tracking-widest border-b border-outline-variant/20 pb-2 mb-4">Besonderheiten & Zuordnungen</h4>
-                  <div className="overflow-x-auto rounded-xl border border-outline-variant/10 w-full">
+                  <h4 className="text-xs font-bold text-primary uppercase tracking-widest border-b border-outline-variant/30 pb-2 mb-4">Besonderheiten & Zuordnungen</h4>
+                  <div className="overflow-x-auto rounded-xl border border-outline-variant/30 w-full">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-surface-container-low border-b border-outline-variant/10">
+                        <tr className="bg-surface-container-low border-b border-outline-variant/30">
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('nachname')}>Nachname{sIcon('nachname')}</th>
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('vorname')}>Vorname{sIcon('vorname')}</th>
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline cursor-pointer" onClick={() => toggleSort('klasse')}>Klasse{sIcon('klasse')}</th>
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline text-center cursor-pointer" onClick={() => toggleSort('status')}>Status{sIcon('status')}</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-outline-variant/5">
+                      <tbody className="divide-y divide-outline-variant/25">
                         {sortedDetail.map((k, i) => (
                            <tr key={i} className={`hover:bg-surface-container transition-colors group ${hasAbgleich && k.inA && !k.inB ? 'bg-error-container/20' : hasAbgleich && !k.inA && k.inB ? 'bg-tertiary-container/10' : ''}`}>
                              <td className="px-4 py-3 text-sm font-bold text-on-surface">{k.nachname}</td>

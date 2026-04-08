@@ -61,7 +61,7 @@
   --color-on-surface: #f8fafc;
   --color-on-surface-variant: #cbd5e1;
   --color-outline: #94a3b8;
-  --color-outline-variant: #475569;
+  --color-outline-variant: #64748b;
   --color-inverse-surface: #f8fafc;
   --color-inverse-on-surface: #0f172a;
   --color-inverse-primary: #4f46e5;
@@ -146,7 +146,7 @@ table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
 th { background: var(--color-surface-container-low); color: var(--color-primary); font-weight: 900; text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-outline-variant); font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.05em; }
 td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-outline-variant); color: var(--color-on-surface); }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--color-surface-container); }
+tr:hover td { background: var(--color-surface-container-low); filter: brightness(1.1); }
 
 /* ── FORMS ── */
 .form-group { margin-bottom: 1rem; }

@@ -122,7 +122,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
                   <div className="text-3xl font-black text-on-surface tracking-tighter">{parseFloat(b.preis_pro_tag).toFixed(2)} € <span className="text-sm font-normal text-on-surface-variant">/ Tag</span></div>
                 </div>
                 {d && (
-                  <div className="flex items-center justify-between py-3 border-t border-outline-variant/10 text-xs text-on-surface-variant">
+                  <div className="flex items-center justify-between py-3 border-t border-outline-variant/30 text-xs text-on-surface-variant">
                     <div className="flex items-center gap-1 font-medium">
                       <span className="material-symbols-outlined text-sm">child_care</span>
                       {d.a.length} Anmeldungen
@@ -133,7 +133,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-outline-variant/10">
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-outline-variant/30">
                   <button className="flex-1 bg-secondary-container text-on-secondary-container py-2.5 rounded-lg text-xs font-bold hover:opacity-80 transition-all" onClick={() => toggleExpand(b.id)}>
                     {isOpen ? 'Zuklappen' : 'Details'}
                   </button>
@@ -146,7 +146,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
                 </div>
 
                 {isOpen && (
-                  <div className="mt-4 pt-4 border-t border-outline-variant/10">
+                  <div className="mt-4 pt-4 border-t border-outline-variant/30">
                     {loading ? <div className="py-4 text-center"><Spinner /></div> : (
                       <div className="space-y-3">
                         <div>
@@ -160,9 +160,9 @@ const FerienblockPage = ({ blocks, onReload }) => {
                           {!d?.a.length ? (
                             <p className="text-xs text-on-surface-variant/50 italic p-2">Keine Einträge</p>
                           ) : (
-                            <div className="max-h-40 overflow-y-auto rounded-lg border border-outline-variant/10">
+                            <div className="max-h-40 overflow-y-auto rounded-lg border border-outline-variant/30">
                               <table className="w-full text-xs">
-                                <tbody className="divide-y divide-outline-variant/5">{d.a.map((k,i)=>(
+                                <tbody className="divide-y divide-outline-variant/25">{d.a.map((k,i)=>(
                                   <tr key={i} className="hover:bg-surface-container-low/50">
                                     <td className="px-2 py-1.5 font-bold text-on-surface">{k.nachname}</td>
                                     <td className="px-2 py-1.5 text-on-surface-variant">{k.vorname}</td>
@@ -181,9 +181,9 @@ const FerienblockPage = ({ blocks, onReload }) => {
                           {!d?.b.length ? (
                             <p className="text-xs text-on-surface-variant/50 italic p-2">Keine Einträge</p>
                           ) : (
-                            <div className="max-h-40 overflow-y-auto rounded-lg border border-outline-variant/10">
+                            <div className="max-h-40 overflow-y-auto rounded-lg border border-outline-variant/30">
                               <table className="w-full text-xs">
-                                <tbody className="divide-y divide-outline-variant/5">{d.b.map((k,i)=>(
+                                <tbody className="divide-y divide-outline-variant/25">{d.b.map((k,i)=>(
                                   <tr key={i} className="hover:bg-surface-container-low/50">
                                     <td className="px-2 py-1.5 font-bold text-on-surface">{k.nachname}</td>
                                     <td className="px-2 py-1.5 text-on-surface-variant">{k.vorname}</td>

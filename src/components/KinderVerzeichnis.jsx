@@ -351,14 +351,14 @@ return (
             </div>
             
             <div className="flex items-center gap-1">
-              <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors" title="Import" onClick={() => setShowImport(!showImport)}>
+              <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-surface-container-lowest border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors" title="Import" onClick={() => setShowImport(!showImport)}>
                 <span className="material-symbols-outlined text-[16px]">{showImport ? 'close' : 'upload_file'}</span> <span className="hidden sm:inline">{showImport ? 'Schließen' : 'Import'}</span>
               </button>
-              <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-white border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors disabled:opacity-50" title="Sync" disabled={syncing} onClick={syncFromLists}>
+              <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-surface-container-lowest border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors disabled:opacity-50" title="Sync" disabled={syncing} onClick={syncFromLists}>
                 <span className="material-symbols-outlined text-[16px]">{syncing ? 'hourglass_empty' : 'sync'}</span> <span className="hidden sm:inline">Sync</span>
               </button>
               {kinder.length > 1 && (
-                <button className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-outline-variant/30 ${showDuplicates ? 'bg-primary text-white' : 'bg-white text-on-surface hover:bg-surface-container-high'} transition-colors`} onClick={() => setShowDuplicates(!showDuplicates)}>
+                <button className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-outline-variant/30 ${showDuplicates ? 'bg-primary text-white' : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container-high'} transition-colors`} onClick={() => setShowDuplicates(!showDuplicates)}>
                   <span className="material-symbols-outlined text-[16px]">content_copy</span> <span className="hidden sm:inline">Duplikate</span>
                 </button>
               )}
@@ -440,7 +440,7 @@ return (
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead>
-                  <tr className="bg-surface-container-high/30 border-b border-outline-variant/10">
+                  <tr className="bg-surface-container-high/50 border-b border-outline-variant/30">
                     <th className="px-5 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('nachname')}>Name {sortIndicator('nachname')}</th>
                     <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest cursor-pointer select-none" onClick={() => toggleSort('klasse')}>Klasse {sortIndicator('klasse')}</th>
                     <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-center cursor-pointer select-none" onClick={() => toggleSort('bloecke')}>Ferienblöcke {sortIndicator('bloecke')}</th>
@@ -448,7 +448,7 @@ return (
                     <th className="px-4 py-4 text-[11px] font-bold text-outline uppercase tracking-widest text-right">Aktionen</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/10">
+                <tbody className="divide-y divide-outline-variant/25">
                   {filtered.map(k => {
                     const isSelected = String(selectedKindId) === String(k.id);
                     return (
@@ -504,10 +504,10 @@ return (
                     </div>
                   </div>
                   <div className="absolute top-4 right-4 flex gap-2">
-                    <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => startEdit(akte.kind)}>
+                    <button className="bg-surface-container-high/60 hover:bg-surface-container-high p-1.5 rounded-full text-white transition-all backdrop-blur-md border border-white/10" onClick={() => startEdit(akte.kind)}>
                       <span className="material-symbols-outlined text-[18px]">edit</span>
                     </button>
-                    <button className="bg-white/20 hover:bg-white/30 p-1.5 rounded-full text-white transition-all backdrop-blur-md" onClick={() => setSelectedKindId(null)}>
+                    <button className="bg-surface-container-high/60 hover:bg-surface-container-high p-1.5 rounded-full text-white transition-all backdrop-blur-md border border-white/10" onClick={() => setSelectedKindId(null)}>
                       <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                   </div>
@@ -566,7 +566,7 @@ return (
                                     <p className="text-[10px] text-on-surface-variant mt-0.5 font-medium">{fmtDate(b.startdatum)} – {fmtDate(b.enddatum)}</p>
                                   </div>
                                 </div>
-                                {b.klasse && <span className="text-[10px] bg-white dark:bg-surface-container-high px-2 py-0.5 rounded-lg border border-outline-variant/20 font-bold">Kl. {b.klasse}</span>}
+                                {b.klasse && <span className="text-[10px] bg-surface-container-low dark:bg-surface-container-high px-2 py-0.5 rounded-lg border border-outline-variant/30 font-bold text-on-surface">Kl. {b.klasse}</span>}
                               </div>
 
                               <div className="space-y-4">
