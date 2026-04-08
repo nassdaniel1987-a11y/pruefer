@@ -5,6 +5,7 @@ import { toast } from '../utils/toast';
 import { fmtDate, fmtDateTime } from '../utils/helpers';
 import { printFehlendeKinder } from '../utils/print';
 import Spinner from './Spinner';
+import { DashboardSkeleton, Skel } from './Skeleton';
 
 // DASHBOARD
 const Dashboard = ({ blocks, onNavigate, onReload }) => {
@@ -216,7 +217,16 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                       <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-3 py-1 rounded-full">{parseFloat(b.preis_pro_tag).toFixed(2)} €/Tag</span>
                     </div>
                     {loading ? (
-                      <div className="py-4 text-center"><Spinner /></div>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <Skel className="h-16 rounded-xl" />
+                          <Skel className="h-16 rounded-xl" />
+                        </div>
+                        <div className="flex gap-2">
+                          <Skel className="h-8 w-24 rounded-lg" />
+                          <Skel className="h-8 w-20 rounded-lg" />
+                        </div>
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
@@ -319,7 +329,20 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
               </div>
             ) : null;
           })() : loadingAbgleich[expandedBlock] ? (
-            <div className="bg-surface-container-lowest rounded-2xl p-8 text-center"><Spinner /></div>
+            <div className="bg-surface-container-lowest rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-outline-variant/10">
+                <Skel className="h-4 w-40" />
+              </div>
+              <div className="p-4 space-y-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex gap-4">
+                    <Skel className="h-4 flex-1" />
+                    <Skel className="h-4 w-12" />
+                    <Skel className="h-4 w-8" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="bg-surface-container-low/50 rounded-3xl p-6">
               <h3 className="text-xl font-extrabold text-on-surface mb-2">Quick Info</h3>

@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { fmtDate } from '../utils/helpers';
-import Spinner from './Spinner';
+import { FinanzenSkeleton } from './Skeleton';
 
 // FINANZEN
 const FinanzenPage = ({ blocks }) => {
@@ -36,7 +36,7 @@ const FinanzenPage = ({ blocks }) => {
         </div>
       </div>
 
-      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
+      {loading && <FinanzenSkeleton />}
 
       {!loading && data && data.statistik && (() => {
         const exportFinanzen = () => {

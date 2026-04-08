@@ -6,6 +6,7 @@ import { confirmDialog } from '../utils/confirm';
 import { fmtDate } from '../utils/helpers';
 import { jaroWinkler, koelnerPhonetik, tokenizeName, calcScore } from '../utils/matching';
 import Spinner from './Spinner';
+import { TableSkeleton } from './Skeleton';
 import { Avatar } from './Avatar';
 
 const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
@@ -435,7 +436,7 @@ return (
 
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 overflow-hidden text-sm">
             {loading ? (
-               <div className="p-12 text-center"><Spinner /></div>
+              <TableSkeleton rows={10} cols={4} />
             ) : (
             <div className="overflow-x-auto w-full">
               <table className="w-full text-left border-collapse min-w-[600px]">
@@ -494,7 +495,18 @@ return (
         <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedKindId(null)}>
           <div className="bg-surface-container-lowest rounded-3xl w-full max-w-2xl shadow-2xl border border-outline-variant/20 overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
             {akteLoading ? (
-              <div className="p-32 flex justify-center"><Spinner /></div>
+              <div className="p-8 space-y-4">
+                <div className="h-28 rounded-2xl skeleton mb-10" />
+                <div className="space-y-3 pt-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="skeleton h-4 w-24 rounded" />
+                      <div className="skeleton h-4 flex-1 rounded" />
+                    </div>
+                  ))}
+                </div>
+                <div className="skeleton h-32 rounded-xl mt-4" />
+              </div>
             ) : akte ? (
               <>
                 <div className="relative h-28 bg-gradient-to-br from-primary-container to-primary shrink-0">

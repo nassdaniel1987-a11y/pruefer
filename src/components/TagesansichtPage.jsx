@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { API } from '../utils/api';
 import { fmtDate } from '../utils/helpers';
-import Spinner from './Spinner';
+import { TagesansichtSkeleton } from './Skeleton';
 
 // ─── TAGESANSICHT ─────────────────────────────────────
 const TagesansichtPage = ({ blocks }) => {
@@ -185,7 +185,7 @@ const TagesansichtPage = ({ blocks }) => {
         </div>
       </div>
 
-      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
+      {loading && <TagesansichtSkeleton />}
       
       {!loading && dayStats.length === 0 && blockId && (
         <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/30 text-center">
