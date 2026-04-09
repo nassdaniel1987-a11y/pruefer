@@ -189,12 +189,66 @@ exports.handler = async (event) => {
       const fbIdPost = parseInt(ferienblock_id, 10);
       if (isNaN(fbIdPost)) return respond(400, { error: 'Ungültige ferienblock_id' });
 
-      // Neuen Abgleich anlegen
-      const abgleichResult = await client.query(
-        "INSERT INTO abgleich (ferienblock_id, status, abgeschlossen_am) VALUES ($1, 'abgeschlossen', NOW()) RETURNING id",
+      // Patch-Modus: bestehenden neuesten Abgleich suchen
+      const existingAbgleich = await client.query(
+        `SELECT id FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 1`,
         [fbIdPost]
       );
-      const abgleich_id = abgleichResult.rows[0].id;
+
+      let abgleich_id;
+
+      if (existingAbgleich.rows.length > 0) {
+        // Bestehenden Abgleich patchen — betroffene Tage ermitteln
+        abgleich_id = existingAbgleich.rows[0].id;
+
+        const aIds = matches.map(m => m.liste_a_id).filter(Boolean);
+        const bIds = matches.map(m => m.liste_b_id).filter(Boolean);
+
+        const affectedDates = new Set();
+        if (aIds.length > 0) {
+          const aDates = await client.query(
+            `SELECT DISTINCT datum FROM liste_a WHERE id = ANY($1)`, [aIds]
+          );
+          aDates.rows.forEach(r => affectedDates.add(r.datum.toISOString().split('T')[0]));
+        }
+        if (bIds.length > 0) {
+          const bDates = await client.query(
+            `SELECT DISTINCT datum FROM liste_b WHERE id = ANY($1)`, [bIds]
+          );
+          bDates.rows.forEach(r => affectedDates.add(r.datum.toISOString().split('T')[0]));
+        }
+        // Denormalisierte Daten aus den Matches selbst (für nur-in-A/B ohne Gegenseite)
+        matches.forEach(m => {
+          if (m.a_datum) affectedDates.add(m.a_datum);
+          if (m.b_datum) affectedDates.add(m.b_datum);
+        });
+
+        const dateArr = [...affectedDates];
+        if (dateArr.length > 0) {
+          await client.query(`
+            DELETE FROM abgleich_matches
+            WHERE abgleich_id = $1
+            AND (
+              a_datum = ANY($2::date[])
+              OR b_datum = ANY($2::date[])
+              OR liste_a_id IN (SELECT id FROM liste_a WHERE datum = ANY($2::date[]))
+              OR liste_b_id IN (SELECT id FROM liste_b WHERE datum = ANY($2::date[]))
+            )
+          `, [abgleich_id, dateArr]);
+        }
+
+        await client.query(
+          `UPDATE abgleich SET abgeschlossen_am = NOW() WHERE id = $1`,
+          [abgleich_id]
+        );
+      } else {
+        // Kein bestehender Abgleich → neu anlegen
+        const abgleichResult = await client.query(
+          "INSERT INTO abgleich (ferienblock_id, status, abgeschlossen_am) VALUES ($1, 'abgeschlossen', NOW()) RETURNING id",
+          [fbIdPost]
+        );
+        abgleich_id = abgleichResult.rows[0].id;
+      }
 
       // Alle Matches per Batch speichern (schnell)
       if (matches.length > 0) {
@@ -243,7 +297,7 @@ exports.handler = async (event) => {
         console.log('Namen-Spalten nicht verfügbar:', e.message);
       }
 
-      return respond(201, { success: true, abgleich_id });
+      return respond(201, { success: true, abgleich_id, patched: existingAbgleich.rows.length > 0 });
     }
 
     return respond(405, { error: 'Method Not Allowed' });

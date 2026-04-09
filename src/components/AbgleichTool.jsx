@@ -346,11 +346,11 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     const res = await API.post('abgleich', { ferienblock_id: blockId, matches: matchRows });
     setSaving(false);
     if (res.success) {
-      alert(`Abgleich gespeichert! ID: ${res.abgleich_id}`);
+      toast.success(res.patched ? 'Abgleich aktualisiert (Tage gepatcht)' : 'Abgleich gespeichert');
       setStep(4);
       if (onReload) onReload(); // Dashboard-Daten aktualisieren
     } else {
-      alert('Fehler beim Speichern: ' + res.error);
+      toast.error('Fehler beim Speichern: ' + res.error);
     }
   };
 
