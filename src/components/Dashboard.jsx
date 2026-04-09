@@ -379,9 +379,15 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                     <span className="material-symbols-outlined text-base">warning</span>
                     {list.length} Kinder ohne Anmeldung (nur Liste B)
                   </h4>
-                  <button className="p-1 text-on-surface-variant hover:text-amber-600 transition-colors" onClick={() => setExpandedNurB(null)}>
-                    <span className="material-symbols-outlined text-lg">close</span>
-                  </button>
+                  <div className="flex gap-1">
+                    <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-1"
+                      onClick={() => printFehlendeKinder('Nur in Liste B', list, blocks.find(blk => blk.id === expandedNurB)?.name)}>
+                      <span className="material-symbols-outlined text-sm">print</span>
+                    </button>
+                    <button className="p-1 text-on-surface-variant hover:text-amber-600 transition-colors" onClick={() => setExpandedNurB(null)}>
+                      <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
