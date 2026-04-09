@@ -104,6 +104,30 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     });
   }, [selectedKindId]);
 
+  // Tageskorrektur in der Akte
+  const [editingBlockId, setEditingBlockId] = useState(null);
+  const [dayEditLoading, setDayEditLoading] = useState({});
+
+  const toggleDay = async (block, datum, isInA) => {
+    const key = `${block.ferienblock_id}_${datum}`;
+    setDayEditLoading(prev => ({ ...prev, [key]: true }));
+    try {
+      if (isInA) {
+        await API.post('listen', { action: 'remove_day', ferienblock_id: block.ferienblock_id, nachname: akte.kind.nachname, vorname: akte.kind.vorname, datum });
+        toast.success('Tag entfernt');
+      } else {
+        await API.post('listen', { action: 'add_day', ferienblock_id: block.ferienblock_id, nachname: akte.kind.nachname, vorname: akte.kind.vorname, klasse: akte.kind.klasse, datum });
+        toast.success('Tag hinzugefügt');
+      }
+      // Akte neu laden
+      const data = await API.get('kinder', { id: selectedKindId });
+      setAkte(data.kind ? data : null);
+    } catch (e) {
+      toast.error('Fehler: ' + e.message);
+    }
+    setDayEditLoading(prev => ({ ...prev, [key]: false }));
+  };
+
   // Fuzzy-Sync: Preview laden
   const [syncPreview, setSyncPreview] = useState(null); // null = Modal zu
   const [syncDecisions, setSyncDecisions] = useState({}); // key=incoming-key, value: 'merge'|'create'
@@ -640,18 +664,59 @@ return (
                                   <p className="text-[9px] font-black uppercase text-on-surface-variant tracking-wider mb-2 flex items-center gap-1.5">
                                     <span className="w-1 h-1 rounded-full bg-primary/40"></span>
                                     Anmeldungen (A) <span className="text-primary ml-1">{b.anmeldungen.length} Tage</span>
+                                    <button
+                                      className={`ml-auto flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors ${editingBlockId === b.ferienblock_id ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant hover:bg-primary/10 hover:text-primary'}`}
+                                      onClick={() => setEditingBlockId(editingBlockId === b.ferienblock_id ? null : b.ferienblock_id)}
+                                      title="Tage bearbeiten"
+                                    >
+                                      <span className="material-symbols-outlined text-[11px]">{editingBlockId === b.ferienblock_id ? 'check' : 'edit'}</span>
+                                      {editingBlockId === b.ferienblock_id ? 'Fertig' : 'Bearbeiten'}
+                                    </button>
                                   </p>
                                   <div className="flex flex-wrap gap-1.5 pl-2.5">
-                                    {[...aDates].sort().map(d => {
-                                      const inB = bDates.has(d);
-                                      return (
-                                        <div key={'a' + d} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${inB ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-error-container/20 text-error border-error-container/30'}`}>
-                                           <span className="material-symbols-outlined text-[10px]">{inB ? 'check' : 'close'}</span>
-                                           <span>{weekday(d)} {fmtDate(d)}</span>
-                                        </div>
-                                      );
-                                    })}
-                                    {b.anmeldungen.length === 0 && <span className="text-[10px] text-on-surface-variant italic">Keine Anmeldungen</span>}
+                                    {editingBlockId === b.ferienblock_id ? (
+                                      // Bearbeitungsmodus: alle bekannten Tage (A + B) als klickbare Chips
+                                      allDates.length === 0
+                                        ? <span className="text-[10px] text-on-surface-variant italic">Keine Tage vorhanden</span>
+                                        : allDates.map(d => {
+                                          const inA = aDates.has(d);
+                                          const inB = bDates.has(d);
+                                          const key = `${b.ferienblock_id}_${d}`;
+                                          const busy = dayEditLoading[key];
+                                          return (
+                                            <button
+                                              key={'edit' + d}
+                                              disabled={busy}
+                                              onClick={() => toggleDay(b, d, inA)}
+                                              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 relative
+                                                ${inA ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-error/10 hover:text-error hover:border-error/30' : 'bg-surface-container text-on-surface-variant border-outline-variant/30 hover:bg-primary/10 hover:text-primary hover:border-primary/30'}
+                                                ${busy ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                                              title={inA ? 'Klicken zum Entfernen' : 'Klicken zum Hinzufügen'}
+                                            >
+                                              {busy
+                                                ? <span className="material-symbols-outlined text-[10px] animate-spin">progress_activity</span>
+                                                : <span className="material-symbols-outlined text-[10px]">{inA ? 'check' : 'add'}</span>
+                                              }
+                                              <span>{weekday(d)} {fmtDate(d)}</span>
+                                              {inB && !inA && <span className="w-1 h-1 rounded-full bg-amber-400 absolute -top-0.5 -right-0.5"></span>}
+                                            </button>
+                                          );
+                                        })
+                                    ) : (
+                                      // Normalmodus: nur A-Tage, read-only
+                                      <>
+                                        {[...aDates].sort().map(d => {
+                                          const inB = bDates.has(d);
+                                          return (
+                                            <div key={'a' + d} className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-1 ${inB ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-error-container/20 text-error border-error-container/30'}`}>
+                                               <span className="material-symbols-outlined text-[10px]">{inB ? 'check' : 'close'}</span>
+                                               <span>{weekday(d)} {fmtDate(d)}</span>
+                                            </div>
+                                          );
+                                        })}
+                                        {b.anmeldungen.length === 0 && <span className="text-[10px] text-on-surface-variant italic">Keine Anmeldungen</span>}
+                                      </>
+                                    )}
                                   </div>
                                 </div>
 

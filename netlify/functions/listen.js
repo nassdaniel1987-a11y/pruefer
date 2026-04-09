@@ -76,6 +76,44 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body);
 
+      // action=add_day → einzelnen Tag für ein Kind in Liste A eintragen
+      if (body.action === 'add_day') {
+        const { ferienblock_id, nachname, vorname, klasse, datum } = body;
+        if (!ferienblock_id || !nachname || !vorname || !datum) {
+          return respond(400, { error: 'ferienblock_id, nachname, vorname, datum erforderlich' });
+        }
+        const fbId = parseInt(ferienblock_id, 10);
+        if (isNaN(fbId)) return respond(400, { error: 'Ungültige ferienblock_id' });
+        // Duplikat-Check
+        const existing = await client.query(
+          `SELECT id FROM liste_a WHERE ferienblock_id=$1 AND LOWER(nachname)=LOWER($2) AND LOWER(vorname)=LOWER($3) AND datum=$4`,
+          [fbId, nachname.trim(), vorname.trim(), datum]
+        );
+        if (existing.rows.length > 0) {
+          return respond(200, { success: true, skipped: true });
+        }
+        await client.query(
+          `INSERT INTO liste_a (ferienblock_id, nachname, vorname, klasse, datum) VALUES ($1,$2,$3,$4,$5)`,
+          [fbId, nachname.trim(), vorname.trim(), (klasse || '').trim(), datum]
+        );
+        return respond(200, { success: true });
+      }
+
+      // action=remove_day → einzelnen Tag für ein Kind aus Liste A entfernen
+      if (body.action === 'remove_day') {
+        const { ferienblock_id, nachname, vorname, datum } = body;
+        if (!ferienblock_id || !nachname || !vorname || !datum) {
+          return respond(400, { error: 'ferienblock_id, nachname, vorname, datum erforderlich' });
+        }
+        const fbId = parseInt(ferienblock_id, 10);
+        if (isNaN(fbId)) return respond(400, { error: 'Ungültige ferienblock_id' });
+        await client.query(
+          `DELETE FROM liste_a WHERE ferienblock_id=$1 AND LOWER(nachname)=LOWER($2) AND LOWER(vorname)=LOWER($3) AND datum=$4`,
+          [fbId, nachname.trim(), vorname.trim(), datum]
+        );
+        return respond(200, { success: true });
+      }
+
       // action=delete → Liste leeren
       if (body.action === 'delete') {
         const { ferienblock_id, liste } = body;
