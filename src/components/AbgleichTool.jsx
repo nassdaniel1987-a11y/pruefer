@@ -236,9 +236,15 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       for (const eA of nonA) {
         for (const eB of (byDate[eA.date] || [])) {
           const { score, reason } = calcScore(eA.name, eB.name);
-          if (score >= 75) {
+          // Auch vertauschten B-Namen testen (falls Vor-/Nachname in Liste B vertauscht importiert)
+          const tB = tokenizeName(eB.name);
+          const eBswapped = tB.length >= 2 ? tB.slice().reverse().join(' ') : eB.name;
+          const { score: scoreSwapped, reason: reasonSwapped } = calcScore(eA.name, eBswapped);
+          const bestScore = Math.max(score, scoreSwapped);
+          const bestReason = bestScore === scoreSwapped && scoreSwapped > score ? reasonSwapped : reason;
+          if (bestScore >= 75) {
             const key = `${tokenizeName(eA.name).sort().join('')}|${tokenizeName(eB.name).sort().join('')}`;
-            if (!groups[key]) groups[key] = { nameA: eA.name, nameB: eB.name, score, reason, entries: [] };
+            if (!groups[key]) groups[key] = { nameA: eA.name, nameB: eB.name, score: bestScore, reason: bestReason, entries: [] };
             groups[key].entries.push({ entryA: eA, entryB: eB });
           }
         }
