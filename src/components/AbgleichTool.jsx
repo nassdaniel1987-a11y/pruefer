@@ -583,6 +583,12 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                           </tbody>
                         </table>
                       </div>
+                      <div className="mb-2 p-2.5 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-between gap-2">
+                        <span className="text-xs text-primary flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-sm">sync</span>
+                          Kinder-Sync im Verzeichnis empfohlen
+                        </span>
+                      </div>
                       <button className="w-full px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setFirebaseImportInfo(null)}>
                         Löschen / Neu laden
                       </button>

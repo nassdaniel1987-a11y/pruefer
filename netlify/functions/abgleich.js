@@ -297,6 +297,9 @@ exports.handler = async (event) => {
         console.log('Namen-Spalten nicht verfügbar:', e.message);
       }
 
+      // Abgleich ist jetzt aktuell
+      await client.query(`UPDATE abgleich SET veraltet = FALSE WHERE id = $1`, [abgleich_id]);
+
       return respond(201, { success: true, abgleich_id, patched: existingAbgleich.rows.length > 0 });
     }
 

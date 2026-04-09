@@ -146,6 +146,14 @@ exports.handler = async (event) => {
       results.push('⚠ Angebot-Tage: ' + e.message);
     }
 
+    // ── Migration 6: veraltet-Flag in abgleich ──
+    try {
+      await client.query(`ALTER TABLE abgleich ADD COLUMN IF NOT EXISTS veraltet BOOLEAN DEFAULT FALSE`);
+      results.push('✓ Spalte "veraltet" in abgleich hinzugefügt');
+    } catch (e) {
+      results.push('⚠ veraltet-Spalte: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

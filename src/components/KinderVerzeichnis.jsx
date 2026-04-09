@@ -308,7 +308,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 
   // Kind löschen
   const deleteAllKinder = async () => {
-    const ok = await confirmDialog('Alle Kinder löschen', `Alle ${kinder.length} Kinder aus dem Stammverzeichnis löschen? Die Listen-Einträge (A und B) bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden.`, 'Alle löschen');
+    const ok = await confirmDialog('Alle Kinder löschen', `Alle ${kinder.length} Kinder aus dem Stammverzeichnis löschen?\n\nDie Listen-Einträge (A und B) bleiben erhalten.\n\n⚠ Tipp: Erstelle vorher unter "Backup" eine Datensicherung — diese Aktion kann nicht rückgängig gemacht werden.`, 'Alle löschen');
     if (!ok) return;
     await API.post('kinder', { action: 'delete_all' });
     toast.success('Alle Kinder gelöscht');

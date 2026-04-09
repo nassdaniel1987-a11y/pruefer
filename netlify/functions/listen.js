@@ -96,6 +96,8 @@ exports.handler = async (event) => {
           `INSERT INTO liste_a (ferienblock_id, nachname, vorname, klasse, datum) VALUES ($1,$2,$3,$4,$5)`,
           [fbId, nachname.trim(), vorname.trim(), (klasse || '').trim(), datum]
         );
+        // Abgleich als veraltet markieren
+        await client.query(`UPDATE abgleich SET veraltet = TRUE WHERE ferienblock_id = $1`, [fbId]);
         return respond(200, { success: true });
       }
 
@@ -111,6 +113,8 @@ exports.handler = async (event) => {
           `DELETE FROM liste_a WHERE ferienblock_id=$1 AND LOWER(nachname)=LOWER($2) AND LOWER(vorname)=LOWER($3) AND datum=$4`,
           [fbId, nachname.trim(), vorname.trim(), datum]
         );
+        // Abgleich als veraltet markieren
+        await client.query(`UPDATE abgleich SET veraltet = TRUE WHERE ferienblock_id = $1`, [fbId]);
         return respond(200, { success: true });
       }
 

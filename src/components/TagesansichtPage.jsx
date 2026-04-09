@@ -10,6 +10,7 @@ const TagesansichtPage = ({ blocks }) => {
   const [listB, setListB] = useState([]);
   const [abgleichMatches, setAbgleichMatches] = useState([]);
   const [hasAbgleich, setHasAbgleich] = useState(false);
+  const [letzterAbgleich, setLetzterAbgleich] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [sortCol, setSortCol] = useState('nachname');
@@ -32,9 +33,11 @@ const TagesansichtPage = ({ blocks }) => {
       const detail = await API.get('abgleich', { abgleich_id: letzter.id });
       setAbgleichMatches(Array.isArray(detail?.matches) ? detail.matches : []);
       setHasAbgleich(true);
+      setLetzterAbgleich(letzter);
     } else {
       setAbgleichMatches([]);
       setHasAbgleich(false);
+      setLetzterAbgleich(null);
     }
     setSelectedDate(null);
     setLoading(false);
@@ -186,6 +189,13 @@ const TagesansichtPage = ({ blocks }) => {
       </div>
 
       {loading && <TagesansichtSkeleton />}
+
+      {!loading && hasAbgleich && letzterAbgleich?.veraltet && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-amber-400/10 border border-amber-400/40 flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+          <span className="material-symbols-outlined text-base">sync_problem</span>
+          <span>Abgleich veraltet — Liste A wurde manuell geändert. Bitte neuen Abgleich durchführen.</span>
+        </div>
+      )}
       
       {!loading && dayStats.length === 0 && blockId && (
         <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/30 text-center">

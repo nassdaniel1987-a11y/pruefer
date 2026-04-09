@@ -245,9 +245,25 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                             <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {d.matches} OK</span>
                             {d.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {d.nur_in_a} fehlt</span>}
                             {d.nur_in_b > 0 && <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {d.nur_in_b} nur B</span>}
+                            {d.letzter_abgleich?.veraltet && <span className="bg-amber-400/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">sync_problem</span>veraltet</span>}
+                          </div>
+                        )}
+                        {d?.eintraege_b > 0 && b.preis_pro_tag && (
+                          <div className="bg-surface-container-low px-3 py-2 rounded-xl">
+                            <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">Geschätzte Kosten</div>
+                            <div className="text-sm font-extrabold text-primary">
+                              {(d.eintraege_b * parseFloat(b.preis_pro_tag)).toFixed(2)} €
+                              <span className="text-[10px] font-medium text-on-surface-variant ml-1">({d.eintraege_b} × {parseFloat(b.preis_pro_tag).toFixed(2)} €)</span>
+                            </div>
                           </div>
                         )}
                         <div className="flex gap-2 pt-1 flex-wrap">
+                          {hatErgebnis && d.letzter_abgleich?.veraltet && (
+                            <p className="w-full text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[10px]">sync_problem</span>
+                              Abgleich veraltet — neu durchführen
+                            </p>
+                          )}
                           {hatErgebnis && d.nur_in_a > 0 && (
                             <button className="px-3 py-1.5 text-xs font-bold rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors" onClick={() => {
                               setExpandedNurB(null);
