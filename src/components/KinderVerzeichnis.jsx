@@ -283,6 +283,15 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   };
 
   // Kind löschen
+  const deleteAllKinder = async () => {
+    const ok = await confirmDialog('Alle Kinder löschen', `Alle ${kinder.length} Kinder aus dem Stammverzeichnis löschen? Die Listen-Einträge (A und B) bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden.`, 'Alle löschen');
+    if (!ok) return;
+    await API.post('kinder', { action: 'delete_all' });
+    toast.success('Alle Kinder gelöscht');
+    loadKinder(filterBlock);
+    setSelectedKindId(null);
+  };
+
   const deleteKind = async (id) => {
     const ok = await confirmDialog('Kind löschen', 'Kind aus Stammverzeichnis löschen? Die Listen-Einträge bleiben erhalten.', 'Löschen');
     if (!ok) return;
@@ -401,6 +410,11 @@ return (
               {kinder.length > 1 && (
                 <button className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-outline-variant/30 ${showDuplicates ? 'bg-primary text-white' : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container-high'} transition-colors`} onClick={() => setShowDuplicates(!showDuplicates)}>
                   <span className="material-symbols-outlined text-[16px]">content_copy</span> <span className="hidden sm:inline">Duplikate</span>
+                </button>
+              )}
+              {kinder.length > 0 && (
+                <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-error/30 text-error bg-surface-container-lowest hover:bg-error/10 transition-colors" title="Alle Kinder löschen" onClick={deleteAllKinder}>
+                  <span className="material-symbols-outlined text-[16px]">delete_sweep</span> <span className="hidden sm:inline">Alle löschen</span>
                 </button>
               )}
             </div>
