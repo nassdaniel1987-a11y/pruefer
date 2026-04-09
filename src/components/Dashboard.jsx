@@ -12,6 +12,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
   const [blockDetail, setBlockDetail] = useState({});
   const [loadingDetail, setLoadingDetail] = useState({});
   const [expandedBlock, setExpandedBlock] = useState(null);
+  const [expandedNurB, setExpandedNurB] = useState(null);
   const [abgleichDetail, setAbgleichDetail] = useState({});
   const [loadingAbgleich, setLoadingAbgleich] = useState({});
   const [detailSort, setDetailSort] = useState({ col: 'nachname', dir: 'asc' });
@@ -246,9 +247,10 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                             {d.nur_in_b > 0 && <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {d.nur_in_b} nur B</span>}
                           </div>
                         )}
-                        <div className="flex gap-2 pt-1">
+                        <div className="flex gap-2 pt-1 flex-wrap">
                           {hatErgebnis && d.nur_in_a > 0 && (
                             <button className="px-3 py-1.5 text-xs font-bold rounded-lg bg-error/10 text-error hover:bg-error/20 transition-colors" onClick={() => {
+                              setExpandedNurB(null);
                               if (expandedBlock === b.id) { setExpandedBlock(null); return; }
                               setExpandedBlock(b.id);
                               if (!abgleichDetail[b.id] && d.letzter_abgleich) {
@@ -259,6 +261,20 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                                 });
                               }
                             }}>Fehlende</button>
+                          )}
+                          {hatErgebnis && d.nur_in_b > 0 && (
+                            <button className="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-400/20 text-amber-700 dark:text-amber-400 hover:bg-amber-400/30 transition-colors" onClick={() => {
+                              setExpandedBlock(null);
+                              if (expandedNurB === b.id) { setExpandedNurB(null); return; }
+                              setExpandedNurB(b.id);
+                              if (!abgleichDetail[b.id] && d.letzter_abgleich) {
+                                setLoadingAbgleich(prev => ({ ...prev, [b.id]: true }));
+                                API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
+                                  setAbgleichDetail(prev => ({ ...prev, [b.id]: res }));
+                                  setLoadingAbgleich(prev => ({ ...prev, [b.id]: false }));
+                                });
+                              }
+                            }}>Nur B</button>
                           )}
                           <button className="px-3 py-1.5 text-xs font-bold rounded-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors" onClick={() => onNavigate('abgleich', b.id)}>Abgleich</button>
                         </div>
@@ -343,10 +359,56 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                 ))}
               </div>
             </div>
-          ) : (
+          ) : null}
+
+          {/* Nur-in-B Panel */}
+          {expandedNurB && abgleichDetail[expandedNurB]?.matches ? (() => {
+            const am = abgleichDetail[expandedNurB].matches;
+            const nurB = am.filter(m => m.match_typ === 'nur_in_b');
+            const grouped = {};
+            nurB.forEach(m => {
+              const key = ((m.b_nachname || '') + '|' + (m.b_vorname || '')).toLowerCase();
+              if (!grouped[key]) grouped[key] = { nachname: m.b_nachname, vorname: m.b_vorname, klasse: m.b_klasse || '', dateSet: new Set() };
+              grouped[key].dateSet.add(m.b_datum);
+            });
+            const list = Object.values(grouped).map(k => ({ ...k, dates: [...k.dateSet] })).sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
+            return list.length > 0 ? (
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-amber-400/40 overflow-hidden">
+                <div className="px-5 py-4 border-b border-amber-400/20 flex items-center justify-between bg-amber-400/5">
+                  <h4 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2 text-sm">
+                    <span className="material-symbols-outlined text-base">warning</span>
+                    {list.length} Kinder ohne Anmeldung (nur Liste B)
+                  </h4>
+                  <button className="p-1 text-on-surface-variant hover:text-amber-600 transition-colors" onClick={() => setExpandedNurB(null)}>
+                    <span className="material-symbols-outlined text-lg">close</span>
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-amber-400/5 border-b border-amber-400/20">
+                      <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase">Name</th>
+                      <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase">Klasse</th>
+                      <th className="text-left px-3 py-2 text-[10px] font-bold text-on-surface-variant uppercase">Tage</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-outline-variant/10">
+                      {list.map((k, i) => (
+                        <tr key={i} className="hover:bg-amber-400/5 transition-colors">
+                          <td className="px-3 py-2"><span className="font-bold text-on-surface">{k.nachname}</span>, <span className="text-on-surface-variant">{k.vorname}</span></td>
+                          <td className="px-3 py-2 text-on-surface-variant">{k.klasse || '–'}</td>
+                          <td className="px-3 py-2"><span className="bg-amber-400/20 text-amber-700 dark:text-amber-400 text-xs font-bold px-2 py-0.5 rounded-full">{k.dates.length}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : null;
+          })() : null}
+
+          {!expandedBlock && !expandedNurB && !loadingAbgleich[expandedBlock] && (
             <div className="bg-surface-container-low/50 rounded-3xl p-6">
               <h3 className="text-xl font-extrabold text-on-surface mb-2">Quick Info</h3>
-              <p className="text-sm text-on-surface-variant mb-4">Wähle "Fehlende" bei einem Block, um die Details hier zu sehen.</p>
+              <p className="text-sm text-on-surface-variant mb-4">Wähle "Fehlende" oder "Nur B" bei einem Block, um die Details hier zu sehen.</p>
               <button className="w-full py-3 bg-surface-container-highest rounded-xl text-xs font-extrabold uppercase tracking-widest text-on-surface-variant hover:bg-outline-variant/20 transition-colors" onClick={onReload}>
                 Daten aktualisieren
               </button>

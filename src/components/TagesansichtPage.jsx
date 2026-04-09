@@ -214,7 +214,10 @@ const TagesansichtPage = ({ blocks }) => {
                     <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-surface-container-lowest p-4 rounded-xl shadow-sm border transition-all ${isActive ? 'border-primary border-l-4 shadow-md scale-[1.02]' : 'border-outline-variant/30 hover:border-primary/50'}`}>
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm font-bold text-on-surface">{fmtDate(d.date)}</span>
-                        {hasAbgleich && d.missingInB > 0 && <span className="flex w-2 h-2 rounded-full bg-error"></span>}
+                        <div className="flex gap-1">
+                          {hasAbgleich && d.missingInB > 0 && <span className="w-2 h-2 rounded-full bg-error" title="Kinder ohne Buchung"></span>}
+                          {hasAbgleich && d.onlyInB > 0 && <span className="w-2 h-2 rounded-full bg-amber-400" title="Kinder nur in Liste B"></span>}
+                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-[10px] font-bold uppercase text-on-surface-variant flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>{d.angemeldet} A</span>
@@ -240,6 +243,24 @@ const TagesansichtPage = ({ blocks }) => {
                       <p className="text-sm text-on-surface-variant font-medium">{dayDetail.length} Kinder an diesem Tag verzeichnet</p>
                     </div>
                   </div>
+
+                  {hasAbgleich && dayDetail.filter(k => !k.inA && k.inB).length > 0 && (
+                    <div className="mb-6 rounded-xl border-2 border-amber-400/60 bg-amber-400/10 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="material-symbols-outlined text-amber-500 text-lg">warning</span>
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                          {dayDetail.filter(k => !k.inA && k.inB).length} {dayDetail.filter(k => !k.inA && k.inB).length === 1 ? 'Kind' : 'Kinder'} nur in Liste B — Essen gebucht, aber nicht angemeldet
+                        </span>
+                      </div>
+                      <ul className="space-y-0.5 pl-6">
+                        {dayDetail.filter(k => !k.inA && k.inB).map((k, i) => (
+                          <li key={i} className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+                            {k.nachname} {k.vorname}{k.klasse ? <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">Kl. {k.klasse}</span> : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {hasAbgleich && (
                     <div className="grid grid-cols-3 gap-4 mb-8">
