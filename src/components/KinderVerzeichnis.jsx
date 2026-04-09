@@ -104,13 +104,53 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     });
   }, [selectedKindId]);
 
-  // Aus Listen synchronisieren
+  // Fuzzy-Sync: Preview laden
+  const [syncPreview, setSyncPreview] = useState(null); // null = Modal zu
+  const [syncDecisions, setSyncDecisions] = useState({}); // key=incoming-key, value: 'merge'|'create'
+
   const syncFromLists = async () => {
     setSyncing(true);
-    const res = await API.post('kinder', { action: 'sync' });
+    const res = await API.post('kinder', { action: 'sync_preview' });
     setSyncing(false);
-    toast.success(res.message || 'Synchronisiert');
-    loadKinder(filterBlock);
+    if (!Array.isArray(res)) { toast.error('Sync fehlgeschlagen'); return; }
+    // Exakte Treffer (action:'exact') brauchen keine Entscheidung — filtern wir raus
+    const filtered = res.filter(r => r.action !== 'exact');
+    if (filtered.length === 0) {
+      toast.success('Alles aktuell — keine neuen Kinder gefunden');
+      loadKinder(filterBlock);
+      return;
+    }
+    // Voreingestellte Entscheidungen: auto_merge → merge, suggest/create → create
+    const defaults = {};
+    for (const r of filtered) {
+      const key = `${r.incoming.nachname}|${r.incoming.vorname}`;
+      if (r.action === 'auto_merge') defaults[key] = 'merge';
+      else defaults[key] = r.action === 'create' ? 'create' : 'create'; // suggest: nicht vorausgewählt → 'create' als Default
+    }
+    setSyncDecisions(defaults);
+    setSyncPreview(filtered);
+  };
+
+  const handleSyncApply = async () => {
+    if (!syncPreview) return;
+    const decisions = syncPreview.map(r => {
+      const key = `${r.incoming.nachname}|${r.incoming.vorname}`;
+      const decision = syncDecisions[key] || 'create';
+      if (decision === 'merge' && r.match) {
+        return { action: 'merge', kinder_id: r.match.id, klasse: r.incoming.klasse };
+      }
+      return { action: 'create', nachname: r.incoming.nachname, vorname: r.incoming.vorname, klasse: r.incoming.klasse };
+    });
+    setSyncing(true);
+    const res = await API.post('kinder', { action: 'sync_apply', decisions });
+    setSyncing(false);
+    setSyncPreview(null);
+    if (res.success) {
+      toast.success(`${res.merged} gemergt, ${res.created} neu angelegt`);
+      loadKinder(filterBlock);
+    } else {
+      toast.error('Sync fehlgeschlagen');
+    }
   };
 
   // Excel importieren
@@ -663,6 +703,97 @@ return (
             <div className="flex justify-end gap-3 mt-8">
               <button className="px-5 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors" onClick={() => setEditKind(null)}>Abbrechen</button>
               <button className="px-6 py-2.5 text-sm font-bold bg-primary text-on-primary border border-primary-container/20 rounded-xl shadow-sm hover:opacity-90 hover:scale-[1.02] transition-all" onClick={saveEdit}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sync Preview Modal */}
+      {syncPreview && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSyncPreview(null)}>
+          <div className="bg-surface-container-lowest rounded-3xl w-full max-w-2xl shadow-2xl border border-outline-variant/20 overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/10 shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-on-surface">Sync-Vorschau</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">{syncPreview.length} Einträge aus Liste A geprüft</p>
+              </div>
+              <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setSyncPreview(null)}>
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            {/* Legende */}
+            <div className="flex gap-3 px-6 py-3 bg-surface-container/50 border-b border-outline-variant/10 shrink-0 flex-wrap text-xs text-on-surface-variant">
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Auto-Merge (≥88%)</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Vorschlag (75–87%)</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-primary inline-block"></span> Neues Kind</span>
+            </div>
+
+            {/* Liste */}
+            <div className="overflow-y-auto flex-1 divide-y divide-outline-variant/10">
+              {syncPreview.map(r => {
+                const key = `${r.incoming.nachname}|${r.incoming.vorname}`;
+                const decision = syncDecisions[key];
+                const isMerge = decision === 'merge';
+
+                if (r.action === 'create') {
+                  return (
+                    <div key={key} className="flex items-center gap-3 px-6 py-3">
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary shrink-0"></span>
+                      <span className="text-sm text-on-surface flex-1">
+                        <span className="font-semibold">{r.incoming.nachname} {r.incoming.vorname}</span>
+                        {r.incoming.klasse && <span className="text-xs text-on-surface-variant ml-1">Kl. {r.incoming.klasse}</span>}
+                      </span>
+                      <span className="text-xs text-primary font-medium">Neu anlegen</span>
+                    </div>
+                  );
+                }
+
+                const dotColor = r.action === 'auto_merge' ? 'bg-emerald-500' : 'bg-amber-400';
+                return (
+                  <label key={key} className="flex items-center gap-3 px-6 py-3 cursor-pointer hover:bg-surface-container/40 transition-colors">
+                    <span className={`w-2.5 h-2.5 rounded-full ${dotColor} shrink-0`}></span>
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded accent-primary shrink-0"
+                      checked={isMerge}
+                      onChange={e => setSyncDecisions(prev => ({ ...prev, [key]: e.target.checked ? 'merge' : 'create' }))}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm">
+                        <span className="text-on-surface-variant">{r.incoming.nachname} {r.incoming.vorname}</span>
+                        <span className="mx-2 text-on-surface-variant/40">→</span>
+                        <span className="font-semibold text-on-surface">{r.match.nachname} {r.match.vorname}</span>
+                        {r.match.klasse && <span className="text-xs text-on-surface-variant ml-1">Kl. {r.match.klasse}</span>}
+                      </div>
+                      <div className="text-[10px] text-on-surface-variant mt-0.5">
+                        {isMerge ? 'Wird gemergt' : 'Wird neu angelegt'} · Score: {r.match.score}%
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-outline-variant/10 shrink-0">
+              <button
+                className="flex-1 py-2.5 rounded-xl border-2 border-outline-variant/30 text-on-surface-variant font-semibold text-sm hover:bg-surface-container transition-colors"
+                onClick={() => setSyncPreview(null)}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="flex-1 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                onClick={handleSyncApply}
+                disabled={syncing}
+              >
+                {syncing
+                  ? <><span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> Wird ausgeführt...</>
+                  : `Sync ausführen (${syncPreview.filter(r => { const k = `${r.incoming.nachname}|${r.incoming.vorname}`; return syncDecisions[k] === 'merge' || r.action === 'create'; }).length} Aktionen)`
+                }
+              </button>
             </div>
           </div>
         </div>

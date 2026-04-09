@@ -7,6 +7,7 @@
 // POST action:delete -> Kind aus Stamm löschen
 
 const { Client } = require('pg');
+const { calcScore } = require('./utils/nameMatch');
 
 const getClient = () => new Client({
   connectionString: process.env.DATABASE_URL,
@@ -386,6 +387,133 @@ exports.handler = async (event) => {
           success: true,
           message: `${inserted} eindeutige Kinder aus Liste A synchronisiert bzw. zusammengeführt`
         });
+      }
+
+      // ── Sync Preview: Fuzzy-Vorschau ohne DB-Schreibzugriff ──
+      if (body.action === 'sync_preview') {
+        // Alle liste_a Namen laden
+        const rawListeA = await client.query(`
+          SELECT nachname, vorname, klasse
+          FROM liste_a
+          WHERE nachname IS NOT NULL AND TRIM(nachname) != ''
+            AND vorname IS NOT NULL AND TRIM(vorname) != ''
+        `);
+
+        // Deduplizieren (canonical key wie in sync)
+        const uniqueMap = new Map();
+        for (const e of rawListeA.rows) {
+          const n = e.nachname.trim();
+          const v = e.vorname.trim();
+          const nl = n.toLowerCase();
+          const vl = v.toLowerCase();
+          const key = nl < vl ? `${nl}|${vl}` : `${vl}|${nl}`;
+          if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, { nachname: n, vorname: v, klasse: e.klasse?.trim() || null });
+          } else if (e.klasse && !uniqueMap.get(key).klasse) {
+            uniqueMap.get(key).klasse = e.klasse.trim();
+          }
+        }
+
+        const incoming = Array.from(uniqueMap.values());
+        if (incoming.length === 0) {
+          return respond(200, []);
+        }
+
+        // Alle bestehenden Kinder laden
+        const kinderRes = await client.query('SELECT id, nachname, vorname, klasse FROM kinder ORDER BY nachname, vorname');
+        const allKinder = kinderRes.rows;
+
+        // Für jeden incoming-Namen besten Match finden
+        const SCORE_AUTO = 88;
+        const SCORE_SUGGEST = 75;
+
+        const preview = [];
+        for (const inc of incoming) {
+          const incFullName = `${inc.nachname} ${inc.vorname}`;
+
+          // Zuerst Exakt-Match prüfen (kein Fuzzy nötig, kein Duplikat)
+          const exactMatch = allKinder.find(k =>
+            (k.nachname.toLowerCase() === inc.nachname.toLowerCase() && k.vorname.toLowerCase() === inc.vorname.toLowerCase()) ||
+            (k.nachname.toLowerCase() === inc.vorname.toLowerCase() && k.vorname.toLowerCase() === inc.nachname.toLowerCase())
+          );
+          if (exactMatch) {
+            // Exakter Treffer → kein neues Duplikat, überspringen (wird vom alten sync-Mechanismus gehandelt)
+            preview.push({
+              incoming: inc,
+              match: { id: exactMatch.id, nachname: exactMatch.nachname, vorname: exactMatch.vorname, klasse: exactMatch.klasse, score: 100 },
+              action: 'exact'
+            });
+            continue;
+          }
+
+          // Fuzzy-Match über alle Kinder
+          let bestMatch = null;
+          let bestScore = 0;
+          for (const k of allKinder) {
+            const kindFullName = `${k.nachname} ${k.vorname}`;
+            const { score } = calcScore(incFullName, kindFullName);
+            // Auch vertauscht prüfen
+            const { score: scoreSwapped } = calcScore(incFullName, `${k.vorname} ${k.nachname}`);
+            const finalScore = Math.max(score, scoreSwapped);
+            if (finalScore > bestScore) {
+              bestScore = finalScore;
+              bestMatch = k;
+            }
+          }
+
+          if (bestScore >= SCORE_AUTO) {
+            preview.push({
+              incoming: inc,
+              match: { id: bestMatch.id, nachname: bestMatch.nachname, vorname: bestMatch.vorname, klasse: bestMatch.klasse, score: bestScore },
+              action: 'auto_merge'
+            });
+          } else if (bestScore >= SCORE_SUGGEST) {
+            preview.push({
+              incoming: inc,
+              match: { id: bestMatch.id, nachname: bestMatch.nachname, vorname: bestMatch.vorname, klasse: bestMatch.klasse, score: bestScore },
+              action: 'suggest'
+            });
+          } else {
+            preview.push({
+              incoming: inc,
+              match: null,
+              action: 'create'
+            });
+          }
+        }
+
+        return respond(200, preview);
+      }
+
+      // ── Sync Apply: Entscheidungen aus Preview ausführen ──
+      if (body.action === 'sync_apply') {
+        const { decisions } = body;
+        if (!Array.isArray(decisions)) return respond(400, { error: 'decisions Array erforderlich' });
+
+        let merged = 0;
+        let created = 0;
+
+        for (const d of decisions) {
+          if (d.action === 'merge' && d.kinder_id) {
+            const kid = parseInt(d.kinder_id, 10);
+            if (isNaN(kid)) continue;
+            await client.query(
+              'UPDATE kinder SET klasse = COALESCE(NULLIF($1, \'\'), klasse) WHERE id = $2',
+              [d.klasse || '', kid]
+            );
+            merged++;
+          } else if (d.action === 'create' && d.nachname && d.vorname) {
+            await client.query(`
+              INSERT INTO kinder (nachname, vorname, klasse)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (GREATEST(LOWER(TRIM(nachname)), LOWER(TRIM(vorname))), LEAST(LOWER(TRIM(nachname)), LOWER(TRIM(vorname))))
+              DO UPDATE SET klasse = COALESCE(NULLIF(EXCLUDED.klasse, ''), kinder.klasse)
+            `, [d.nachname.trim(), d.vorname.trim(), d.klasse?.trim() || null]);
+            created++;
+          }
+        }
+
+        return respond(200, { success: true, merged, created });
       }
 
       // ── Edit: Kind bearbeiten ──
