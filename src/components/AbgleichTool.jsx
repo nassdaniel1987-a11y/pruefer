@@ -206,8 +206,9 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     setListADb(Array.isArray(freshA) ? freshA : []);
     setListBDb(Array.isArray(freshB) ? freshB : []);
 
-    const mA = (Array.isArray(freshA) ? freshA : []).map((e, i) => ({ id: `a${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
-    const mB = (Array.isArray(freshB) ? freshB : []).map((e, i) => ({ id: `b${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
+    const buildName = (e) => [e.vorname, e.nachname].filter(Boolean).join(' ').trim();
+    const mA = (Array.isArray(freshA) ? freshA : []).map((e) => ({ id: `a${e.id}`, dbId: e.id, name: buildName(e), date: String(e.datum).split('T')[0] }));
+    const mB = (Array.isArray(freshB) ? freshB : []).map((e) => ({ id: `b${e.id}`, dbId: e.id, name: buildName(e), date: String(e.datum).split('T')[0] }));
     setListA(mA); setListB(mB);
 
     // Automatisch neue Kinder aus Liste A ins Kinder-Verzeichnis synchronisieren
@@ -243,7 +244,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           const bestScore = Math.max(score, scoreSwapped);
           const bestReason = bestScore === scoreSwapped && scoreSwapped > score ? reasonSwapped : reason;
           if (bestScore >= 75) {
-            const key = `${tokenizeName(eA.name).sort().join('')}|${tokenizeName(eB.name).sort().join('')}`;
+            // Key enthält beide Original-Namen um Kollisionen zu vermeiden
+            const key = `${eA.name.toLowerCase()}|||${eB.name.toLowerCase()}`;
             if (!groups[key]) groups[key] = { nameA: eA.name, nameB: eB.name, score: bestScore, reason: bestReason, entries: [] };
             groups[key].entries.push({ entryA: eA, entryB: eB });
           }
@@ -252,18 +254,19 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       const fuzzyGroups = Object.values(groups).sort((a, b) => b.score - a.score);
       setPotentialMatches(fuzzyGroups);
 
-      // Zusammenfassung für Transparenz
-      const fuzzyEntries = fuzzyGroups.reduce((sum, g) => sum + g.entries.length, 0);
-      const onlyACount = nonA.length - fuzzyEntries;
+      // Zusammenfassung: eindeutige A- und B-Einträge in Fuzzy-Gruppen zählen
+      const fuzzyAIds = new Set();
+      const fuzzyBIds = new Set();
+      fuzzyGroups.forEach(g => g.entries.forEach(p => { fuzzyAIds.add(p.entryA.id); fuzzyBIds.add(p.entryB.id); }));
       setComparisonSummary({
         totalA: lA.length,
         totalB: lB.length,
         exact: exactA.length,
         exactKinder: new Set(exactA.map(e => e.name.toLowerCase())).size,
         fuzzyGroups: fuzzyGroups.length,
-        fuzzyEntries,
-        onlyA: Math.max(0, onlyACount),
-        onlyB: Math.max(0, nonB.length - fuzzyEntries),
+        fuzzyEntries: fuzzyAIds.size,
+        onlyA: Math.max(0, nonA.length - fuzzyAIds.size),
+        onlyB: Math.max(0, nonB.length - fuzzyBIds.size),
       });
 
       setIsLoading(false);
@@ -271,8 +274,9 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   };
 
   const startComparisonFromDb = () => {
-    const mA = listADb.map(e => ({ id: `a${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
-    const mB = listBDb.map(e => ({ id: `b${e.id}`, dbId: e.id, name: `${e.vorname} ${e.nachname}`.trim(), date: String(e.datum).split('T')[0] }));
+    const buildName = (e) => [e.vorname, e.nachname].filter(Boolean).join(' ').trim();
+    const mA = listADb.map(e => ({ id: `a${e.id}`, dbId: e.id, name: buildName(e), date: String(e.datum).split('T')[0] }));
+    const mB = listBDb.map(e => ({ id: `b${e.id}`, dbId: e.id, name: buildName(e), date: String(e.datum).split('T')[0] }));
     setListA(mA); setListB(mB);
     setPotentialMatches([]); setReviewed({}); setComparisonSummary(null);
     setUsedDbForA(true); setUsedDbForB(true);
