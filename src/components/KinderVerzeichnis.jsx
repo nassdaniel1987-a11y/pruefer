@@ -641,7 +641,18 @@ return (
                           const aDates = new Set(b.anmeldungen.map(a => String(a.datum).split('T')[0]));
                           const bDates = new Set(b.buchungen.map(x => String(x.datum).split('T')[0]));
                           const allDates = [...new Set([...aDates, ...bDates])].sort();
-                          
+
+                          // Alle Tage des Blocks für den Bearbeitungsmodus
+                          const blockAllDates = (() => {
+                            const days = [];
+                            const start = new Date(b.startdatum);
+                            const end = new Date(b.enddatum);
+                            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                              days.push(d.toISOString().split('T')[0]);
+                            }
+                            return days;
+                          })();
+
                           const weekday = (d) => {
                             try { return new Date(d).toLocaleDateString('de-DE', { weekday: 'short' }); } catch { return ''; }
                           };
@@ -675,10 +686,10 @@ return (
                                   </p>
                                   <div className="flex flex-wrap gap-1.5 pl-2.5">
                                     {editingBlockId === b.ferienblock_id ? (
-                                      // Bearbeitungsmodus: alle bekannten Tage (A + B) als klickbare Chips
-                                      allDates.length === 0
+                                      // Bearbeitungsmodus: alle Tage des Blocks als klickbare Chips
+                                      blockAllDates.length === 0
                                         ? <span className="text-[10px] text-on-surface-variant italic">Keine Tage vorhanden</span>
-                                        : allDates.map(d => {
+                                        : blockAllDates.map(d => {
                                           const inA = aDates.has(d);
                                           const inB = bDates.has(d);
                                           const key = `${b.ferienblock_id}_${d}`;
