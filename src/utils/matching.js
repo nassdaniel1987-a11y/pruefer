@@ -47,10 +47,16 @@ const jaroWinkler = (s1, s2) => {
 const calcScore = (nameA, nameB) => {
   const tA = tokenizeName(nameA), tB = tokenizeName(nameB);
   if (!tA.length || !tB.length) return { score: 0, reason: 'Leerer Name' };
-  const lastA = tA[tA.length - 1], lastB = tB[tB.length - 1];
-  const lastJW = jaroWinkler(lastA, lastB);
-  const lastPH = koelnerPhonetik(lastA) === koelnerPhonetik(lastB) && koelnerPhonetik(lastA).length > 1;
-  const nachnameOk = lastJW >= 0.82 || lastPH;
+  // Nachnamen-Gate: beliebiges Token-Paar darf übereinstimmen (fängt Bindestrichnamen + vertauschte Reihenfolge ab)
+  let nachnameOk = false;
+  for (const a of tA) {
+    for (const b of tB) {
+      const jw = jaroWinkler(a, b);
+      const ph = koelnerPhonetik(a) === koelnerPhonetik(b) && koelnerPhonetik(a).length > 1;
+      if (jw >= 0.82 || ph) { nachnameOk = true; break; }
+    }
+    if (nachnameOk) break;
+  }
   let matches = [], avail = [...tB];
   for (const a of tA) {
     let best = { score: 0, partner: null, idx: -1 };

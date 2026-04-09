@@ -35,6 +35,9 @@ const validateToken = async (client, event) => {
   return result.rows.length > 0 ? result.rows[0].user_id : null;
 };
 
+// Bereinigt einen Namen: trimmt und entfernt abschließende Kommas (z.B. "Müller," → "Müller")
+const cleanName = (s) => (s || '').trim().replace(/,+$/, '').trim();
+
 // Prüft ob ein Name schon in der kinder-Tabelle existiert (auch vertauscht)
 const findExistingKind = async (client, nachname, vorname) => {
   const result = await client.query(`
@@ -279,12 +282,13 @@ exports.handler = async (event) => {
         const uniqueSet = new Map();
         for (const e of eintraege) {
           if (!e.nachname || !e.vorname) continue;
-          const n = e.nachname.trim();
-          const v = e.vorname.trim();
+          const n = cleanName(e.nachname);
+          const v = cleanName(e.vorname);
+          if (!n || !v) continue;
           const nl = n.toLowerCase();
           const vl = v.toLowerCase();
           const key = nl < vl ? `${nl}|${vl}` : `${vl}|${nl}`;
-          
+
           if (!uniqueSet.has(key)) {
             uniqueSet.set(key, { nachname: n, vorname: v, klasse: e.klasse?.trim() || null });
           } else {
@@ -337,12 +341,13 @@ exports.handler = async (event) => {
         // Auch hier deduplizieren, um Konflikte in derselben Anfrage zu vermeiden
         const uniqueSet = new Map();
         for (const e of rawListeA.rows) {
-          const n = e.nachname.trim();
-          const v = e.vorname.trim();
+          const n = cleanName(e.nachname);
+          const v = cleanName(e.vorname);
+          if (!n || !v) continue;
           const nl = n.toLowerCase();
           const vl = v.toLowerCase();
           const key = nl < vl ? `${nl}|${vl}` : `${vl}|${nl}`;
-          
+
           if (!uniqueSet.has(key)) {
             uniqueSet.set(key, { nachname: n, vorname: v, klasse: e.klasse?.trim() || null });
           } else {
@@ -402,8 +407,9 @@ exports.handler = async (event) => {
         // Deduplizieren (canonical key wie in sync)
         const uniqueMap = new Map();
         for (const e of rawListeA.rows) {
-          const n = e.nachname.trim();
-          const v = e.vorname.trim();
+          const n = cleanName(e.nachname);
+          const v = cleanName(e.vorname);
+          if (!n || !v) continue;
           const nl = n.toLowerCase();
           const vl = v.toLowerCase();
           const key = nl < vl ? `${nl}|${vl}` : `${vl}|${nl}`;
