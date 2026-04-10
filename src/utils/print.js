@@ -31,10 +31,10 @@ const printFehlendeKinder = (title, kinder, blockName) => {
     html += `<td>${k.dates ? k.dates.sort().map(d => fmtDate(d)).join(', ') : ''}</td></tr>`;
   });
 
-  const isNurB = title.toLowerCase().includes('ferienanmeldung') || title.toLowerCase().includes('keine anmeldung');
+  const isNurB = title.toLowerCase().includes('nicht angemeldet');
   const legendeText = isNurB
-    ? `<b>Keine Ferienanmeldung — Essen gebucht:</b> Diese Kinder haben eine Essens-Buchung beim Caterer, sind aber <b>nicht</b> in der Ferienanmeldungsliste eingetragen. Bitte prüfen, ob die Buchung korrekt ist oder ob eine Anmeldung nachgetragen werden muss.`
-    : `<b>Keine Essensbuchung:</b> Diese Kinder sind in der Ferienanmeldungsliste eingetragen, haben aber <b>keine</b> Essens-Buchung beim Caterer. Bitte prüfen, ob die Buchung nachgeholt werden muss.`;
+    ? `<b>Essen gebucht — nicht angemeldet:</b> Diese Kinder haben eine Essens-Buchung beim Caterer (Liste B), sind aber <b>nicht</b> in der Ferienanmeldungsliste (Liste A) eingetragen. Bitte prüfen, ob eine Anmeldung fehlt oder ob die Buchung storniert werden muss.`
+    : `<b>Kein Essen gebucht:</b> Diese Kinder sind in der Ferienanmeldungsliste (Liste A) eingetragen, haben aber <b>keine</b> Essens-Buchung beim Caterer (Liste B). Bitte prüfen, ob die Buchung noch nachgeholt werden muss.`;
 
   html += `</tbody></table>
 <div class="summary">Gesamtzahl: ${kinder.length} Kinder · ${totalTage} Tage</div>

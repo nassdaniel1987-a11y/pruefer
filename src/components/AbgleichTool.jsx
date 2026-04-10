@@ -844,13 +844,13 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
                     <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10 flex-wrap">
                       <span className="material-symbols-outlined text-error text-base">warning</span>
-                      <span className="font-semibold text-error">Keine Essensbuchung</span>
+                      <span className="font-semibold text-error">Kein Essen gebucht</span>
                       <span className="bg-error-container text-on-error-container text-xs font-bold px-2 py-0.5 rounded-full">{fehlendeKinder.length} Kinder · {finalResults.onlyInA.length} Tage</span>
                       <button className="ml-auto flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
                         onClick={() => {
                           const bName = blocks.find(bl => String(bl.id) === String(blockId))?.name || '';
                           const printData = fehlendeKinder.map(k => { const parts = k.name.split(' '); return { vorname: parts[0] || '', nachname: parts.slice(1).join(' ') || k.name, klasse: '', dates: k.dates }; });
-                          printFehlendeKinder('Keine Essensbuchung', printData, bName);
+                          printFehlendeKinder('Kein Essen gebucht', printData, bName);
                         }}><span className="material-symbols-outlined text-sm">print</span>Drucken</button>
                     </div>
                     <div className="overflow-x-auto">
@@ -906,7 +906,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/10 mb-3 overflow-hidden">
                     <div className="flex items-center gap-2 px-5 py-4 border-b border-outline-variant/10">
                       <span className="material-symbols-outlined text-amber-600 text-base">info</span>
-                      <span className="font-semibold text-amber-700">Keine Ferienanmeldung — Essen gebucht</span>
+                      <span className="font-semibold text-amber-700">Essen gebucht — nicht angemeldet</span>
                       <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">{nurInBKinder.length} Kinder · {finalResults.onlyInB.length} Tage</span>
                     </div>
                     <div className="overflow-x-auto">
