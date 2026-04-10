@@ -83,6 +83,18 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
       items: diff.neueEintraege, getMatch: e => e.match, desc: 'Im älteren Abgleich nicht vorhanden.'
     },
     {
+      key: 'nurBWeg', title: 'Essen gebucht — jetzt weggefallen', icon: '🍽️', badge: 'badge-red',
+      changed: true, border: 'rgba(220,53,69,0.5)',
+      items: (diff.nurBWeg || []).map(m => ({ match: m })), getMatch: e => ({ a_nachname: e.match.b_nachname, a_vorname: e.match.b_vorname, a_datum: e.match.b_datum, a_klasse: e.match.b_klasse }),
+      desc: 'Waren im alten Abgleich als "Essen gebucht — nicht angemeldet" gelistet, fehlen jetzt komplett.'
+    },
+    {
+      key: 'nurBNeu', title: 'Essen neu gebucht (nicht angemeldet)', icon: '🍽️', badge: 'badge-orange',
+      changed: true, border: 'rgba(251,146,60,0.5)',
+      items: (diff.nurBNeu || []).map(m => ({ match: m })), getMatch: e => ({ a_nachname: e.match.b_nachname, a_vorname: e.match.b_vorname, a_datum: e.match.b_datum, a_klasse: e.match.b_klasse }),
+      desc: 'Neu in Liste B aufgetaucht, aber keine Ferienanmeldung vorhanden.'
+    },
+    {
       key: 'unveraendertFehlend', title: 'Weiterhin fehlend', icon: '⚠', badge: 'badge-orange',
       changed: false,
       items: diff.unveraendertFehlend, getMatch: e => e.neu, desc: 'Fehlten vorher und fehlen weiterhin — keine Änderung.'
