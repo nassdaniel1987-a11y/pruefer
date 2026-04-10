@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { confirmDialog } from '../utils/confirm';
@@ -12,6 +12,14 @@ const EinstellungenPage = ({ user, onLogout }) => {
   const [regPw, setRegPw] = useState('');
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+
+  const loadUsers = async () => {
+    const res = await API.post('auth', { action: 'list-users', token: API.token() });
+    if (res.success) setUsers(res.users);
+  };
+
+  useEffect(() => { loadUsers(); }, []);
 
   const changePw = async () => {
     if (newPw !== confirmPw) { toast.error('Passwörter stimmen nicht überein'); return; }
@@ -25,7 +33,15 @@ const EinstellungenPage = ({ user, onLogout }) => {
     if (regPw.length < 8) { toast.error('Passwort muss mindestens 8 Zeichen haben'); return; }
     if (regUser.trim().length < 3) { toast.error('Benutzername muss mindestens 3 Zeichen haben'); return; }
     const res = await API.post('auth', { action: 'register', token: API.token(), username: regUser, password: regPw });
-    if (res.success) { toast.success(`Benutzer "${regUser}" erstellt!`); setRegUser(''); setRegPw(''); }
+    if (res.success) { toast.success(`Benutzer "${regUser}" erstellt!`); setRegUser(''); setRegPw(''); loadUsers(); }
+    else toast.error(res.error || 'Fehler');
+  };
+
+  const deleteUser = async (u) => {
+    const ok = await confirmDialog('Benutzer löschen', `"${u.username}" wirklich löschen? Der Benutzer kann sich danach nicht mehr anmelden.`, 'Löschen');
+    if (!ok) return;
+    const res = await API.post('auth', { action: 'delete-user', token: API.token(), userId: u.id });
+    if (res.success) { toast.success(`Benutzer "${u.username}" gelöscht`); loadUsers(); }
     else toast.error(res.error || 'Fehler');
   };
 
@@ -118,6 +134,30 @@ const EinstellungenPage = ({ user, onLogout }) => {
             </div>
           </div>
           <div className="space-y-4">
+            {/* Nutzerliste */}
+            {users.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Vorhandene Benutzer</h4>
+                <div className="space-y-2">
+                  {users.map(u => (
+                    <div key={u.id} className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-surface-container-low border border-outline-variant/10">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-base text-on-surface-variant">person</span>
+                        <span className="text-sm font-bold text-on-surface">{u.username}</span>
+                        {u.username === user?.username && <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">Ich</span>}
+                      </div>
+                      {u.username !== user?.username && (
+                        <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors" onClick={() => deleteUser(u)} title="Benutzer löschen">
+                          <span className="material-symbols-outlined text-base">delete</span>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Neuer Benutzer */}
             <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Neuer Benutzer</h4>
             <div className="grid grid-cols-2 gap-3">
               <input placeholder="Benutzername" className="border border-outline-variant/30 rounded-xl px-4 py-2.5 text-sm bg-surface-container-low focus:ring-2 focus:ring-primary/20" value={regUser} onChange={e => setRegUser(e.target.value)} />

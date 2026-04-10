@@ -137,6 +137,42 @@ exports.handler = async (event) => {
       return respond(201, { success: true });
     }
 
+    // --- NUTZER LISTE ---
+    if (action === 'list-users') {
+      const { token } = body;
+      if (!token) return respond(401, { error: 'Nicht autorisiert' });
+      const session = await client.query(
+        'SELECT user_id FROM sessions WHERE id = $1 AND expires_at > NOW()',
+        [token]
+      );
+      if (session.rows.length === 0) return respond(401, { error: 'Nicht autorisiert' });
+
+      const result = await client.query(
+        'SELECT id, username, created_at FROM users ORDER BY created_at ASC'
+      );
+      return respond(200, { success: true, users: result.rows });
+    }
+
+    // --- NUTZER LÖSCHEN ---
+    if (action === 'delete-user') {
+      const { token, userId } = body;
+      if (!token) return respond(401, { error: 'Nicht autorisiert' });
+      const session = await client.query(
+        'SELECT user_id FROM sessions WHERE id = $1 AND expires_at > NOW()',
+        [token]
+      );
+      if (session.rows.length === 0) return respond(401, { error: 'Nicht autorisiert' });
+
+      // Eigenen Account kann man nicht löschen
+      if (session.rows[0].user_id === userId) {
+        return respond(400, { error: 'Eigener Account kann nicht gelöscht werden' });
+      }
+
+      await client.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM users WHERE id = $1', [userId]);
+      return respond(200, { success: true });
+    }
+
     // --- PASSWORT ÄNDERN ---
     if (action === 'change-password') {
       const { token, newPassword } = body;
