@@ -283,8 +283,20 @@ const VerlaufPage = ({ blocks }) => {
                     )}
 
                     {isOpen && (!log.details || log.details.length === 0) && (
-                      <div className="border-t border-outline-variant/10 p-5 text-center text-sm text-on-surface-variant">
-                        Erster Import — kein Vergleich möglich.
+                      <div className="border-t border-outline-variant/10 p-5 text-center text-sm text-on-surface-variant space-y-3">
+                        <p>Erster Import — kein direkter Vergleich gespeichert.</p>
+                        <button
+                          className="px-4 py-2 text-xs font-bold rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                          onClick={async () => {
+                            const res = await API.post('listen', { action: 'rebuild_import_log', ferienblock_id: blockId, liste: log.liste });
+                            if (res.success) {
+                              if (res.weg === 0 && res.neu === 0) { alert('Kein Unterschied zum letzten Abgleich gefunden.'); return; }
+                              loadImportLogs(blockId);
+                            }
+                          }}
+                        >
+                          Nachträglich mit letztem Abgleich vergleichen
+                        </button>
                       </div>
                     )}
                   </div>

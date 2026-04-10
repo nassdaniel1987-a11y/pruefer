@@ -88,6 +88,60 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body);
 
+      // action=rebuild_import_log → Diff aus letztem Abgleich vs. aktuelle Liste B berechnen
+      if (body.action === 'rebuild_import_log') {
+        const { ferienblock_id, liste } = body;
+        if (!ferienblock_id || !liste) return respond(400, { error: 'ferienblock_id und liste erforderlich' });
+        const fbId = parseInt(ferienblock_id, 10);
+        if (isNaN(fbId)) return respond(400, { error: 'Ungültige ferienblock_id' });
+        const table = liste === 'A' ? 'liste_a' : 'liste_b';
+        const prefix = liste === 'A' ? 'a' : 'b';
+
+        // Alte Personen aus letztem Abgleich (b_nachname/b_vorname gespeichert)
+        const abgleichRows = await client.query(`
+          SELECT am.${prefix}_nachname as nachname, am.${prefix}_vorname as vorname, am.${prefix}_datum as datum
+          FROM abgleich_matches am
+          JOIN abgleich ab ON am.abgleich_id = ab.id
+          WHERE ab.ferienblock_id = $1
+            AND ab.id = (SELECT id FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 1)
+            AND am.${prefix}_nachname IS NOT NULL
+        `, [fbId]);
+
+        const oldPersonen = new Map();
+        abgleichRows.rows.forEach(r => {
+          const key = (r.nachname + '|' + r.vorname).toLowerCase();
+          if (!oldPersonen.has(key)) oldPersonen.set(key, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
+          if (r.datum) oldPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
+        });
+
+        // Aktuelle Personen aus der Tabelle
+        const currentRows = await client.query(
+          `SELECT nachname, vorname, datum FROM ${table} WHERE ferienblock_id = $1`, [fbId]
+        );
+        const newPersonen = new Map();
+        currentRows.rows.forEach(r => {
+          const key = (r.nachname + '|' + r.vorname).toLowerCase();
+          if (!newPersonen.has(key)) newPersonen.set(key, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
+          if (r.datum) newPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
+        });
+
+        const details = [];
+        for (const [key, p] of newPersonen) {
+          if (!oldPersonen.has(key)) details.push({ aktion: 'neu', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
+        }
+        for (const [key, p] of oldPersonen) {
+          if (!newPersonen.has(key)) details.push({ aktion: 'weg', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
+        }
+
+        await client.query(
+          `INSERT INTO import_log (ferienblock_id, liste, eintraege_neu, eintraege_weg, eintraege_gesamt, details)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [fbId, liste, details.filter(d => d.aktion === 'neu').length, details.filter(d => d.aktion === 'weg').length, newPersonen.size, JSON.stringify(details)]
+        );
+
+        return respond(200, { success: true, neu: details.filter(d => d.aktion === 'neu').length, weg: details.filter(d => d.aktion === 'weg').length });
+      }
+
       // action=add_day → einzelnen Tag für ein Kind in Liste A eintragen
       if (body.action === 'add_day') {
         const { ferienblock_id, nachname, vorname, klasse, datum } = body;
