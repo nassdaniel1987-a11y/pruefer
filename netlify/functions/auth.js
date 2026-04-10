@@ -105,6 +105,38 @@ exports.handler = async (event) => {
       });
     }
 
+    // --- NUTZER ANLEGEN ---
+    if (action === 'register') {
+      const { token, username, password } = body;
+
+      // Nur eingeloggte Nutzer dürfen neue Nutzer anlegen
+      if (!token) return respond(401, { error: 'Nicht autorisiert' });
+      const session = await client.query(
+        'SELECT user_id FROM sessions WHERE id = $1 AND expires_at > NOW()',
+        [token]
+      );
+      if (session.rows.length === 0) return respond(401, { error: 'Nicht autorisiert' });
+
+      if (!username || !password) return respond(400, { error: 'Benutzername und Passwort erforderlich' });
+      if (username.trim().length < 3) return respond(400, { error: 'Benutzername muss mindestens 3 Zeichen haben' });
+      if (password.length < 8) return respond(400, { error: 'Passwort muss mindestens 8 Zeichen haben' });
+
+      // Duplikat prüfen
+      const existing = await client.query(
+        'SELECT id FROM users WHERE username = $1',
+        [username.toLowerCase().trim()]
+      );
+      if (existing.rows.length > 0) return respond(409, { error: 'Benutzername bereits vergeben' });
+
+      const hash = await bcrypt.hash(password, 12);
+      await client.query(
+        'INSERT INTO users (username, password_hash) VALUES ($1, $2)',
+        [username.toLowerCase().trim(), hash]
+      );
+
+      return respond(201, { success: true });
+    }
+
     // --- PASSWORT ÄNDERN ---
     if (action === 'change-password') {
       const { token, newPassword } = body;

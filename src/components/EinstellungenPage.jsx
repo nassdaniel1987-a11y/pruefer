@@ -22,8 +22,10 @@ const EinstellungenPage = ({ user, onLogout }) => {
   };
 
   const register = async () => {
-    const res = await API.post('auth', { action: 'register', username: regUser, password: regPw });
-    if (res.success) { toast.success('Benutzer erstellt!'); setRegUser(''); setRegPw(''); }
+    if (regPw.length < 8) { toast.error('Passwort muss mindestens 8 Zeichen haben'); return; }
+    if (regUser.trim().length < 3) { toast.error('Benutzername muss mindestens 3 Zeichen haben'); return; }
+    const res = await API.post('auth', { action: 'register', token: API.token(), username: regUser, password: regPw });
+    if (res.success) { toast.success(`Benutzer "${regUser}" erstellt!`); setRegUser(''); setRegPw(''); }
     else toast.error(res.error || 'Fehler');
   };
 
