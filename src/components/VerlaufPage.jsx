@@ -209,6 +209,9 @@ const VerlaufPage = ({ blocks }) => {
                 const isOpen = openLogId === log.id;
                 const neuItems = log.details?.filter(d => d.aktion === 'neu') || [];
                 const wegItems = log.details?.filter(d => d.aktion === 'weg') || [];
+                const tagNeuItems = log.details?.filter(d => d.aktion === 'tag_neu') || [];
+                const tagWegItems = log.details?.filter(d => d.aktion === 'tag_weg') || [];
+                const hasAnyChanges = neuItems.length > 0 || wegItems.length > 0 || tagNeuItems.length > 0 || tagWegItems.length > 0;
                 return (
                   <div key={log.id} className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10">
                     <div className="flex items-center gap-4 p-5 cursor-pointer" onClick={() => setOpenLogId(isOpen ? null : log.id)}>
@@ -258,7 +261,7 @@ const VerlaufPage = ({ blocks }) => {
                         )}
                         {wegItems.length > 0 && (
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-wider text-error mb-2">Weggefallen ({wegItems.length})</p>
+                            <p className="text-[10px] font-black uppercase tracking-wider text-error mb-2">Komplett weggefallen ({wegItems.length})</p>
                             <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
                               <table className="w-full text-sm">
                                 <thead><tr className="bg-surface-container-low">
@@ -279,6 +282,52 @@ const VerlaufPage = ({ blocks }) => {
                             </div>
                           </div>
                         )}
+                        {tagWegItems.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-wider text-amber-500 mb-2">Einzelne Tage entfernt ({tagWegItems.length} Kinder)</p>
+                            <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                              <table className="w-full text-sm">
+                                <thead><tr className="bg-surface-container-low">
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Entfernte Tage</th>
+                                </tr></thead>
+                                <tbody className="divide-y divide-outline-variant/5">
+                                  {tagWegItems.map((p, i) => (
+                                    <tr key={i} className="bg-amber-500/5">
+                                      <td className="px-3 py-2 font-bold text-on-surface">{p.nachname}</td>
+                                      <td className="px-3 py-2 text-on-surface-variant">{p.vorname || '–'}</td>
+                                      <td className="px-3 py-2 text-amber-600 text-xs font-medium">{p.tage?.map(t => fmtDate(t)).join(', ') || '–'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                        {tagNeuItems.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-500 mb-2">Einzelne Tage hinzugekommen ({tagNeuItems.length} Kinder)</p>
+                            <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                              <table className="w-full text-sm">
+                                <thead><tr className="bg-surface-container-low">
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Neue Tage</th>
+                                </tr></thead>
+                                <tbody className="divide-y divide-outline-variant/5">
+                                  {tagNeuItems.map((p, i) => (
+                                    <tr key={i}>
+                                      <td className="px-3 py-2 font-bold text-on-surface">{p.nachname}</td>
+                                      <td className="px-3 py-2 text-on-surface-variant">{p.vorname || '–'}</td>
+                                      <td className="px-3 py-2 text-emerald-500 text-xs font-medium">{p.tage?.map(t => fmtDate(t)).join(', ') || '–'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -290,7 +339,7 @@ const VerlaufPage = ({ blocks }) => {
                           onClick={async () => {
                             const res = await API.post('listen', { action: 'rebuild_import_log', ferienblock_id: blockId, liste: log.liste });
                             if (res.success) {
-                              if (res.weg === 0 && res.neu === 0) { alert('Kein Unterschied zum letzten Abgleich gefunden.'); return; }
+                              if (res.weg === 0 && res.neu === 0 && res.tag_weg === 0 && res.tag_neu === 0) { alert('Kein Unterschied zwischen den Abgleichen gefunden.'); return; }
                               loadImportLogs(blockId);
                             }
                           }}

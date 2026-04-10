@@ -119,9 +119,9 @@ exports.handler = async (event) => {
 
         const oldPersonen = new Map();
         abgleichRows.rows.forEach(r => {
-          const key = (r.nachname + '|' + r.vorname).toLowerCase();
-          if (!oldPersonen.has(key)) oldPersonen.set(key, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
-          if (r.datum) oldPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
+          const personKey = (r.nachname + '|' + r.vorname).toLowerCase();
+          if (!oldPersonen.has(personKey)) oldPersonen.set(personKey, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
+          if (r.datum) oldPersonen.get(personKey).tage.add(String(r.datum).split('T')[0]);
         });
 
         // Aktuelle Personen aus neuestem Abgleich (falls verschieden vom ältesten)
@@ -136,17 +136,29 @@ exports.handler = async (event) => {
             );
         const newPersonen = new Map();
         currentQuery.rows.forEach(r => {
-          const key = (r.nachname + '|' + r.vorname).toLowerCase();
-          if (!newPersonen.has(key)) newPersonen.set(key, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
-          if (r.datum) newPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
+          const personKey = (r.nachname + '|' + r.vorname).toLowerCase();
+          if (!newPersonen.has(personKey)) newPersonen.set(personKey, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
+          if (r.datum) newPersonen.get(personKey).tage.add(String(r.datum).split('T')[0]);
         });
 
         const details = [];
+
+        // Personen komplett neu
         for (const [key, p] of newPersonen) {
           if (!oldPersonen.has(key)) details.push({ aktion: 'neu', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
         }
+        // Personen komplett weggefallen
         for (const [key, p] of oldPersonen) {
           if (!newPersonen.has(key)) details.push({ aktion: 'weg', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
+        }
+        // Einzelne Tage weggefallen oder neu (Person noch vorhanden)
+        for (const [key, oldP] of oldPersonen) {
+          if (!newPersonen.has(key)) continue; // schon als 'weg' erfasst
+          const newP = newPersonen.get(key);
+          const tageWeg = [...oldP.tage].filter(t => !newP.tage.has(t)).sort();
+          const tageNeu = [...newP.tage].filter(t => !oldP.tage.has(t)).sort();
+          if (tageWeg.length > 0) details.push({ aktion: 'tag_weg', nachname: oldP.nachname, vorname: oldP.vorname, tage: tageWeg });
+          if (tageNeu.length > 0) details.push({ aktion: 'tag_neu', nachname: oldP.nachname, vorname: oldP.vorname, tage: tageNeu });
         }
 
         await client.query(
@@ -155,7 +167,13 @@ exports.handler = async (event) => {
           [fbId, liste, details.filter(d => d.aktion === 'neu').length, details.filter(d => d.aktion === 'weg').length, newPersonen.size, JSON.stringify(details)]
         );
 
-        return respond(200, { success: true, neu: details.filter(d => d.aktion === 'neu').length, weg: details.filter(d => d.aktion === 'weg').length });
+        return respond(200, {
+          success: true,
+          neu: details.filter(d => d.aktion === 'neu').length,
+          weg: details.filter(d => d.aktion === 'weg').length,
+          tag_neu: details.filter(d => d.aktion === 'tag_neu').length,
+          tag_weg: details.filter(d => d.aktion === 'tag_weg').length,
+        });
       }
 
       // action=add_day → einzelnen Tag für ein Kind in Liste A eintragen
