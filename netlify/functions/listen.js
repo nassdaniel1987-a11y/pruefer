@@ -54,6 +54,18 @@ exports.handler = async (event) => {
 
     // ── GET: Einträge laden ──────────────────────────────────
     if (event.httpMethod === 'GET') {
+      // GET ?import_log=1&ferienblock_id=X → Import-Protokolle laden
+      if (params.import_log && params.ferienblock_id) {
+        const fbId = parseInt(params.ferienblock_id, 10);
+        if (isNaN(fbId)) return respond(400, { error: 'Ungültige ferienblock_id' });
+        const result = await client.query(
+          `SELECT id, liste, erstellt_am, eintraege_neu, eintraege_weg, eintraege_gesamt, details
+           FROM import_log WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 50`,
+          [fbId]
+        );
+        return respond(200, result.rows);
+      }
+
       const { ferienblock_id, liste } = params;
       if (!ferienblock_id || !liste) {
         return respond(400, { error: 'ferienblock_id und liste erforderlich' });
@@ -143,6 +155,18 @@ exports.handler = async (event) => {
       if (isNaN(fbIdImport)) return respond(400, { error: 'Ungültige ferienblock_id' });
       const table = liste === 'A' ? 'liste_a' : 'liste_b';
 
+      // ── Diff berechnen (alt vs. neu) für Import-Log ──
+      const oldRows = await client.query(
+        `SELECT nachname, vorname, datum FROM ${table} WHERE ferienblock_id = $1`,
+        [fbIdImport]
+      );
+      const oldPersonen = new Map();
+      oldRows.rows.forEach(r => {
+        const key = (r.nachname + '|' + r.vorname).toLowerCase();
+        if (!oldPersonen.has(key)) oldPersonen.set(key, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
+        oldPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
+      });
+
       // Bestehende Einträge überschreiben
       await client.query(`DELETE FROM ${table} WHERE ferienblock_id = $1`, [fbIdImport]);
 
@@ -188,6 +212,37 @@ exports.handler = async (event) => {
         }
         count += batch.length;
       }
+
+      // ── Import-Log speichern ──
+      try {
+        const newPersonen = new Map();
+        const valid2 = eintraege.filter(e => e.nachname && e.datum);
+        valid2.forEach(e => {
+          const key = (e.nachname + '|' + (e.vorname || '')).toLowerCase();
+          if (!newPersonen.has(key)) newPersonen.set(key, { nachname: e.nachname, vorname: e.vorname || '', tage: new Set() });
+          newPersonen.get(key).tage.add(String(e.datum).split('T')[0]);
+        });
+
+        const details = [];
+        for (const [key, p] of newPersonen) {
+          if (!oldPersonen.has(key)) details.push({ aktion: 'neu', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
+        }
+        for (const [key, p] of oldPersonen) {
+          if (!newPersonen.has(key)) details.push({ aktion: 'weg', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
+        }
+
+        const eintraegeNeu = oldPersonen.size === 0 ? newPersonen.size : details.filter(d => d.aktion === 'neu').length;
+        const eintraegeWeg = details.filter(d => d.aktion === 'weg').length;
+
+        await client.query(
+          `INSERT INTO import_log (ferienblock_id, liste, eintraege_neu, eintraege_weg, eintraege_gesamt, details)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [fbIdImport, liste, eintraegeNeu, eintraegeWeg, newPersonen.size, JSON.stringify(details)]
+        );
+      } catch (logErr) {
+        console.error('Import-Log Fehler (nicht kritisch):', logErr.message);
+      }
+
       return respond(201, { success: true, count });
     }
 

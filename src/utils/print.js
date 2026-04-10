@@ -18,6 +18,7 @@ const printFehlendeKinder = (title, kinder, blockName) => {
   tr:nth-child(even) { background: #fafafa; }
   .badge-red { background: #fee; color: #c00; padding: 1px 6px; border-radius: 3px; font-weight: bold; }
   .summary { margin-top: 12px; font-size: 9pt; color: #666; border-top: 1px solid #ddd; padding-top: 6px; }
+  .legende { margin-top: 16px; font-size: 8.5pt; color: #555; border: 1px solid #ddd; border-radius: 4px; padding: 8px 10px; background: #f9f9f9; }
   @media print { @page { margin: 1.5cm; } }
 </style></head><body>
 <h1>${title}</h1>
@@ -30,8 +31,19 @@ const printFehlendeKinder = (title, kinder, blockName) => {
     html += `<td>${k.dates ? k.dates.sort().map(d => fmtDate(d)).join(', ') : ''}</td></tr>`;
   });
 
+  const isNurB = title.toLowerCase().includes('liste b') || title.toLowerCase().includes('nur b');
+  const legendeText = isNurB
+    ? `<b>Nur in Liste B</b> bedeutet: Diese Kinder haben eine Essens-Buchung beim Caterer (Liste B), sind aber <b>nicht</b> in der Anmeldungsliste (Liste A) eingetragen. Bitte prüfen, ob die Buchung korrekt ist oder ob eine Anmeldung nachgetragen werden muss.`
+    : `<b>Fehlende Buchung</b> bedeutet: Diese Kinder sind in der Anmeldungsliste (Liste A) eingetragen, haben aber <b>keine</b> entsprechende Essens-Buchung beim Caterer (Liste B). Bitte prüfen, ob die Buchung nachgeholt werden muss.`;
+
   html += `</tbody></table>
-<div class="summary">Gesamtzahl fehlender Kinder: ${kinder.length} · Gesamtzahl fehlender Tage: ${totalTage}</div>
+<div class="summary">Gesamtzahl: ${kinder.length} Kinder · ${totalTage} Tage</div>
+<div class="legende"><b>Legende:</b> ${legendeText}<br><br>
+  <b>#</b> = Laufende Nummer &nbsp;|&nbsp;
+  <b>Klasse</b> = Schulklasse des Kindes &nbsp;|&nbsp;
+  <b>Tage</b> = Anzahl betroffener Tage &nbsp;|&nbsp;
+  <b>Daten</b> = Genaue Termine
+</div>
 </body></html>`;
 
   const w = window.open('', '_blank');

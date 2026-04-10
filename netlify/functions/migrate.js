@@ -154,6 +154,26 @@ exports.handler = async (event) => {
       results.push('⚠ veraltet-Spalte: ' + e.message);
     }
 
+    // ── Migration 7: Import-Protokoll Tabelle ──
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS import_log (
+          id SERIAL PRIMARY KEY,
+          ferienblock_id INTEGER REFERENCES ferienblock(id) ON DELETE CASCADE,
+          liste CHAR(1) NOT NULL,
+          erstellt_am TIMESTAMPTZ DEFAULT NOW(),
+          eintraege_neu INTEGER DEFAULT 0,
+          eintraege_weg INTEGER DEFAULT 0,
+          eintraege_gesamt INTEGER DEFAULT 0,
+          details JSONB
+        );
+        CREATE INDEX IF NOT EXISTS idx_import_log_block ON import_log(ferienblock_id, erstellt_am DESC);
+      `);
+      results.push('✓ Tabelle "import_log" erstellt');
+    } catch (e) {
+      results.push('⚠ import_log: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

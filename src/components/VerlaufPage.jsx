@@ -19,6 +19,11 @@ const VerlaufPage = ({ blocks }) => {
   const [compareIds, setCompareIds] = useState([]);
   const [diffResult, setDiffResult] = useState(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  // Import-Log
+  const [activeTab, setActiveTab] = useState('abgleiche');
+  const [importLogs, setImportLogs] = useState([]);
+  const [importLoading, setImportLoading] = useState(false);
+  const [openLogId, setOpenLogId] = useState(null);
 
   const loadVerlauf = (id) => {
     if (!id) return;
@@ -31,7 +36,20 @@ const VerlaufPage = ({ blocks }) => {
     });
   };
 
-  useEffect(() => { loadVerlauf(blockId); }, [blockId]);
+  const loadImportLogs = (id) => {
+    if (!id) return;
+    setImportLoading(true);
+    setOpenLogId(null);
+    API.get('listen', { import_log: 1, ferienblock_id: id }).then(d => {
+      setImportLogs(Array.isArray(d) ? d : []);
+      setImportLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    if (activeTab === 'abgleiche') loadVerlauf(blockId);
+    else loadImportLogs(blockId);
+  }, [blockId, activeTab]);
 
   const toggleDetail = async (id) => {
     if (openId === id) { setOpenId(null); return; }
@@ -50,13 +68,12 @@ const VerlaufPage = ({ blocks }) => {
       API.get('abgleich', { abgleich_id: compareIds[0] }),
       API.get('abgleich', { abgleich_id: compareIds[1] })
     ]);
-    
+
     const abgA = verlauf.find(a => a.id === compareIds[0]);
     const abgB = verlauf.find(a => a.id === compareIds[1]);
 
-    // Ensure older Abgleich is "old" and newer is "new"
     const isAOlder = new Date(abgA.erstellt_am) < new Date(abgB.erstellt_am);
-    
+
     setDiffResult({
       matchesOld: isAOlder ? resA.matches : resB.matches,
       matchesNew: isAOlder ? resB.matches : resA.matches,
@@ -78,80 +95,204 @@ const VerlaufPage = ({ blocks }) => {
             <option value="">Alle Blöcke</option>
             {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
-          {compareMode && compareIds.length === 2 && (
+          {activeTab === 'abgleiche' && compareMode && compareIds.length === 2 && (
             <button className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-lg shadow-primary/20" onClick={doDiff} disabled={compareLoading}>{compareLoading ? 'Laden...' : 'Vergleichen'}</button>
           )}
-          <button className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${compareMode ? 'bg-error text-on-error' : 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container-low'}`} onClick={() => { setCompareMode(!compareMode); setCompareIds([]); setDiffResult(null); }}>
-            <span className="material-symbols-outlined text-sm mr-1">{compareMode ? 'close' : 'compare_arrows'}</span>{compareMode ? 'Abbrechen' : 'Vergleichen'}
-          </button>
+          {activeTab === 'abgleiche' && (
+            <button className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${compareMode ? 'bg-error text-on-error' : 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container-low'}`} onClick={() => { setCompareMode(!compareMode); setCompareIds([]); setDiffResult(null); }}>
+              <span className="material-symbols-outlined text-sm mr-1">{compareMode ? 'close' : 'compare_arrows'}</span>{compareMode ? 'Abbrechen' : 'Vergleichen'}
+            </button>
+          )}
         </div>
       </div>
 
-      {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
+      {/* Tab-Bar */}
+      <div className="flex gap-1 bg-surface-container-low p-1 rounded-xl w-fit">
+        <button
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTab === 'abgleiche' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+          onClick={() => setActiveTab('abgleiche')}
+        >Abgleiche</button>
+        <button
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTab === 'importe' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+          onClick={() => setActiveTab('importe')}
+        >Importe</button>
+      </div>
 
-      {!loading && verlauf.length === 0 && (
-        <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/10 text-center">
-          <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-3">history</span>
-          <p className="text-lg font-bold text-on-surface">Keine Abgleiche vorhanden.</p>
-          <p className="text-sm text-on-surface-variant mt-1">Führe im Abgleich-Tool zuerst einen Abgleich durch.</p>
-        </div>
+      {/* ── ABGLEICHE TAB ── */}
+      {activeTab === 'abgleiche' && (
+        <>
+          {loading && <div className="py-12 flex justify-center"><Spinner /></div>}
+
+          {!loading && verlauf.length === 0 && (
+            <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/10 text-center">
+              <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-3">history</span>
+              <p className="text-lg font-bold text-on-surface">Keine Abgleiche vorhanden.</p>
+              <p className="text-sm text-on-surface-variant mt-1">Führe im Abgleich-Tool zuerst einen Abgleich durch.</p>
+            </div>
+          )}
+
+          {!loading && verlauf.length > 0 && (
+            <div className="space-y-3">
+              {verlauf.map(a => {
+                const isOpen = openId === a.id;
+                return (
+                  <div key={a.id} className={`bg-surface-container-lowest rounded-2xl shadow-sm border transition-all ${compareMode && compareIds.includes(a.id) ? 'border-primary border-l-4 shadow-md' : 'border-outline-variant/10'}`}>
+                    <div className="flex items-center gap-4 p-5 cursor-pointer" onClick={() => {
+                      if (compareMode) { setCompareIds(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : prev.length < 2 ? [...prev, a.id] : prev); return; }
+                      toggleDetail(a.id);
+                    }}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${compareMode && compareIds.includes(a.id) ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
+                        <span className="material-symbols-outlined text-xl">sync</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-on-surface text-sm">{a.block_name || 'Block'}</span>
+                          <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase">{new Date(a.erstellt_am).toLocaleDateString('de-DE')} {new Date(a.erstellt_am).toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'})}</span>
+                        </div>
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {a.matches}</span>
+                          {a.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {a.nur_in_a}</span>}
+                          {a.nur_in_b > 0 && <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {a.nur_in_b}</span>}
+                        </div>
+                      </div>
+                      <span className="material-symbols-outlined text-on-surface-variant/50">{isOpen ? 'expand_less' : 'expand_more'}</span>
+                    </div>
+                    {isOpen && detail[a.id] && (
+                      <div className="border-t border-outline-variant/10 p-5">
+                        <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                          <table className="w-full text-sm">
+                            <thead><tr className="bg-surface-container-low">
+                              <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Typ</th>
+                              <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
+                              <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
+                              <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Datum</th>
+                            </tr></thead>
+                            <tbody className="divide-y divide-outline-variant/5">
+                              {detail[a.id].matches?.map((m,i) => (
+                                <tr key={i} className={`${m.match_typ === 'nur_in_a' ? 'bg-error-container/10' : m.match_typ === 'nur_in_b' ? 'bg-tertiary-container/10' : ''}`}>
+                                  <td className="px-3 py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'bg-emerald-500/10 text-emerald-500' : m.match_typ === 'nur_in_a' ? 'bg-error text-on-error' : 'bg-tertiary text-on-tertiary'}`}>{(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'OK' : m.match_typ === 'nur_in_a' ? 'Fehlt' : 'Nur B'}</span></td>
+                                  <td className="px-3 py-2 font-bold text-on-surface">{m.a_nachname || m.b_nachname || '–'}</td>
+                                  <td className="px-3 py-2 text-on-surface-variant">{m.a_vorname || m.b_vorname || '–'}</td>
+                                  <td className="px-3 py-2 text-on-surface-variant/60 text-xs">{m.a_datum ? fmtDate(m.a_datum) : m.b_datum ? fmtDate(m.b_datum) : '–'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                    {isOpen && detailLoading[a.id] && <div className="p-5 text-center border-t border-outline-variant/10"><Spinner /></div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
-      {!loading && verlauf.length > 0 && (
-        <div className="space-y-3">
-          {verlauf.map(a => {
-            const isOpen = openId === a.id;
-            return (
-              <div key={a.id} className={`bg-surface-container-lowest rounded-2xl shadow-sm border transition-all ${compareMode && compareIds.includes(a.id) ? 'border-primary border-l-4 shadow-md' : 'border-outline-variant/10'}`}>
-                <div className="flex items-center gap-4 p-5 cursor-pointer" onClick={() => {
-                  if (compareMode) { setCompareIds(prev => prev.includes(a.id) ? prev.filter(x => x !== a.id) : prev.length < 2 ? [...prev, a.id] : prev); return; }
-                  toggleDetail(a.id);
-                }}>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${compareMode && compareIds.includes(a.id) ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>
-                    <span className="material-symbols-outlined text-xl">sync</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-on-surface text-sm">{a.block_name || 'Block'}</span>
-                      <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase">{new Date(a.erstellt_am).toLocaleDateString('de-DE')} {new Date(a.erstellt_am).toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'})}</span>
+      {/* ── IMPORTE TAB ── */}
+      {activeTab === 'importe' && (
+        <>
+          {importLoading && <div className="py-12 flex justify-center"><Spinner /></div>}
+
+          {!importLoading && importLogs.length === 0 && (
+            <div className="bg-surface-container-lowest rounded-2xl p-12 shadow-sm border border-outline-variant/10 text-center">
+              <span className="material-symbols-outlined text-5xl text-on-surface-variant/40 mb-3">upload_file</span>
+              <p className="text-lg font-bold text-on-surface">Keine Import-Protokolle vorhanden.</p>
+              <p className="text-sm text-on-surface-variant mt-1">Protokolle werden beim nächsten Listen-Import automatisch erstellt.</p>
+            </div>
+          )}
+
+          {!importLoading && importLogs.length > 0 && (
+            <div className="space-y-3">
+              {importLogs.map(log => {
+                const isOpen = openLogId === log.id;
+                const neuItems = log.details?.filter(d => d.aktion === 'neu') || [];
+                const wegItems = log.details?.filter(d => d.aktion === 'weg') || [];
+                return (
+                  <div key={log.id} className="bg-surface-container-lowest rounded-2xl border border-outline-variant/10">
+                    <div className="flex items-center gap-4 p-5 cursor-pointer" onClick={() => setOpenLogId(isOpen ? null : log.id)}>
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-xl">upload_file</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-on-surface text-sm">Liste {log.liste}</span>
+                          <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase">
+                            {new Date(log.erstellt_am).toLocaleDateString('de-DE')} {new Date(log.erstellt_am).toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'})}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 mt-1 flex-wrap">
+                          <span className="text-[10px] font-bold bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full">{log.eintraege_gesamt} gesamt</span>
+                          {log.eintraege_neu > 0 && <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full">+{log.eintraege_neu} neu</span>}
+                          {log.eintraege_weg > 0 && <span className="text-[10px] font-bold bg-error/10 text-error px-2 py-0.5 rounded-full">−{log.eintraege_weg} entfernt</span>}
+                        </div>
+                      </div>
+                      <span className="material-symbols-outlined text-on-surface-variant/50">{isOpen ? 'expand_less' : 'expand_more'}</span>
                     </div>
-                    <div className="flex gap-2 mt-1 flex-wrap">
-                      <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {a.matches}</span>
-                      {a.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {a.nur_in_a}</span>}
-                      {a.nur_in_b > 0 && <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {a.nur_in_b}</span>}
-                    </div>
+
+                    {isOpen && log.details && log.details.length > 0 && (
+                      <div className="border-t border-outline-variant/10 p-5 space-y-4">
+                        {neuItems.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-500 mb-2">Neu dazugekommen ({neuItems.length})</p>
+                            <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                              <table className="w-full text-sm">
+                                <thead><tr className="bg-surface-container-low">
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Tage</th>
+                                </tr></thead>
+                                <tbody className="divide-y divide-outline-variant/5">
+                                  {neuItems.map((p, i) => (
+                                    <tr key={i}>
+                                      <td className="px-3 py-2 font-bold text-on-surface">{p.nachname}</td>
+                                      <td className="px-3 py-2 text-on-surface-variant">{p.vorname || '–'}</td>
+                                      <td className="px-3 py-2 text-on-surface-variant/60 text-xs">{p.tage?.map(t => fmtDate(t)).join(', ') || '–'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                        {wegItems.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-wider text-error mb-2">Weggefallen ({wegItems.length})</p>
+                            <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
+                              <table className="w-full text-sm">
+                                <thead><tr className="bg-surface-container-low">
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
+                                  <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Tage</th>
+                                </tr></thead>
+                                <tbody className="divide-y divide-outline-variant/5">
+                                  {wegItems.map((p, i) => (
+                                    <tr key={i}>
+                                      <td className="px-3 py-2 font-bold text-on-surface">{p.nachname}</td>
+                                      <td className="px-3 py-2 text-on-surface-variant">{p.vorname || '–'}</td>
+                                      <td className="px-3 py-2 text-on-surface-variant/60 text-xs">{p.tage?.map(t => fmtDate(t)).join(', ') || '–'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {isOpen && (!log.details || log.details.length === 0) && (
+                      <div className="border-t border-outline-variant/10 p-5 text-center text-sm text-on-surface-variant">
+                        Erster Import — kein Vergleich möglich.
+                      </div>
+                    )}
                   </div>
-                  <span className="material-symbols-outlined text-on-surface-variant/50">{isOpen ? 'expand_less' : 'expand_more'}</span>
-                </div>
-                {isOpen && detail[a.id] && (
-                  <div className="border-t border-outline-variant/10 p-5">
-                    <div className="overflow-x-auto rounded-xl border border-outline-variant/10">
-                      <table className="w-full text-sm">
-                        <thead><tr className="bg-surface-container-low">
-                          <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Typ</th>
-                          <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Nachname</th>
-                          <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Vorname</th>
-                          <th className="text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-outline">Datum</th>
-                        </tr></thead>
-                        <tbody className="divide-y divide-outline-variant/5">
-                          {detail[a.id].matches?.map((m,i) => (
-                            <tr key={i} className={`${m.match_typ === 'nur_in_a' ? 'bg-error-container/10' : m.match_typ === 'nur_in_b' ? 'bg-tertiary-container/10' : ''}`}>
-                              <td className="px-3 py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'bg-emerald-500/10 text-emerald-500' : m.match_typ === 'nur_in_a' ? 'bg-error text-on-error' : 'bg-tertiary text-on-tertiary'}`}>{(m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') ? 'OK' : m.match_typ === 'nur_in_a' ? 'Fehlt' : 'Nur B'}</span></td>
-                              <td className="px-3 py-2 font-bold text-on-surface">{m.a_nachname || m.b_nachname || '–'}</td>
-                              <td className="px-3 py-2 text-on-surface-variant">{m.a_vorname || m.b_vorname || '–'}</td>
-                              <td className="px-3 py-2 text-on-surface-variant/60 text-xs">{m.a_datum ? fmtDate(m.a_datum) : m.b_datum ? fmtDate(m.b_datum) : '–'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-                {isOpen && detailLoading[a.id] && <div className="p-5 text-center border-t border-outline-variant/10"><Spinner /></div>}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Diff Modal */}
@@ -168,9 +309,9 @@ const VerlaufPage = ({ blocks }) => {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 bg-surface">
-              <VergleichView 
-                matchesOld={diffResult.matchesOld} matchesNew={diffResult.matchesNew} 
-                abgleichOld={diffResult.abgleichOld} abgleichNew={diffResult.abgleichNew} 
+              <VergleichView
+                matchesOld={diffResult.matchesOld} matchesNew={diffResult.matchesNew}
+                abgleichOld={diffResult.abgleichOld} abgleichNew={diffResult.abgleichNew}
               />
             </div>
           </div>
