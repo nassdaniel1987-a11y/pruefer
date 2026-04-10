@@ -176,6 +176,14 @@ exports.handler = async (event) => {
         });
       }
 
+      // action=delete_import_log → einzelnen Import-Log-Eintrag löschen
+      if (body.action === 'delete_import_log') {
+        const { id } = body;
+        if (!id) return respond(400, { error: 'id erforderlich' });
+        await client.query('DELETE FROM import_log WHERE id = $1', [parseInt(id, 10)]);
+        return respond(200, { success: true });
+      }
+
       // action=add_day → einzelnen Tag für ein Kind in Liste A eintragen
       if (body.action === 'add_day') {
         const { ferienblock_id, nachname, vorname, klasse, datum } = body;

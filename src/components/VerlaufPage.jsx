@@ -231,6 +231,15 @@ const VerlaufPage = ({ blocks }) => {
                           {log.eintraege_weg > 0 && <span className="text-[10px] font-bold bg-error/10 text-error px-2 py-0.5 rounded-full">−{log.eintraege_weg} entfernt</span>}
                         </div>
                       </div>
+                      <button className="p-1.5 rounded-lg text-on-surface-variant/40 hover:bg-error/10 hover:text-error transition-colors shrink-0" title="Eintrag löschen"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!window.confirm('Diesen Import-Eintrag löschen?')) return;
+                          await API.post('listen', { action: 'delete_import_log', id: log.id });
+                          loadImportLogs(blockId);
+                        }}>
+                        <span className="material-symbols-outlined text-base">delete</span>
+                      </button>
                       <span className="material-symbols-outlined text-on-surface-variant/50">{isOpen ? 'expand_less' : 'expand_more'}</span>
                     </div>
 
