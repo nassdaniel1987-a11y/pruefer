@@ -302,7 +302,7 @@ exports.handler = async (event) => {
       // Abgleich ist jetzt aktuell
       await client.query(`UPDATE abgleich SET veraltet = FALSE WHERE id = $1`, [abgleich_id]);
 
-      return respond(201, { success: true, abgleich_id, patched: existingAbgleich.rows.length > 0 });
+      return respond(201, { success: true, abgleich_id, patched: existingAbgleich.rows.length > 0 && !istVeraltet });
     }
 
     return respond(405, { error: 'Method Not Allowed' });
