@@ -97,15 +97,25 @@ exports.handler = async (event) => {
         const table = liste === 'A' ? 'liste_a' : 'liste_b';
         const prefix = liste === 'A' ? 'a' : 'b';
 
-        // Alte Personen aus letztem Abgleich (b_nachname/b_vorname gespeichert)
+        // Alle Abgleiche für diesen Block holen (neuester zuerst)
+        const alleAbgleiche = await client.query(
+          `SELECT id, erstellt_am FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC`,
+          [fbId]
+        );
+
+        // Wir brauchen den ältesten Abgleich als "alt" — der hat noch die ursprünglichen Daten
+        const altesterAbgleich = alleAbgleiche.rows[alleAbgleiche.rows.length - 1];
+        const neusterAbgleich = alleAbgleiche.rows[0];
+
+        if (!altesterAbgleich) return respond(400, { error: 'Kein Abgleich vorhanden' });
+
+        // Alte Personen aus ältestem Abgleich
         const abgleichRows = await client.query(`
           SELECT am.${prefix}_nachname as nachname, am.${prefix}_vorname as vorname, am.${prefix}_datum as datum
           FROM abgleich_matches am
-          JOIN abgleich ab ON am.abgleich_id = ab.id
-          WHERE ab.ferienblock_id = $1
-            AND ab.id = (SELECT id FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 1)
+          WHERE am.abgleich_id = $1
             AND am.${prefix}_nachname IS NOT NULL
-        `, [fbId]);
+        `, [altesterAbgleich.id]);
 
         const oldPersonen = new Map();
         abgleichRows.rows.forEach(r => {
@@ -114,12 +124,18 @@ exports.handler = async (event) => {
           if (r.datum) oldPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
         });
 
-        // Aktuelle Personen aus der Tabelle
-        const currentRows = await client.query(
-          `SELECT nachname, vorname, datum FROM ${table} WHERE ferienblock_id = $1`, [fbId]
-        );
+        // Aktuelle Personen aus neuestem Abgleich (falls verschieden vom ältesten)
+        const currentQuery = altesterAbgleich.id !== neusterAbgleich.id
+          ? await client.query(`
+              SELECT am.${prefix}_nachname as nachname, am.${prefix}_vorname as vorname, am.${prefix}_datum as datum
+              FROM abgleich_matches am
+              WHERE am.abgleich_id = $1 AND am.${prefix}_nachname IS NOT NULL
+            `, [neusterAbgleich.id])
+          : await client.query(
+              `SELECT nachname, vorname, datum FROM ${table} WHERE ferienblock_id = $1`, [fbId]
+            );
         const newPersonen = new Map();
-        currentRows.rows.forEach(r => {
+        currentQuery.rows.forEach(r => {
           const key = (r.nachname + '|' + r.vorname).toLowerCase();
           if (!newPersonen.has(key)) newPersonen.set(key, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
           if (r.datum) newPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
