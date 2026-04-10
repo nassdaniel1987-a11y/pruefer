@@ -363,7 +363,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
         const parts = i.name.split(/\s+/);
         return { Vorname: parts.slice(0, -1).join(' '), Nachname: parts.pop() || '', Datum: fmt(i.date) };
       });
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Fehlt in Liste B');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Kein Essen gebucht');
     }
     // Nur-in-B Sheet
     if (finalResults.onlyInB.length > 0) {
@@ -829,12 +829,12 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                     <div className="text-xs text-on-surface-variant mt-0.5">{matchedKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.matches.length} Tage</div>
                   </div>
                   <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-                    <div className="text-xs text-on-surface-variant mb-1">Fehlt in B</div>
+                    <div className="text-xs text-on-surface-variant mb-1">Kein Essen gebucht</div>
                     <div className="text-2xl font-bold text-error">{fehlendeKinder.length}</div>
                     <div className="text-xs text-on-surface-variant mt-0.5">{fehlendeKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInA.length} Tage</div>
                   </div>
                   <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm border border-outline-variant/10">
-                    <div className="text-xs text-on-surface-variant mb-1">Nur in B</div>
+                    <div className="text-xs text-on-surface-variant mb-1">Nicht angemeldet</div>
                     <div className="text-2xl font-bold text-tertiary">{nurInBKinder.length}</div>
                     <div className="text-xs text-on-surface-variant mt-0.5">{nurInBKinder.length === 1 ? 'Kind' : 'Kinder'} · {finalResults.onlyInB.length} Tage</div>
                   </div>

@@ -158,7 +158,7 @@ const KlassenPage = ({ blocks }) => {
               <div className="text-2xl font-extrabold text-emerald-600">{totalKinderA}</div>
             </div>
             <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
-              <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Ohne Buchung</div>
+              <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Kein Essen gebucht</div>
               <div className={`text-2xl font-extrabold ${totalOhneB > 0 ? 'text-error' : 'text-on-surface-variant/40'}`}>{totalOhneB}</div>
             </div>
           </div>
@@ -177,8 +177,8 @@ const KlassenPage = ({ blocks }) => {
                   <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Kinder B</th>
                   <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Tage A</th>
                   <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Tage B</th>
-                  <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Ohne B</th>
-                  <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Nur B</th>
+                  <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Kein Essen</th>
+                  <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Nicht angem.</th>
                 </tr></thead>
                 <tbody className="divide-y divide-outline-variant/5">
                   {klassenData.map(k => (

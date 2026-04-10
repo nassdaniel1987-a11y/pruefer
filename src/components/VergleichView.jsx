@@ -124,12 +124,12 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
           <div className="stat-sub">{fmtDelta(diff.delta.matched)} vs. vorher ({diff.oldCounts.matched})</div>
         </div>
         <div className="stat-card accent-red" style={{ padding: '0.75rem 1rem' }}>
-          <div className="stat-label" style={{ fontSize: '0.7rem' }}>✗ Fehlend in B</div>
+          <div className="stat-label" style={{ fontSize: '0.7rem' }}>✗ Kein Essen gebucht</div>
           <div className="stat-value" style={{ fontSize: '1.5rem' }}>{diff.newCounts.nur_in_a}</div>
           <div className="stat-sub">{fmtDelta(diff.delta.nur_in_a)} vs. vorher ({diff.oldCounts.nur_in_a})</div>
         </div>
         <div className="stat-card accent-orange" style={{ padding: '0.75rem 1rem' }}>
-          <div className="stat-label" style={{ fontSize: '0.7rem' }}>⚠ Nur in B</div>
+          <div className="stat-label" style={{ fontSize: '0.7rem' }}>⚠ Nicht angemeldet</div>
           <div className="stat-value" style={{ fontSize: '1.5rem' }}>{diff.newCounts.nur_in_b}</div>
           <div className="stat-sub">{fmtDelta(diff.delta.nur_in_b)} vs. vorher ({diff.oldCounts.nur_in_b})</div>
         </div>

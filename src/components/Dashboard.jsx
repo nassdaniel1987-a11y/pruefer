@@ -92,8 +92,8 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
     }
     if (!allFehlende.length) { toast.info('Lade erst Details, dann exportieren'); return; }
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allFehlende), 'Fehlende Buchungen');
-    XLSX.writeFile(wb, 'Fehlende_Buchungen.xlsx');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allFehlende), 'Kein Essen gebucht');
+    XLSX.writeFile(wb, 'Kein_Essen_gebucht.xlsx');
     toast.success(`${allFehlende.length} Einträge exportiert`);
   };
 

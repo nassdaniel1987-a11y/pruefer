@@ -225,8 +225,8 @@ const TagesansichtPage = ({ blocks }) => {
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm font-bold text-on-surface">{fmtDate(d.date)}</span>
                         <div className="flex gap-1">
-                          {hasAbgleich && d.missingInB > 0 && <span className="w-2 h-2 rounded-full bg-error" title="Kinder ohne Buchung"></span>}
-                          {hasAbgleich && d.onlyInB > 0 && <span className="w-2 h-2 rounded-full bg-amber-400" title="Kinder nur in Liste B"></span>}
+                          {hasAbgleich && d.missingInB > 0 && <span className="w-2 h-2 rounded-full bg-error" title="Kein Essen gebucht"></span>}
+                          {hasAbgleich && d.onlyInB > 0 && <span className="w-2 h-2 rounded-full bg-amber-400" title="Essen gebucht — nicht angemeldet"></span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -259,7 +259,7 @@ const TagesansichtPage = ({ blocks }) => {
                       <div className="flex items-center gap-2 mb-2">
                         <span className="material-symbols-outlined text-amber-500 text-lg">warning</span>
                         <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
-                          {dayDetail.filter(k => !k.inA && k.inB).length} {dayDetail.filter(k => !k.inA && k.inB).length === 1 ? 'Kind' : 'Kinder'} nur in Liste B — Essen gebucht, aber nicht angemeldet
+                          {dayDetail.filter(k => !k.inA && k.inB).length} {dayDetail.filter(k => !k.inA && k.inB).length === 1 ? 'Kind' : 'Kinder'} — Essen gebucht, aber nicht angemeldet
                         </span>
                       </div>
                       <ul className="space-y-0.5 pl-6">
@@ -279,11 +279,11 @@ const TagesansichtPage = ({ blocks }) => {
                         <div className="flex items-end gap-1"><span className="text-2xl font-black text-emerald-500">{dayDetail.filter(k => k.inA && k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
                       <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
-                        <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Fehlt in B</p>
+                        <p className="text-[10px] font-bold text-error uppercase tracking-wider mb-1">Kein Essen gebucht</p>
                         <div className="flex items-end gap-1"><span className="text-2xl font-black text-error">{dayDetail.filter(k => k.inA && !k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
                       <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
-                        <p className="text-[10px] font-bold text-tertiary uppercase tracking-wider mb-1">Nur in B</p>
+                        <p className="text-[10px] font-bold text-tertiary uppercase tracking-wider mb-1">Nicht angemeldet</p>
                         <div className="flex items-end gap-1"><span className="text-2xl font-black text-tertiary">{dayDetail.filter(k => !k.inA && k.inB).length}</span><span className="text-xs font-medium text-on-surface-variant/40 mb-1">Kind.</span></div>
                       </div>
                     </div>
@@ -312,8 +312,8 @@ const TagesansichtPage = ({ blocks }) => {
                                {hasAbgleich ? (
                                  <div className="flex justify-center flex-wrap gap-1">
                                    {k.inA && k.inB && <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px]">check</span>OK</span>}
-                                   {k.inA && !k.inB && <span className="bg-error font-bold text-on-error text-[10px] px-2 py-0.5 rounded-full">Fehlt (B)</span>}
-                                   {!k.inA && k.inB && <span className="bg-tertiary font-bold text-on-tertiary text-[10px] px-2 py-0.5 rounded-full">Nur (B)</span>}
+                                   {k.inA && !k.inB && <span className="bg-error font-bold text-on-error text-[10px] px-2 py-0.5 rounded-full">Kein Essen</span>}
+                                   {!k.inA && k.inB && <span className="bg-tertiary font-bold text-on-tertiary text-[10px] px-2 py-0.5 rounded-full">Nicht angem.</span>}
                                  </div>
                                ) : (
                                   <div className="flex gap-1 justify-center">
