@@ -243,8 +243,8 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                         {hatErgebnis && (
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-2 py-0.5 rounded-full">✓ {d.matches} OK</span>
-                            {d.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {d.nur_in_a} fehlt</span>}
-                            {d.nur_in_b > 0 && <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {d.nur_in_b} nur B</span>}
+                            {d.nur_in_a > 0 && <span className="bg-error/10 text-error text-[10px] font-bold px-2 py-0.5 rounded-full">↓ {d.nur_in_a} ohne Buchung</span>}
+                            {d.nur_in_b > 0 && <span className="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">↑ {d.nur_in_b} ohne Anmeldung</span>}
                             {d.letzter_abgleich?.veraltet && <span className="bg-amber-400/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">sync_problem</span>veraltet</span>}
                           </div>
                         )}
@@ -276,7 +276,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                                   setLoadingAbgleich(prev => ({ ...prev, [b.id]: false }));
                                 });
                               }
-                            }}>Fehlende</button>
+                            }}>Keine Buchung</button>
                           )}
                           {hatErgebnis && d.nur_in_b > 0 && (
                             <button className="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-400/20 text-amber-700 dark:text-amber-400 hover:bg-amber-400/30 transition-colors" onClick={() => {
@@ -290,7 +290,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                                   setLoadingAbgleich(prev => ({ ...prev, [b.id]: false }));
                                 });
                               }
-                            }}>Nur B</button>
+                            }}>Keine Anmeldung</button>
                           )}
                           <button className="px-3 py-1.5 text-xs font-bold rounded-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors" onClick={() => onNavigate('abgleich', b.id)}>Abgleich</button>
                         </div>
@@ -332,7 +332,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                   </h4>
                   <div className="flex gap-1">
                     <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-1"
-                      onClick={() => printFehlendeKinder('Fehlende Kinder', sortDetailList(fehlendeGrp), blocks.find(blk => blk.id === expandedBlock)?.name)}>
+                      onClick={() => printFehlendeKinder('Keine Essensbuchung', sortDetailList(fehlendeGrp), blocks.find(blk => blk.id === expandedBlock)?.name)}>
                       <span className="material-symbols-outlined text-sm">print</span>
                     </button>
                     <button className="p-1 text-on-surface-variant hover:text-error transition-colors" onClick={() => setExpandedBlock(null)}>
@@ -393,11 +393,11 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                 <div className="px-5 py-4 border-b border-amber-400/20 flex items-center justify-between bg-amber-400/5">
                   <h4 className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2 text-sm">
                     <span className="material-symbols-outlined text-base">warning</span>
-                    {list.length} Kinder ohne Anmeldung (nur Liste B)
+                    {list.length} Kinder — Keine Ferienanmeldung, Essen gebucht
                   </h4>
                   <div className="flex gap-1">
                     <button className="px-2.5 py-1 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors flex items-center gap-1"
-                      onClick={() => printFehlendeKinder('Nur in Liste B', list, blocks.find(blk => blk.id === expandedNurB)?.name)}>
+                      onClick={() => printFehlendeKinder('Keine Ferienanmeldung — Essen gebucht', list, blocks.find(blk => blk.id === expandedNurB)?.name)}>
                       <span className="material-symbols-outlined text-sm">print</span>
                     </button>
                     <button className="p-1 text-on-surface-variant hover:text-amber-600 transition-colors" onClick={() => setExpandedNurB(null)}>
@@ -430,7 +430,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
           {!expandedBlock && !expandedNurB && !loadingAbgleich[expandedBlock] && (
             <div className="bg-surface-container-low/50 rounded-3xl p-6">
               <h3 className="text-xl font-extrabold text-on-surface mb-2">Quick Info</h3>
-              <p className="text-sm text-on-surface-variant mb-4">Wähle "Fehlende" oder "Nur B" bei einem Block, um die Details hier zu sehen.</p>
+              <p className="text-sm text-on-surface-variant mb-4">Wähle "Keine Buchung" oder "Keine Anmeldung" bei einem Block, um die Details hier zu sehen.</p>
               <button className="w-full py-3 bg-surface-container-highest rounded-xl text-xs font-extrabold uppercase tracking-widest text-on-surface-variant hover:bg-outline-variant/20 transition-colors" onClick={onReload}>
                 Daten aktualisieren
               </button>
