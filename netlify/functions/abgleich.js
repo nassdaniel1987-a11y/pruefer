@@ -189,15 +189,32 @@ exports.handler = async (event) => {
       const fbIdPost = parseInt(ferienblock_id, 10);
       if (isNaN(fbIdPost)) return respond(400, { error: 'Ungültige ferienblock_id' });
 
-      // Prüfen ob der bestehende Abgleich veraltet ist (= neue Liste wurde hochgeladen)
-      // Wenn veraltet → immer neuen Abgleich anlegen, nicht patchen
+      // Prüfen ob seit dem letzten Abgleich eine neue Liste hochgeladen wurde
+      // → Liste A oder B hat Einträge die NACH dem letzten Abgleich erstellt wurden
       const existingAbgleich = await client.query(
-        `SELECT id, veraltet FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 1`,
+        `SELECT id, veraltet, abgeschlossen_am FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 1`,
         [fbIdPost]
       );
 
       let abgleich_id;
-      const istVeraltet = existingAbgleich.rows.length > 0 && existingAbgleich.rows[0].veraltet;
+      let istVeraltet = false;
+
+      if (existingAbgleich.rows.length > 0) {
+        const letzterAbgleich = existingAbgleich.rows[0];
+        // veraltet-Flag direkt prüfen (gesetzt beim Listen-Upload)
+        istVeraltet = letzterAbgleich.veraltet === true;
+
+        // Zusätzlich: prüfen ob Liste A oder B Einträge hat die nach dem Abgleich importiert wurden
+        if (!istVeraltet && letzterAbgleich.abgeschlossen_am) {
+          const neueImporte = await client.query(`
+            SELECT 1 FROM liste_a WHERE ferienblock_id = $1 AND created_at > $2
+            UNION ALL
+            SELECT 1 FROM liste_b WHERE ferienblock_id = $1 AND created_at > $2
+            LIMIT 1
+          `, [fbIdPost, letzterAbgleich.abgeschlossen_am]);
+          if (neueImporte.rows.length > 0) istVeraltet = true;
+        }
+      }
 
       if (existingAbgleich.rows.length > 0 && !istVeraltet) {
         // Patch-Modus: nur wenn nicht veraltet — betroffene Tage ermitteln
