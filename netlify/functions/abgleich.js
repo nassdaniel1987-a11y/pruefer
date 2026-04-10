@@ -80,6 +80,54 @@ exports.handler = async (event) => {
         });
       }
 
+      // Vergleich: B-Namen aus Abgleich vs. aktuelle Liste B (für ein Datum)
+      if (params.action === 'b_diff' && params.ferienblock_id) {
+        const fbId = parseInt(params.ferienblock_id, 10);
+        const datum = params.datum || null;
+
+        // Alle B-Personen aus dem gespeicherten Abgleich (b_nachname gespeichert)
+        let abgleichQuery = `
+          SELECT DISTINCT LOWER(am.b_nachname) as nachname_norm, LOWER(am.b_vorname) as vorname_norm,
+                 am.b_nachname as nachname, am.b_vorname as vorname, am.b_datum as datum
+          FROM abgleich_matches am
+          JOIN abgleich a ON am.abgleich_id = a.id
+          WHERE a.ferienblock_id = $1 AND am.b_nachname IS NOT NULL
+        `;
+        const abgleichParams = [fbId];
+        if (datum) { abgleichQuery += ` AND am.b_datum::date = $2::date`; abgleichParams.push(datum); }
+
+        const abgleichRows = await client.query(abgleichQuery, abgleichParams);
+
+        // Aktuelle Liste B
+        let listeQuery = `SELECT LOWER(nachname) as nachname_norm, LOWER(vorname) as vorname_norm, nachname, vorname, datum FROM liste_b WHERE ferienblock_id = $1`;
+        const listeParams = [fbId];
+        if (datum) { listeQuery += ` AND datum::date = $2::date`; listeParams.push(datum); }
+        const listeRows = await client.query(listeQuery, listeParams);
+
+        // Personen-Maps (key = nachname|vorname|datum)
+        const abgleichMap = new Map();
+        abgleichRows.rows.forEach(r => {
+          const key = `${r.nachname_norm}|${r.vorname_norm}|${String(r.datum).split('T')[0]}`;
+          abgleichMap.set(key, { nachname: r.nachname, vorname: r.vorname, datum: r.datum });
+        });
+        const listeMap = new Map();
+        listeRows.rows.forEach(r => {
+          const key = `${r.nachname_norm}|${r.vorname_norm}|${String(r.datum).split('T')[0]}`;
+          listeMap.set(key, { nachname: r.nachname, vorname: r.vorname, datum: r.datum });
+        });
+
+        const weggefallen = [];
+        const neuDazu = [];
+        for (const [key, p] of abgleichMap) {
+          if (!listeMap.has(key)) weggefallen.push(p);
+        }
+        for (const [key, p] of listeMap) {
+          if (!abgleichMap.has(key)) neuDazu.push(p);
+        }
+
+        return respond(200, { weggefallen, neuDazu, abgleich_gesamt: abgleichMap.size, liste_gesamt: listeMap.size });
+      }
+
       // Einzelnen Abgleich mit allen Matches laden
       if (params.abgleich_id) {
         const aId = parseInt(params.abgleich_id, 10);
