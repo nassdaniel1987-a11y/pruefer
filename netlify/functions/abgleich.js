@@ -197,20 +197,24 @@ exports.handler = async (event) => {
       );
 
       let abgleich_id;
+      // partial=true → Patch-Modus erzwingen (einzelner Tag, kein neuer Abgleich)
+      // partial=false/undefined → prüfen ob neue Liste hochgeladen wurde
+      const forcePatch = body.partial === true;
       let istVeraltet = false;
 
-      if (existingAbgleich.rows.length > 0) {
+      if (!forcePatch && existingAbgleich.rows.length > 0) {
         const letzterAbgleich = existingAbgleich.rows[0];
         // veraltet-Flag direkt prüfen (gesetzt beim Listen-Upload)
         istVeraltet = letzterAbgleich.veraltet === true;
 
-        // Zusätzlich: prüfen ob Liste A oder B Einträge hat die nach dem Abgleich importiert wurden
+        // Zusätzlich: prüfen ob eine komplett neue Liste hochgeladen wurde
+        // (erkennbar daran dass ALLE liste_b Einträge nach dem letzten Abgleich created wurden)
         if (!istVeraltet && letzterAbgleich.abgeschlossen_am) {
           const neueImporte = await client.query(`
-            SELECT 1 FROM liste_a WHERE ferienblock_id = $1 AND created_at > $2
-            UNION ALL
-            SELECT 1 FROM liste_b WHERE ferienblock_id = $1 AND created_at > $2
-            LIMIT 1
+            SELECT 1 FROM (
+              SELECT created_at FROM liste_b WHERE ferienblock_id = $1
+              ORDER BY created_at DESC LIMIT 1
+            ) sub WHERE sub.created_at > $2
           `, [fbIdPost, letzterAbgleich.abgeschlossen_am]);
           if (neueImporte.rows.length > 0) istVeraltet = true;
         }
