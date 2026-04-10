@@ -319,13 +319,16 @@ exports.handler = async (event) => {
           if (!newPersonen.has(key)) details.push({ aktion: 'weg', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
         }
 
-        const eintraegeNeu = oldPersonen.size === 0 ? newPersonen.size : details.filter(d => d.aktion === 'neu').length;
+        const istErsterImport = oldPersonen.size === 0;
+        const eintraegeNeu = istErsterImport ? newPersonen.size : details.filter(d => d.aktion === 'neu').length;
         const eintraegeWeg = details.filter(d => d.aktion === 'weg').length;
+        // Bei erstem Import keine details speichern (null) — bei Folgeimporten immer details
+        const detailsJson = istErsterImport ? null : JSON.stringify(details);
 
         await client.query(
           `INSERT INTO import_log (ferienblock_id, liste, eintraege_neu, eintraege_weg, eintraege_gesamt, details)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [fbIdImport, liste, eintraegeNeu, eintraegeWeg, newPersonen.size, JSON.stringify(details)]
+          [fbIdImport, liste, eintraegeNeu, eintraegeWeg, newPersonen.size, detailsJson]
         );
       } catch (logErr) {
         console.error('Import-Log Fehler (nicht kritisch):', logErr.message);

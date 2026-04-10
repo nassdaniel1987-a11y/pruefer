@@ -189,16 +189,18 @@ exports.handler = async (event) => {
       const fbIdPost = parseInt(ferienblock_id, 10);
       if (isNaN(fbIdPost)) return respond(400, { error: 'Ungültige ferienblock_id' });
 
-      // Patch-Modus: bestehenden neuesten Abgleich suchen
+      // Prüfen ob der bestehende Abgleich veraltet ist (= neue Liste wurde hochgeladen)
+      // Wenn veraltet → immer neuen Abgleich anlegen, nicht patchen
       const existingAbgleich = await client.query(
-        `SELECT id FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 1`,
+        `SELECT id, veraltet FROM abgleich WHERE ferienblock_id = $1 ORDER BY erstellt_am DESC LIMIT 1`,
         [fbIdPost]
       );
 
       let abgleich_id;
+      const istVeraltet = existingAbgleich.rows.length > 0 && existingAbgleich.rows[0].veraltet;
 
-      if (existingAbgleich.rows.length > 0) {
-        // Bestehenden Abgleich patchen — betroffene Tage ermitteln
+      if (existingAbgleich.rows.length > 0 && !istVeraltet) {
+        // Patch-Modus: nur wenn nicht veraltet — betroffene Tage ermitteln
         abgleich_id = existingAbgleich.rows[0].id;
 
         const aIds = matches.map(m => m.liste_a_id).filter(Boolean);
@@ -242,7 +244,7 @@ exports.handler = async (event) => {
           [abgleich_id]
         );
       } else {
-        // Kein bestehender Abgleich → neu anlegen
+        // Kein bestehender Abgleich, oder veraltet → immer neu anlegen
         const abgleichResult = await client.query(
           "INSERT INTO abgleich (ferienblock_id, status, abgeschlossen_am) VALUES ($1, 'abgeschlossen', NOW()) RETURNING id",
           [fbIdPost]
