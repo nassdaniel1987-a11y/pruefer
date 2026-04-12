@@ -3,8 +3,35 @@ import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { confirmDialog } from '../utils/confirm';
 
+const THEMES = [
+  {
+    id: 'light',
+    label: 'Hell',
+    icon: 'light_mode',
+    description: 'Material Design · Violett/Indigo · Sidebar links',
+    preview: { bg: '#fcf8fd', accent: '#5a598b', sidebar: '#1e1b4b' },
+    isTopbar: false,
+  },
+  {
+    id: 'dark',
+    label: 'Dunkel',
+    icon: 'dark_mode',
+    description: 'Dunkles Slate-Design · Sidebar links',
+    preview: { bg: '#0f172a', accent: '#818cf8', sidebar: '#020617' },
+    isTopbar: false,
+  },
+  {
+    id: 'aurora',
+    label: 'Aurora',
+    icon: 'forest',
+    description: 'Warm & organisch · Waldgrün · Topbar-Navigation',
+    preview: { bg: '#f5f0e8', accent: '#3a6b47', sidebar: '#2d4a35' },
+    isTopbar: true,
+  },
+];
+
 // EINSTELLUNGEN
-const EinstellungenPage = ({ user, onLogout }) => {
+const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
   const [oldPw, setOldPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -96,6 +123,93 @@ const EinstellungenPage = ({ user, onLogout }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Design / Erscheinungsbild */}
+        {setTheme && (
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 lg:col-span-2">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-2xl">palette</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-on-surface">Design</h3>
+                <p className="text-xs text-on-surface-variant">Erscheinungsbild, Farbschema &amp; Navigation</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {THEMES.map(t => {
+                const active = theme === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id)}
+                    className={`flex flex-col gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                      active
+                        ? 'border-primary bg-primary/5'
+                        : 'border-outline-variant/20 hover:border-outline-variant/50 hover:bg-surface-container-low'
+                    }`}
+                  >
+                    {/* Layout-Miniaturvorschau */}
+                    <div className="w-full rounded-lg overflow-hidden border border-outline-variant/20 flex flex-col" style={{ height: '64px' }}>
+                      {t.isTopbar ? (
+                        /* Aurora: Topbar oben */
+                        <>
+                          <div style={{ height: '13px', background: t.preview.sidebar, display: 'flex', alignItems: 'center', padding: '0 5px', gap: '3px', flexShrink: 0 }}>
+                            <div style={{ width: '18px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.55)' }} />
+                            {[1,2,3,4,5].map(i => (
+                              <div key={i} style={{ flex: 1, height: '4px', borderRadius: '2px', background: i === 1 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)' }} />
+                            ))}
+                          </div>
+                          <div style={{ flex: 1, background: t.preview.bg, padding: '5px' }}>
+                            <div style={{ height: '6px', borderRadius: '2px', background: t.preview.accent, opacity: 0.35, marginBottom: '4px' }} />
+                            <div style={{ display: 'flex', gap: '3px' }}>
+                              {[1,2,3].map(i => <div key={i} style={{ flex: 1, height: '20px', borderRadius: '3px', background: t.preview.accent, opacity: 0.1 }} />)}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        /* Hell/Dunkel: Sidebar links */
+                        <div style={{ display: 'flex', height: '100%' }}>
+                          <div style={{ width: '18px', background: t.preview.sidebar, display: 'flex', flexDirection: 'column', gap: '3px', padding: '4px 3px', flexShrink: 0 }}>
+                            {[1,2,3,4,5,6].map(i => (
+                              <div key={i} style={{ height: '4px', borderRadius: '2px', background: i === 1 ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.14)' }} />
+                            ))}
+                          </div>
+                          <div style={{ flex: 1, background: t.preview.bg, padding: '5px' }}>
+                            <div style={{ height: '5px', borderRadius: '2px', background: t.preview.accent, opacity: 0.45, marginBottom: '4px' }} />
+                            <div style={{ display: 'flex', gap: '3px' }}>
+                              {[1,2,3].map(i => <div key={i} style={{ flex: 1, height: '26px', borderRadius: '3px', background: t.preview.accent, opacity: 0.1 }} />)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Label + Icon */}
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-base text-on-surface-variant">{t.icon}</span>
+                      <span className="text-sm font-bold text-on-surface">{t.label}</span>
+                      {active && (
+                        <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-auto">Aktiv</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-on-surface-variant -mt-1">{t.description}</p>
+
+                    {/* Auswahl-Indikator */}
+                    <div className={`w-5 h-5 rounded-full border-2 self-end flex items-center justify-center transition-all ${
+                      active ? 'border-primary bg-primary' : 'border-outline-variant/40'
+                    }`}>
+                      {active && (
+                        <span className="material-symbols-outlined text-on-primary" style={{ fontSize: '12px' }}>check</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Profil */}
         <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
           <div className="flex items-center gap-3 mb-6">

@@ -12,6 +12,7 @@ import VerlaufPage from './components/VerlaufPage';
 import TagesansichtPage from './components/TagesansichtPage';
 import KlassenPage from './components/KlassenPage';
 import EinstellungenPage from './components/EinstellungenPage';
+import AuroraLayout from './components/AuroraLayout';
 import KinderVerzeichnis from './components/KinderVerzeichnis';
 import AngebotePage from './components/AngebotePage';
 
@@ -51,8 +52,26 @@ const App = () => {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
-    document.documentElement.className = theme === 'dark' ? 'dark' : '';
+    let cls = '';
+    if (theme === 'dark') cls = 'dark';
+    else if (theme === 'aurora') cls = 'aurora';
+    document.documentElement.className = cls;
     localStorage.setItem('theme', theme);
+
+    // Aurora-Font (Lora) dynamisch laden/entfernen
+    const FONT_ID = 'aurora-font-link';
+    const existing = document.getElementById(FONT_ID);
+    if (theme === 'aurora') {
+      if (!existing) {
+        const link = document.createElement('link');
+        link.id = FONT_ID;
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&display=swap';
+        document.head.appendChild(link);
+      }
+    } else {
+      if (existing) existing.remove();
+    }
   }, [theme]);
 
   // Token prüfen beim Start
@@ -123,8 +142,36 @@ const App = () => {
   if (checking) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spinner /></div>;
   if (!user) return <LoginPage onLogin={handleLogin} />;
 
-  const navItems = NAV_ITEMS;
+  // Gemeinsamer Page-Content für beide Layouts
+  const pageContent = (
+    <>
+      {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
+      {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
+      {page === 'angebote' && <AngebotePage blocks={blocks} />}
+      {page === 'abgleich' && <AbgleichTool blocks={blocks} initialBlockId={navParam} onReload={loadBlocks} />}
+      {page === 'tagesansicht' && <TagesansichtPage blocks={blocks} />}
+      {page === 'klassen' && <KlassenPage blocks={blocks} />}
+      {page === 'finanzen' && <FinanzenPage blocks={blocks} />}
+      {page === 'verlauf' && <VerlaufPage blocks={blocks} />}
+      {page === 'ferienblock' && <FerienblockPage blocks={blocks} onReload={loadBlocks} />}
+      {page === 'einstellungen' && <EinstellungenPage user={user} onLogout={handleLogout} theme={theme} setTheme={setTheme} />}
+    </>
+  );
 
+  // Aurora: alternatives Layout mit Topbar
+  if (theme === 'aurora') {
+    return (
+      <>
+        <AuroraLayout page={page} navigate={navigate} user={user} theme={theme} setTheme={setTheme} onLogout={handleLogout}>
+          {pageContent}
+        </AuroraLayout>
+        <ToastContainer />
+        <ConfirmDialog />
+      </>
+    );
+  }
+
+  // Standard-Layout (Hell / Dunkel) — unverändert
   return (
     <div className="flex h-full overflow-hidden">
       {/* Indigo Dark Sidebar */}
@@ -134,7 +181,7 @@ const App = () => {
           <p className="text-[10px] text-indigo-300/60 uppercase tracking-[0.2em] font-semibold">Verwaltungssystem</p>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar">
-          {navItems.map(n => (
+          {NAV_ITEMS.map(n => (
             <button
               key={n.id}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left ${
@@ -186,16 +233,7 @@ const App = () => {
           <span className="ml-3 font-bold text-on-surface text-lg">Prüfer</span>
         </div>
         <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-12 pt-4 md:pt-6 space-y-6 md:space-y-8 no-scrollbar">
-          {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
-          {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
-          {page === 'angebote' && <AngebotePage blocks={blocks} />}
-          {page === 'abgleich' && <AbgleichTool blocks={blocks} initialBlockId={navParam} onReload={loadBlocks} />}
-          {page === 'tagesansicht' && <TagesansichtPage blocks={blocks} />}
-          {page === 'klassen' && <KlassenPage blocks={blocks} />}
-          {page === 'finanzen' && <FinanzenPage blocks={blocks} />}
-          {page === 'verlauf' && <VerlaufPage blocks={blocks} />}
-          {page === 'ferienblock' && <FerienblockPage blocks={blocks} onReload={loadBlocks} />}
-          {page === 'einstellungen' && <EinstellungenPage user={user} onLogout={handleLogout} />}
+          {pageContent}
         </div>
       </main>
     </div>
