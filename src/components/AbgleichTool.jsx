@@ -9,6 +9,17 @@ import Spinner from './Spinner';
 import MiniExcel from './MiniExcel';
 import FirebaseImportModal from './FirebaseImportModal';
 
+const STRONG_MATCH_THRESHOLD = 75;
+const REVIEW_MATCH_THRESHOLD = 60;
+
+const firstNameToken = (name) => tokenizeName(name)[0] || '';
+
+const hasSameFirstName = (nameA, nameB) => {
+  const a = firstNameToken(nameA);
+  const b = firstNameToken(nameB);
+  return a.length >= 3 && a === b;
+};
+
 const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const [blockId, setBlockId] = useState(initialBlockId || (blocks[0]?.id || ''));
   const [step, setStep] = useState(1);
@@ -241,9 +252,16 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
           const tB = tokenizeName(eB.name);
           const eBswapped = tB.length >= 2 ? tB.slice().reverse().join(' ') : eB.name;
           const { score: scoreSwapped, reason: reasonSwapped } = calcScore(eA.name, eBswapped);
+          const swappedIsBetter = scoreSwapped > score;
           const bestScore = Math.max(score, scoreSwapped);
-          const bestReason = bestScore === scoreSwapped && scoreSwapped > score ? reasonSwapped : reason;
-          if (bestScore >= 75) {
+          const sameFirstName = hasSameFirstName(eA.name, eB.name) || (swappedIsBetter && hasSameFirstName(eA.name, eBswapped));
+          const isStrongMatch = bestScore >= STRONG_MATCH_THRESHOLD;
+          const isFirstNameReview = sameFirstName && bestScore >= REVIEW_MATCH_THRESHOLD;
+          const bestReasonBase = swappedIsBetter ? reasonSwapped : reason;
+          const bestReason = isFirstNameReview && !isStrongMatch
+            ? `${bestReasonBase}; gleicher Vorname - bitte manuell prüfen`
+            : bestReasonBase;
+          if (isStrongMatch || isFirstNameReview) {
             // Key enthält beide Original-Namen um Kollisionen zu vermeiden
             const key = `${eA.name.toLowerCase()}|||${eB.name.toLowerCase()}`;
             if (!groups[key]) groups[key] = { nameA: eA.name, nameB: eB.name, score: bestScore, reason: bestReason, entries: [] };
@@ -748,6 +766,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   let scoreTxt = group.score + '%';
                   if (group.score >= 90) { bc = 'border-emerald-500'; tc = 'text-emerald-500'; bgc = 'bg-emerald-500/10'; cc = 'text-emerald-500'; }
                   else if (group.score >= 75) { bc = 'border-tertiary-container'; tc = 'text-tertiary'; bgc = 'bg-tertiary-container'; cc = 'text-on-tertiary-container'; }
+                  else if (group.score >= REVIEW_MATCH_THRESHOLD) { bc = 'border-amber-500'; tc = 'text-amber-600'; bgc = 'bg-amber-500/10'; cc = 'text-amber-700'; }
 
                   return (
                     <div key={group.nameA + group.nameB} className={`bg-surface-container-lowest p-6 rounded-xl transition-all shadow-sm hover:shadow-md border-l-4 ${bc} flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative group`}>
@@ -770,6 +789,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                           <div className={`${bgc} ${cc} font-bold text-sm px-4 py-1.5 rounded-full shadow-sm whitespace-nowrap`}>
                             {scoreTxt} Ähnlichkeit
                           </div>
+                          <div className="text-[10px] text-outline mt-1 font-semibold max-w-[11rem] text-center">{group.reason}</div>
                           <div className="text-[10px] text-outline mt-2 font-semibold">({group.entries.length} Buchungen)</div>
                         </div>
 
