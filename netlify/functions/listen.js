@@ -309,6 +309,10 @@ exports.handler = async (event) => {
         count += batch.length;
       }
 
+      // Ein kompletter Neuimport ersetzt die bisherigen Listen-IDs.
+      // Vorhandene Abgleiche bleiben historisch erhalten, sind aber nicht mehr aktuell.
+      await client.query(`UPDATE abgleich SET veraltet = TRUE WHERE ferienblock_id = $1`, [fbIdImport]);
+
       // ── Import-Log speichern ──
       try {
         const newPersonen = new Map();

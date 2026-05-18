@@ -45,19 +45,31 @@ const TagesansichtPage = ({ blocks }) => {
 
   useEffect(() => { if (blockId) load(blockId); }, [blockId]);
 
-  // Matchings aus Abgleich-Ergebnissen aufbereiten
-  const { matchedAIds, matchedBIds, bToAMap } = useMemo(() => {
+  const entryKey = (nachname, vorname, datum) =>
+    `${String(nachname || '').trim().toLowerCase()}|${String(vorname || '').trim().toLowerCase()}|${String(datum || '').split('T')[0]}`;
+
+  // Matchings aus Abgleich-Ergebnissen aufbereiten.
+  // Nach einem Listen-Neuimport ändern sich DB-IDs, die gespeicherten Namen/Datumswerte bleiben aber stabil.
+  const { matchedAIds, matchedBIds, matchedAKeys, matchedBKeys, bToAMap, bToAKeyMap } = useMemo(() => {
     const aIds = new Set();
     const bIds = new Set();
+    const aKeys = new Set();
+    const bKeys = new Set();
     const b2a = new Map(); // B-entry-ID → A-entry-ID
+    const b2aKey = new Map(); // B-name/date → A-name/date
     abgleichMatches.forEach(m => {
-      if ((m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') && m.liste_a_id && m.liste_b_id) {
-        aIds.add(m.liste_a_id);
-        bIds.add(m.liste_b_id);
-        b2a.set(m.liste_b_id, m.liste_a_id);
+      if (m.match_typ === 'exact' || m.match_typ === 'fuzzy_accepted') {
+        const aKey = entryKey(m.a_nachname, m.a_vorname, m.a_datum);
+        const bKey = entryKey(m.b_nachname, m.b_vorname, m.b_datum);
+        if (m.liste_a_id) aIds.add(m.liste_a_id);
+        if (m.liste_b_id) bIds.add(m.liste_b_id);
+        if (m.a_nachname && m.a_datum) aKeys.add(aKey);
+        if (m.b_nachname && m.b_datum) bKeys.add(bKey);
+        if (m.liste_a_id && m.liste_b_id) b2a.set(m.liste_b_id, m.liste_a_id);
+        if (m.a_nachname && m.a_datum && m.b_nachname && m.b_datum) b2aKey.set(bKey, aKey);
       }
     });
-    return { matchedAIds: aIds, matchedBIds: bIds, bToAMap: b2a };
+    return { matchedAIds: aIds, matchedBIds: bIds, matchedAKeys: aKeys, matchedBKeys: bKeys, bToAMap: b2a, bToAKeyMap: b2aKey };
   }, [abgleichMatches]);
 
   // Alle Tage sammeln
@@ -78,9 +90,9 @@ const TagesansichtPage = ({ blocks }) => {
 
       if (hasAbgleich) {
         // Nutze echte Abgleich-Ergebnisse
-        const aMatched = aDay.filter(e => matchedAIds.has(e.id));
-        const aMissing = aDay.filter(e => !matchedAIds.has(e.id));
-        const bOnly = bDay.filter(e => !matchedBIds.has(e.id));
+        const aMatched = aDay.filter(e => matchedAIds.has(e.id) || matchedAKeys.has(entryKey(e.nachname, e.vorname, e.datum)));
+        const aMissing = aDay.filter(e => !matchedAIds.has(e.id) && !matchedAKeys.has(entryKey(e.nachname, e.vorname, e.datum)));
+        const bOnly = bDay.filter(e => !matchedBIds.has(e.id) && !matchedBKeys.has(entryKey(e.nachname, e.vorname, e.datum)));
         // Unique Kinder zählen
         const matchedKids = new Set(aMatched.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
         const missingKids = new Set(aMissing.map(e => (e.nachname + '|' + e.vorname).toLowerCase()));
@@ -91,7 +103,7 @@ const TagesansichtPage = ({ blocks }) => {
         return { date: d, angemeldet: aKids.size, gebucht: bKids.size, matched: null, missingInB: null, onlyInB: null };
       }
     });
-  }, [allDates, listA, listB, hasAbgleich, matchedAIds, matchedBIds]);
+  }, [allDates, listA, listB, hasAbgleich, matchedAIds, matchedBIds, matchedAKeys, matchedBKeys]);
 
   // Detail für gewählten Tag — nutzt Abgleich-Ergebnisse
   const dayDetail = useMemo(() => {
@@ -104,30 +116,39 @@ const TagesansichtPage = ({ blocks }) => {
       // Mit Abgleich: Nutze echte Match-Ergebnisse
       // Schritt 1: Alle A-Kinder einfügen, nach DB-ID indexiert
       const kinderById = {}; // a_entry_id → kind-Objekt
+      const kinderByEntryKey = {}; // a-name/date → kind-Objekt
       const kinder = {};     // name-key → kind-Objekt (für Deduplizierung gleicher A-Namen)
       aEntries.forEach(e => {
         const key = (e.nachname + '|' + e.vorname).toLowerCase();
+        const matchKey = entryKey(e.nachname, e.vorname, e.datum);
+        const isMatched = matchedAIds.has(e.id) || matchedAKeys.has(matchKey);
         if (!kinder[key]) {
-          const kind = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: true, inB: matchedAIds.has(e.id) };
+          const kind = { nachname: e.nachname, vorname: e.vorname, klasse: e.klasse || '', inA: true, inB: isMatched };
           kinder[key] = kind;
           kinderById[e.id] = kind;
+          kinderByEntryKey[matchKey] = kind;
         } else {
           kinderById[e.id] = kinder[key];
-          if (matchedAIds.has(e.id)) kinder[key].inB = true;
+          kinderByEntryKey[matchKey] = kinder[key];
+          if (isMatched) kinder[key].inB = true;
         }
       });
 
       // Schritt 2: B-Kinder verarbeiten
       bEntries.forEach(e => {
-        if (matchedBIds.has(e.id)) {
+        const bKey = entryKey(e.nachname, e.vorname, e.datum);
+        const isMatched = matchedBIds.has(e.id) || matchedBKeys.has(bKey);
+        if (isMatched) {
           // Gematcht → dem zugehörigen A-Kind zuordnen (nicht als separaten Eintrag!)
           const aId = bToAMap.get(e.id);
-          if (aId && kinderById[aId]) {
-            kinderById[aId].inB = true;
+          const aKey = bToAKeyMap.get(bKey);
+          const targetKind = (aId && kinderById[aId]) || (aKey && kinderByEntryKey[aKey]);
+          if (targetKind) {
+            targetKind.inB = true;
           }
           // Falls Klasse in B vorhanden aber nicht in A, übernehmen
-          if (aId && kinderById[aId] && !kinderById[aId].klasse && e.klasse) {
-            kinderById[aId].klasse = e.klasse;
+          if (targetKind && !targetKind.klasse && e.klasse) {
+            targetKind.klasse = e.klasse;
           }
         } else {
           // Nicht gematcht → als "Nur in B" hinzufügen
@@ -152,7 +173,7 @@ const TagesansichtPage = ({ blocks }) => {
       });
       return Object.values(kinder);
     }
-  }, [selectedDate, listA, listB, hasAbgleich, matchedAIds, matchedBIds, bToAMap]);
+  }, [selectedDate, listA, listB, hasAbgleich, matchedAIds, matchedBIds, matchedAKeys, matchedBKeys, bToAMap, bToAKeyMap]);
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
