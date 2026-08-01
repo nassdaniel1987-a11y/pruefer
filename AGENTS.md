@@ -93,7 +93,12 @@ candidates plus a check whether it is currently 9 o'clock in `Europe/Berlin`.
 The job only runs when a Ferienblock covers today. It fetches both lists, imports
 them, computes the comparison, saves it as a **new** Abgleich (leaving previous
 ones untouched), mails the report, and writes to `automatik_log` — including on
-failure, so a silent breakdown becomes visible.
+failure, so a silent breakdown becomes visible. A failed run also triggers its
+own mail; the log alone would go unnoticed.
+
+**Scope:** the comparison always covers the whole block, but the mail lists only
+**today's** discrepancies (block-wide totals stay in the header). Reporting the
+full block would repeat the same entries every morning for weeks.
 
 **Automatic matching only accepts scores ≥ 75** (`STRONG_MATCH_THRESHOLD`).
 Pairs between 60 and 74 are deliberately *not* matched; they are returned as

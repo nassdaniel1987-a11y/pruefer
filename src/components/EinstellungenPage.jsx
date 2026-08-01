@@ -109,8 +109,8 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
       setAutoStatus({
         ok: res.mail_ok,
         text: res.mail_ok
-          ? `${res.block}: ${k.nurInA} ohne Essen, ${k.nurInB} nicht angemeldet, ${k.unsicher} unsicher. Bericht verschickt.`
-          : `Abgleich lief durch (${k.nurInA} ohne Essen, ${k.nurInB} nicht angemeldet), aber: ${res.meldung}`
+          ? `${res.block} — im ganzen Block: ${k.nurInA} ohne Essen, ${k.nurInB} nicht angemeldet, ${k.unsicher} unsicher. Der Bericht per Mail zeigt davon nur den heutigen Tag.`
+          : `Abgleich lief durch (${k.nurInA} ohne Essen, ${k.nurInB} nicht angemeldet im ganzen Block), aber: ${res.meldung}`
       });
     }
     ladeAutomatik();
@@ -454,7 +454,9 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
                 Täglich um 09:01 automatisch abgleichen
                 <span className="block text-xs text-on-surface-variant mt-0.5">
                   Holt Liste A aus Firebase und Liste B aus kitafino, speichert einen neuen
-                  Abgleich und verschickt den Bericht. Läuft nur, wenn gerade ein Ferienblock aktiv ist.
+                  Abgleich über den ganzen Block und verschickt den Bericht — dieser zeigt
+                  die Abweichungen des <strong>heutigen Tages</strong>. Läuft nur, wenn gerade
+                  ein Ferienblock aktiv ist.
                 </span>
               </span>
             </label>

@@ -45,35 +45,50 @@ const textListe = (kinder) => {
 };
 
 /**
- * @param {{block:Object, ergebnis:Object, appUrl:string}} opts
+ * @param {{block:Object, ergebnis:Object, appUrl:string, fokus?:string}} opts
+ *   fokus — Tag, auf den sich der Bericht beschränkt (Standard: ergebnis.heute).
+ *   Der Abgleich umfasst immer den ganzen Block; die Mail zeigt bewusst nur
+ *   diesen einen Tag, sonst stünden dieselben Einträge wochenlang darin.
  * @returns {{betreff:string, html:string, text:string}}
  */
-const baueBericht = ({ block, ergebnis, appUrl }) => {
+const baueBericht = ({ block, ergebnis, appUrl, fokus }) => {
   const k = ergebnis.kennzahlen;
-  const fehltEssen = proKind(ergebnis.nurInA);
-  const nichtAngemeldet = proKind(ergebnis.nurInB);
-  const unsicher = ergebnis.unsicher;
+  const tag = fokus || ergebnis.heute;
+
+  const nurHeute = (eintraege) => eintraege.filter(e => e.date === tag);
+
+  const fehltEssen = proKind(nurHeute(ergebnis.nurInA));
+  const nichtAngemeldet = proKind(nurHeute(ergebnis.nurInB));
+  const unsicher = (ergebnis.unsicher || []).filter(u => u.tage.includes(tag));
+
+  // Gesamtstand des Blocks als Einordnung — sonst sieht man nicht, ob es
+  // insgesamt viele offene Fälle gibt oder nur heute zufällig keine.
+  const restBlock = {
+    ohneEssen: proKind(ergebnis.nurInA).length,
+    nichtAngemeldet: proKind(ergebnis.nurInB).length,
+  };
 
   const ohneBefund = fehltEssen.length === 0 && nichtAngemeldet.length === 0 && unsicher.length === 0;
 
   const betreff = ohneBefund
-    ? `Prüfer: keine Abweichungen — ${block.name}`
-    : `Prüfer: ${fehltEssen.length} ohne Essen, ${nichtAngemeldet.length} nicht angemeldet — ${block.name}`;
+    ? `Prüfer ${fmtDatum(tag)}: keine Abweichungen`
+    : `Prüfer ${fmtDatum(tag)}: ${fehltEssen.length} ohne Essen, ${nichtAngemeldet.length} nicht angemeldet`;
 
   const html = `
 <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:680px;margin:0 auto;color:#1c1b1f">
-  <h2 style="margin:0 0 4px">Abgleich ${esc(block.name)}</h2>
+  <h2 style="margin:0 0 4px">${fmtDatum(tag)} — ${esc(block.name)}</h2>
   <p style="margin:0 0 16px;color:#666;font-size:14px">
-    ${fmtDatum(ergebnis.von)} – ${fmtDatum(ergebnis.bis)} · automatisch erstellt am ${fmtDatum(ergebnis.heute)}
+    Abweichungen für diesen Tag. Der Abgleich umfasst den ganzen Block
+    (${fmtDatum(ergebnis.von)} – ${fmtDatum(ergebnis.bis)}).
   </p>
 
   <div style="background:#f5f5f7;border-radius:10px;padding:12px 16px;margin-bottom:24px;font-size:14px">
-    <strong>${k.kinderA}</strong> Kinder angemeldet (${k.eintraegeA} Tage) ·
-    <strong>${k.kinderB}</strong> Kinder mit Essen (${k.eintraegeB} Tage) ·
-    <strong>${k.exakt + k.automatisch}</strong> Zuordnungen
+    <strong>Ganzer Block:</strong>
+    ${k.kinderA} Kinder angemeldet · ${k.kinderB} mit Essen ·
+    ${restBlock.ohneEssen} offene Fälle ohne Essen · ${restBlock.nichtAngemeldet} nicht angemeldet
   </div>
 
-  ${ohneBefund ? '<p style="font-size:15px">Keine Abweichungen. Alle Anmeldungen haben eine passende Essensbuchung.</p>' : ''}
+  ${ohneBefund ? `<p style="font-size:15px">Für den ${fmtDatum(tag)} gibt es keine Abweichungen. Alle Anmeldungen haben eine passende Essensbuchung.</p>` : ''}
 
   <h3 style="margin:0 0 2px;font-size:15px">Angemeldet, aber kein Essen gebucht (${fehltEssen.length})</h3>
   ${tabelle(fehltEssen)}
@@ -113,10 +128,10 @@ const baueBericht = ({ block, ergebnis, appUrl }) => {
 </div>`.trim();
 
   const text = [
-    `Abgleich ${block.name}`,
-    `${fmtDatum(ergebnis.von)} - ${fmtDatum(ergebnis.bis)}`,
+    `${fmtDatum(tag)} - ${block.name}`,
+    `Abweichungen fuer diesen Tag. Abgleich umfasst ${fmtDatum(ergebnis.von)} - ${fmtDatum(ergebnis.bis)}.`,
     '',
-    `${k.kinderA} Kinder angemeldet (${k.eintraegeA} Tage), ${k.kinderB} mit Essen (${k.eintraegeB} Tage), ${k.exakt + k.automatisch} Zuordnungen`,
+    `Ganzer Block: ${k.kinderA} Kinder angemeldet, ${k.kinderB} mit Essen, ${restBlock.ohneEssen} offene Faelle ohne Essen, ${restBlock.nichtAngemeldet} nicht angemeldet`,
     '',
     `ANGEMELDET, ABER KEIN ESSEN GEBUCHT (${fehltEssen.length})`,
     textListe(fehltEssen),
