@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import * as XLSX from 'xlsx';
+import { ladeXLSX } from '../utils/xlsx';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { fmtDate } from '../utils/helpers';
@@ -39,7 +39,8 @@ const FinanzenPage = ({ blocks }) => {
       {loading && <FinanzenSkeleton />}
 
       {!loading && data && data.statistik && (() => {
-        const exportFinanzen = () => {
+        const exportFinanzen = async () => {
+          const XLSX = await ladeXLSX();
           const wb = XLSX.utils.book_new();
           if (data.buchungen?.length) {
             const rows = data.buchungen.map(k => ({

@@ -1,7 +1,12 @@
-// Einmalig aufrufen: https://deine-seite.netlify.app/.netlify/functions/setup-db
-// Legt alle Tabellen in der Neon-Datenbank an
+// Einmalig aufrufen: https://deine-seite.netlify.app/.netlify/functions/setup-db?secret=…
+// Legt alle Tabellen in der Neon-Datenbank an.
+//
+// Geschützt durch SETUP_SECRET (oder eine gültige Sitzung) — der Endpunkt legt
+// einen Administrator an und darf deshalb nicht offen erreichbar sein.
 
 const { Client } = require('pg');
+const crypto = require('crypto');
+const { pruefeWartungszugriff } = require('./utils/guard');
 
 exports.handler = async (event) => {
   // Nur GET erlauben
@@ -16,6 +21,9 @@ exports.handler = async (event) => {
 
   try {
     await client.connect();
+
+    const abgelehnt = await pruefeWartungszugriff(event, client);
+    if (abgelehnt) return abgelehnt;
 
     await client.query(`
       -- Benutzer (Admin-Accounts)
@@ -98,23 +106,41 @@ exports.handler = async (event) => {
       CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
     `);
 
-    // Standard-Admin anlegen falls noch keiner existiert
-    // Passwort: "admin123" (gehashed) - beim ersten Login ändern!
+    // Admin anlegen, falls noch keiner existiert.
+    //
+    // Früher stand hier das feste Passwort "admin123". Das war der eigentliche
+    // Angriffspunkt: wer den Endpunkt aufrief, kannte die Zugangsdaten. Jetzt
+    // wird entweder SETUP_ADMIN_PASSWORD verwendet oder ein Zufallspasswort
+    // erzeugt, das genau einmal in der Antwort erscheint.
     const bcrypt = require('bcryptjs');
-    const defaultHash = await bcrypt.hash('admin123', 12);
+    const vorgegeben = process.env.SETUP_ADMIN_PASSWORD;
+    const passwort = vorgegeben || crypto.randomBytes(12).toString('base64url');
+    const hash = await bcrypt.hash(passwort, 12);
 
-    await client.query(`
+    const angelegt = await client.query(`
       INSERT INTO users (username, password_hash)
       VALUES ('admin', $1)
       ON CONFLICT (username) DO NOTHING
-    `, [defaultHash]);
+      RETURNING id
+    `, [hash]);
+
+    const istNeu = angelegt.rows.length > 0;
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
-        message: 'Datenbank erfolgreich eingerichtet. Standard-Login: admin / admin123 — Bitte sofort ändern!'
+        message: istNeu
+          ? 'Datenbank eingerichtet und Administrator angelegt.'
+          : 'Datenbank eingerichtet. Ein Administrator war bereits vorhanden und wurde nicht verändert.',
+        // Nur beim erstmaligen Anlegen und nur, wenn wir das Passwort erzeugt
+        // haben — ein vorgegebenes kennt der Aufrufer ohnehin.
+        ...(istNeu && !vorgegeben ? {
+          benutzername: 'admin',
+          passwort,
+          hinweis: 'Dieses Passwort wird nur jetzt angezeigt. Notiere es und ändere es nach dem ersten Login.'
+        } : {})
       })
     };
 

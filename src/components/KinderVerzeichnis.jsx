@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import * as XLSX from 'xlsx';
+import { ladeXLSX } from '../utils/xlsx';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { confirmDialog } from '../utils/confirm';
@@ -187,7 +187,8 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
+      const XLSX = await ladeXLSX();
       const wb = XLSX.read(evt.target.result, { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });

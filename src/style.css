@@ -1,3 +1,21 @@
+/* Tailwind wird seit der Umstellung vom CDN hier eingebunden und beim Bauen
+   erzeugt. Die Reihenfolge ist wichtig: base zuerst, damit die eigenen Regeln
+   weiter unten in dieser Datei Vorrang behalten. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Vom CDN-Setup übernommen (standen früher inline in index.html) */
+body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes toastIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+
 :root {
   --color-background: #fcf8fd;
   --color-on-background: #1c1b1f;

@@ -4,6 +4,7 @@
 // POST { action:'delete', ferienblock_id, liste } -> Leeren
 
 const { Client } = require('pg');
+const { toYmd } = require('./utils/datum');
 
 const getClient = () => new Client({
   connectionString: process.env.DATABASE_URL,
@@ -121,7 +122,7 @@ exports.handler = async (event) => {
         abgleichRows.rows.forEach(r => {
           const personKey = (r.nachname + '|' + r.vorname).toLowerCase();
           if (!oldPersonen.has(personKey)) oldPersonen.set(personKey, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
-          if (r.datum) oldPersonen.get(personKey).tage.add(String(r.datum).split('T')[0]);
+          if (r.datum) oldPersonen.get(personKey).tage.add(toYmd(r.datum));
         });
 
         // Aktuelle Personen aus neuestem Abgleich (falls verschieden vom ältesten)
@@ -138,7 +139,7 @@ exports.handler = async (event) => {
         currentQuery.rows.forEach(r => {
           const personKey = (r.nachname + '|' + r.vorname).toLowerCase();
           if (!newPersonen.has(personKey)) newPersonen.set(personKey, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
-          if (r.datum) newPersonen.get(personKey).tage.add(String(r.datum).split('T')[0]);
+          if (r.datum) newPersonen.get(personKey).tage.add(toYmd(r.datum));
         });
 
         const details = [];
@@ -273,7 +274,7 @@ exports.handler = async (event) => {
       oldRows.rows.forEach(r => {
         const key = (r.nachname + '|' + r.vorname).toLowerCase();
         if (!oldPersonen.has(key)) oldPersonen.set(key, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
-        oldPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
+        oldPersonen.get(key).tage.add(toYmd(r.datum));
       });
 
       // Bestehende Einträge überschreiben (beim Merge nur im Zeitraum)
@@ -336,7 +337,7 @@ exports.handler = async (event) => {
         valid2.forEach(e => {
           const key = (e.nachname + '|' + (e.vorname || '')).toLowerCase();
           if (!newPersonen.has(key)) newPersonen.set(key, { nachname: e.nachname, vorname: e.vorname || '', tage: new Set() });
-          newPersonen.get(key).tage.add(String(e.datum).split('T')[0]);
+          newPersonen.get(key).tage.add(toYmd(e.datum));
         });
 
         const details = [];

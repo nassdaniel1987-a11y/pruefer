@@ -1,4 +1,9 @@
-// Matching algorithms extracted from App.jsx
+// Namens-Matching für den Abgleich von Liste A gegen Liste B.
+//
+// Maßgebliche Fassung. netlify/functions/utils/nameMatch.js ist die
+// CommonJS-Spiegelung davon (das Frontend ist ESM, die Functions sind CJS).
+// Änderungen hier müssen dort nachgezogen werden — tests/matching.test.mjs
+// vergleicht beide Fassungen und schlägt sonst fehl.
 
 const nicknames = { 'alex': 'alexander', 'sandra': 'alexandra', 'max': 'maximilian', 'hans': 'johannes', 'chris': 'christoph', 'sepp': 'josef', 'joe': 'josef', 'jörg': 'georg', 'joerg': 'georg' };
 

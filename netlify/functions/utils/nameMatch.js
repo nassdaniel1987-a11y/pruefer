@@ -1,5 +1,13 @@
-// CommonJS-Version der Matching-Funktionen (identisch zu src/utils/matching.js)
-// Wird von netlify/functions/kinder.js für Fuzzy-Sync verwendet.
+// CommonJS-Spiegel von src/utils/matching.js.
+//
+// ACHTUNG: src/utils/matching.js ist die maßgebliche Fassung. Diese Datei muss
+// wortgleich dieselben Ergebnisse liefern — das Frontend ist ESM, die Functions
+// sind CommonJS, ein gemeinsames Modul ginge nur über einen Umbau aller
+// Functions auf ESM.
+//
+// Damit die Kopie nicht unbemerkt abdriftet, vergleicht tests/matching.test.mjs
+// beide Fassungen über einen Korpus von Namenspaaren. Wer hier oder dort etwas
+// ändert, muss es in beiden Dateien tun — sonst schlägt `npm test` fehl.
 
 const nicknames = { 'alex': 'alexander', 'sandra': 'alexandra', 'max': 'maximilian', 'hans': 'johannes', 'chris': 'christoph', 'sepp': 'josef', 'joe': 'josef', 'jörg': 'georg', 'joerg': 'georg' };
 
@@ -83,7 +91,34 @@ const calcScore = (nameA, nameB) => {
   const coveragePenalty = coverageRatio < 0.5 ? 0.5 : 1;
   let score = Math.max(0, Math.round((avg - penalty) * coveragePenalty));
   if (!nachnameOk) { score = Math.min(score, 40); }
-  return { score };
+  const reasons = [];
+  if (avail.length > 0) reasons.push(`${avail.length} Teil(e) ohne Partner`);
+  if (!nachnameOk) reasons.push('Nachname unterschiedlich');
+  const reason = reasons.length > 0 ? reasons.join(', ') : 'Alle Teile zugeordnet';
+  return { score, reason };
 };
 
-module.exports = { tokenizeName, koelnerPhonetik, jaroWinkler, calcScore };
+const analyzeMatch = (nameA, nameB) => {
+  const tA = tokenizeName(nameA), tB = tokenizeName(nameB);
+  const origA = nameA.split(/\s+/).filter(Boolean), origB = nameB.split(/\s+/).filter(Boolean);
+  let matchedA = new Set(), matchedB = new Set(), avail = [...tB];
+  for (let i = 0; i < tA.length; i++) {
+    let best = { score: 0, idx: -1 };
+    for (let j = 0; j < avail.length; j++) {
+      const jw = jaroWinkler(tA[i], avail[j]);
+      const ph = koelnerPhonetik(tA[i]) === koelnerPhonetik(avail[j]) && koelnerPhonetik(tA[i]).length > 1;
+      if ((jw > 0.8 || ph) && jw > best.score) best = { score: jw, idx: j };
+    }
+    if (best.idx !== -1) {
+      matchedA.add(i);
+      matchedB.add(tB.indexOf(avail[best.idx]));
+      avail.splice(best.idx, 1);
+    }
+  }
+  return {
+    tokensA: origA.map((t, i) => ({ token: t, matched: matchedA.has(i) })),
+    tokensB: origB.map((t, i) => ({ token: t, matched: matchedB.has(i) }))
+  };
+};
+
+module.exports = { nicknames, tokenizeName, koelnerPhonetik, jaroWinkler, calcScore, analyzeMatch };

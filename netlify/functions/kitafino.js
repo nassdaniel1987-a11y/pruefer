@@ -10,6 +10,7 @@
 // Das Session-Cookie gilt laut Portal für die ganze Domain '.kitafino.de'.
 
 const { Client } = require('pg');
+const { toYmd } = require('./utils/datum');
 
 const AUTH_BASE = 'https://auth.kitafino.de/sys_k2';
 const FACILITY_BASE = 'https://facility.kitafino.de/sys_k2/caterer';
@@ -395,17 +396,8 @@ const ymd = (d) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
-// DATE-Spalten liefert node-postgres als JS-Date. String(date) ergibt dann
-// "Tue May 26 2026 00:00:00 GMT+0200 (…)" — ein split('T') darauf liefert
-// Müll, mit dem sich Datumsgrenzen nicht vergleichen lassen.
-const toYmd = (value) => {
-  if (value instanceof Date) return ymd(value);
-  const s = String(value);
-  const iso = s.match(/^\d{4}-\d{2}-\d{2}/);
-  if (iso) return iso[0];
-  const parsed = new Date(s);
-  return isNaN(parsed) ? null : ymd(parsed);
-};
+// toYmd kommt aus utils/datum.js — siehe dortigen Kommentar zur Fallstrick-
+// Kombination aus DATE-Spalten, Date-Objekten und Zeitzonen.
 
 // ─── Handler ───────────────────────────────────────────────
 exports.handler = async (event) => {

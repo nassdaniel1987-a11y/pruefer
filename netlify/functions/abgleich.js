@@ -5,6 +5,7 @@
 // GET  ?ferienblock_id=X&action=dashboard -> Dashboard-Statistiken
 
 const { Client } = require('pg');
+const { toYmd } = require('./utils/datum');
 
 const getClient = () => new Client({
   connectionString: process.env.DATABASE_URL,
@@ -107,12 +108,12 @@ exports.handler = async (event) => {
         // Personen-Maps (key = nachname|vorname|datum)
         const abgleichMap = new Map();
         abgleichRows.rows.forEach(r => {
-          const key = `${r.nachname_norm}|${r.vorname_norm}|${String(r.datum).split('T')[0]}`;
+          const key = `${r.nachname_norm}|${r.vorname_norm}|${toYmd(r.datum)}`;
           abgleichMap.set(key, { nachname: r.nachname, vorname: r.vorname, datum: r.datum });
         });
         const listeMap = new Map();
         listeRows.rows.forEach(r => {
-          const key = `${r.nachname_norm}|${r.vorname_norm}|${String(r.datum).split('T')[0]}`;
+          const key = `${r.nachname_norm}|${r.vorname_norm}|${toYmd(r.datum)}`;
           listeMap.set(key, { nachname: r.nachname, vorname: r.vorname, datum: r.datum });
         });
 
@@ -280,13 +281,13 @@ exports.handler = async (event) => {
           const aDates = await client.query(
             `SELECT DISTINCT datum FROM liste_a WHERE id = ANY($1)`, [aIds]
           );
-          aDates.rows.forEach(r => affectedDates.add(r.datum.toISOString().split('T')[0]));
+          aDates.rows.forEach(r => affectedDates.add(toYmd(r.datum)));
         }
         if (bIds.length > 0) {
           const bDates = await client.query(
             `SELECT DISTINCT datum FROM liste_b WHERE id = ANY($1)`, [bIds]
           );
-          bDates.rows.forEach(r => affectedDates.add(r.datum.toISOString().split('T')[0]));
+          bDates.rows.forEach(r => affectedDates.add(toYmd(r.datum)));
         }
         // Denormalisierte Daten aus den Matches selbst (für nur-in-A/B ohne Gegenseite)
         matches.forEach(m => {

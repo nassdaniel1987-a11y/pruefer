@@ -1,7 +1,11 @@
-// Einmalig aufrufen: https://pruefer.netlify.app/.netlify/functions/migrate
-// Führt alle DB-Migrationen aus (idempotent — kann mehrfach aufgerufen werden)
+// Aufrufen mit: https://pruefer.netlify.app/.netlify/functions/migrate?secret=…
+// Führt alle DB-Migrationen aus (idempotent — kann mehrfach aufgerufen werden).
+//
+// Geschützt durch SETUP_SECRET oder eine gültige Sitzung: der Endpunkt ändert
+// das Datenbankschema und gehört nicht offen ins Netz.
 
 const { Client } = require('pg');
+const { pruefeWartungszugriff } = require('./utils/guard');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') {
@@ -17,6 +21,9 @@ exports.handler = async (event) => {
 
   try {
     await client.connect();
+
+    const abgelehnt = await pruefeWartungszugriff(event, client);
+    if (abgelehnt) return abgelehnt;
 
     // ── Migration 1: Foreign Key Constraints fixen ──
     try {
@@ -188,6 +195,30 @@ exports.handler = async (event) => {
       results.push('✓ Spalte "kitafino_id" in liste_b und kinder hinzugefügt');
     } catch (e) {
       results.push('⚠ kitafino_id-Spalten: ' + e.message);
+    }
+
+    // ── Migration 9: Fehlversuche beim Login ──
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS login_versuche (
+          id SERIAL PRIMARY KEY,
+          benutzername VARCHAR(200) NOT NULL,
+          zeitpunkt TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_login_versuche
+          ON login_versuche (benutzername, zeitpunkt DESC);
+      `);
+      results.push('✓ Tabelle "login_versuche" erstellt');
+    } catch (e) {
+      results.push('⚠ login_versuche: ' + e.message);
+    }
+
+    // ── Migration 10: abgelaufene Sitzungen einmalig aufräumen ──
+    try {
+      const weg = await client.query('DELETE FROM sessions WHERE expires_at < NOW()');
+      results.push(`✓ ${weg.rowCount} abgelaufene Sitzungen entfernt`);
+    } catch (e) {
+      results.push('⚠ Sitzungen aufräumen: ' + e.message);
     }
 
     return {

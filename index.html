@@ -4,94 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prüfer - Ferienversorgung</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- Tailwind wird gebaut, nicht per CDN geladen: siehe tailwind.config.js
+       und die @tailwind-Direktiven in src/style.css -->
   <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <!-- Material Symbols -->
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "background": "var(--color-background)",
-            "on-background": "var(--color-on-background)",
-            "surface": "var(--color-surface)",
-            "surface-dim": "var(--color-surface-dim)",
-            "surface-bright": "var(--color-surface-bright)",
-            "surface-container-lowest": "var(--color-surface-container-lowest)",
-            "surface-container-low": "var(--color-surface-container-low)",
-            "surface-container": "var(--color-surface-container)",
-            "surface-container-high": "var(--color-surface-container-high)",
-            "surface-container-highest": "var(--color-surface-container-highest)",
-            "on-surface": "var(--color-on-surface)",
-            "on-surface-variant": "var(--color-on-surface-variant)",
-            "outline": "var(--color-outline)",
-            "outline-variant": "var(--color-outline-variant)",
-            "inverse-surface": "var(--color-inverse-surface)",
-            "inverse-on-surface": "var(--color-inverse-on-surface)",
-            "inverse-primary": "var(--color-inverse-primary)",
-            "primary": "var(--color-primary)",
-            "on-primary": "var(--color-on-primary)",
-            "primary-container": "var(--color-primary-container)",
-            "on-primary-container": "var(--color-on-primary-container)",
-            "primary-fixed": "var(--color-primary-fixed)",
-            "on-primary-fixed": "var(--color-on-primary-fixed)",
-            "primary-fixed-dim": "var(--color-primary-fixed-dim)",
-            "on-primary-fixed-variant": "var(--color-on-primary-fixed-variant)",
-            "secondary": "var(--color-secondary)",
-            "on-secondary": "var(--color-on-secondary)",
-            "secondary-container": "var(--color-secondary-container)",
-            "on-secondary-container": "var(--color-on-secondary-container)",
-            "secondary-fixed": "var(--color-secondary-fixed)",
-            "on-secondary-fixed": "var(--color-on-secondary-fixed)",
-            "secondary-fixed-dim": "var(--color-secondary-fixed-dim)",
-            "on-secondary-fixed-variant": "var(--color-on-secondary-fixed-variant)",
-            "tertiary": "var(--color-tertiary)",
-            "on-tertiary": "var(--color-on-tertiary)",
-            "tertiary-container": "var(--color-tertiary-container)",
-            "on-tertiary-container": "var(--color-on-tertiary-container)",
-            "tertiary-fixed": "var(--color-tertiary-fixed)",
-            "on-tertiary-fixed": "var(--color-on-tertiary-fixed)",
-            "tertiary-fixed-dim": "var(--color-tertiary-fixed-dim)",
-            "on-tertiary-fixed-variant": "var(--color-on-tertiary-fixed-variant)",
-            "error": "var(--color-error)",
-            "on-error": "var(--color-on-error)",
-            "error-container": "var(--color-error-container)",
-            "on-error-container": "var(--color-on-error-container)",
-            "surface-tint": "var(--color-surface-tint)",
-          },
-          borderRadius: {
-            DEFAULT: "0.25rem",
-            lg: "0.5rem",
-            xl: "0.75rem",
-            "2xl": "1rem",
-            "3xl": "1.5rem",
-            full: "9999px"
-          },
-          fontFamily: {
-            headline: ["Plus Jakarta Sans", "sans-serif"],
-            body: ["Inter", "Plus Jakarta Sans", "sans-serif"],
-            label: ["Inter", "Plus Jakarta Sans", "sans-serif"]
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    body { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      vertical-align: middle;
-    }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes toastIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
-  </style>
 </head>
 <body class="bg-surface text-on-surface h-full">
   <div id="root" class="h-full"></div>

@@ -12,6 +12,49 @@ const getClient = () => new Client({
 
 const generateToken = () => crypto.randomBytes(48).toString('hex');
 
+// ─── Bremse gegen Passwort-Raten ───────────────────────────
+const MAX_VERSUCHE = 5;
+const SPERRE_MINUTEN = 15;
+
+// Alle Helfer sind fehlertolerant: existiert die Tabelle login_versuche noch
+// nicht (Migration nicht gelaufen), soll der Login trotzdem funktionieren —
+// die Anmeldung darf nicht an der Schutzmaßnahme scheitern.
+const pruefeSperre = async (client, name) => {
+  try {
+    const res = await client.query(
+      `SELECT COUNT(*)::int AS n, MAX(zeitpunkt) AS letzter
+       FROM login_versuche
+       WHERE benutzername = $1 AND zeitpunkt > NOW() - ($2 || ' minutes')::interval`,
+      [name, String(SPERRE_MINUTEN)]
+    );
+    const { n, letzter } = res.rows[0];
+    if (n < MAX_VERSUCHE) return 0;
+    const restMs = new Date(letzter).getTime() + SPERRE_MINUTEN * 60000 - Date.now();
+    return Math.max(1, Math.ceil(restMs / 60000));
+  } catch {
+    return 0;
+  }
+};
+
+const merkeFehlversuch = async (client, name) => {
+  try {
+    await client.query(
+      'INSERT INTO login_versuche (benutzername) VALUES ($1)',
+      [name]
+    );
+    // Alte Einträge wegräumen, die Tabelle soll nicht wachsen.
+    await client.query(
+      "DELETE FROM login_versuche WHERE zeitpunkt < NOW() - INTERVAL '1 day'"
+    );
+  } catch { /* Tabelle fehlt — Login bleibt möglich */ }
+};
+
+const loescheFehlversuche = async (client, name) => {
+  try {
+    await client.query('DELETE FROM login_versuche WHERE benutzername = $1', [name]);
+  } catch { /* Tabelle fehlt */ }
+};
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -37,12 +80,27 @@ exports.handler = async (event) => {
         return respond(400, { error: 'Benutzername und Passwort erforderlich' });
       }
 
+      const name = username.toLowerCase().trim();
+
+      // Fehlversuche zählen. Ohne Bremse lässt sich ein schwaches Passwort
+      // in Ruhe durchprobieren — bei einer Handvoll Konten ist das real.
+      // Gezählt wird pro Benutzername, nicht pro IP: Netlify-Functions sehen
+      // je nach Aufruf unterschiedliche Adressen, und ein gesperrter Name
+      // schützt genau das Konto, um das es geht.
+      const gesperrt = await pruefeSperre(client, name);
+      if (gesperrt) {
+        return respond(429, {
+          error: `Zu viele Fehlversuche. Bitte in ${gesperrt} Minuten erneut versuchen.`
+        });
+      }
+
       const result = await client.query(
         'SELECT id, username, password_hash FROM users WHERE username = $1',
-        [username.toLowerCase().trim()]
+        [name]
       );
 
       if (result.rows.length === 0) {
+        await merkeFehlversuch(client, name);
         return respond(401, { error: 'Ungültige Anmeldedaten' });
       }
 
@@ -50,8 +108,11 @@ exports.handler = async (event) => {
       const valid = await bcrypt.compare(password, user.password_hash);
 
       if (!valid) {
+        await merkeFehlversuch(client, name);
         return respond(401, { error: 'Ungültige Anmeldedaten' });
       }
+
+      await loescheFehlversuche(client, name);
 
       // Session erstellen (7 Tage)
       const token = generateToken();
@@ -61,6 +122,10 @@ exports.handler = async (event) => {
         'INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)',
         [token, user.id, expiresAt]
       );
+
+      // Abgelaufene Sitzungen bei der Gelegenheit aufräumen — sonst wächst
+      // die Tabelle unbegrenzt, weil nur beim Abmelden gelöscht wird.
+      await client.query('DELETE FROM sessions WHERE expires_at < NOW()').catch(() => {});
 
       return respond(200, {
         success: true,

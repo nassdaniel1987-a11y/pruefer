@@ -23,7 +23,9 @@
       "Bash(npx netlify:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(grep -v \"//.*badge\\\\|//.*btn\\\\|html +=\")"
+      "Bash(grep -v \"//.*badge\\\\|//.*btn\\\\|html +=\")",
+      "Bash(git fetch *)",
+      "Bash(git ls-remote *)"
     ]
   }
 }

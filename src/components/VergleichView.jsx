@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import * as XLSX from 'xlsx';
+import { ladeXLSX } from '../utils/xlsx';
 import { toast } from '../utils/toast';
 import { fmtDate } from '../utils/helpers';
 import { computeDiff } from '../utils/diff';
@@ -107,7 +107,8 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
   ];
 
   // Excel-Export
-  const exportDiffExcel = () => {
+  const exportDiffExcel = async () => {
+    const XLSX = await ladeXLSX();
     const wb = XLSX.utils.book_new();
     sections.forEach(sec => {
       if (!sec.items.length) return;

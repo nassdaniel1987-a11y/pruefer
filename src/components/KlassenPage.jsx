@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import * as XLSX from 'xlsx';
+import { ladeXLSX } from '../utils/xlsx';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { fmtDate } from '../utils/helpers';
@@ -106,8 +106,9 @@ const KlassenPage = ({ blocks }) => {
   const totalKinderA = klassenData.reduce((s, k) => s + k.kinderA, 0);
   const totalOhneB = klassenData.reduce((s, k) => s + k.ohneB, 0);
 
-  const exportKlassen = () => {
+  const exportKlassen = async () => {
     if (!klassenData.length) return;
+    const XLSX = await ladeXLSX();
     const wb = XLSX.utils.book_new();
     const rows = klassenData.map(k => ({
       Klasse: k.klasse,

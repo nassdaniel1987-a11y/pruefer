@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import * as XLSX from 'xlsx';
+import { ladeXLSX } from '../utils/xlsx';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { fmtDate, fmtDateTime } from '../utils/helpers';
@@ -80,7 +80,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
   const hatAbgleich = vals.some(d => d?.letzter_abgleich);
 
   // Excel-Export: Fehlende Kinder
-  const exportFehlende = () => {
+  const exportFehlende = async () => {
     const allFehlende = [];
     for (const bId of Object.keys(abgleichDetail)) {
       const am = abgleichDetail[bId]?.matches;
@@ -91,6 +91,7 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
       });
     }
     if (!allFehlende.length) { toast.info('Lade erst Details, dann exportieren'); return; }
+    const XLSX = await ladeXLSX();
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(allFehlende), 'Kein Essen gebucht');
     XLSX.writeFile(wb, 'Kein_Essen_gebucht.xlsx');

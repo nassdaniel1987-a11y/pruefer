@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import * as XLSX from 'xlsx';
+import { ladeXLSX } from '../utils/xlsx';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { confirmDialog } from '../utils/confirm';
@@ -94,7 +94,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     if (!file) return;
     setIsLoading(true);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
+      const XLSX = await ladeXLSX();
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, { type: 'array', cellDates: false });
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -437,7 +438,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     }
   };
 
-  const exportExcel = () => {
+  const exportExcel = async () => {
+    const XLSX = await ladeXLSX();
     const wb = XLSX.utils.book_new();
     const fmt = (d) => fmtDate(d);
     // Nur-in-A Sheet
