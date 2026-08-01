@@ -342,6 +342,11 @@ const parseDay = (html) => {
   // und darf nicht als "keine Buchungen" durchgehen.
   if (!table) return { bestellungen, hatTabelle: false };
 
+  // Das Portal gibt jeden Abschnitt zweimal aus (einmal je Ansicht im
+  // Tab-Aufbau) — mit identischem Inhalt. Ohne Entdopplung zaehlt jede
+  // Buchung doppelt: 370 statt der 185, die die Monatsuebersicht nennt.
+  const gesehen = new Set();
+
   let mode = null;
   for (const row of parseRows(table)) {
     const joined = row.cells.join(' | ');
@@ -355,6 +360,12 @@ const parseDay = (html) => {
 
     const [benutzer, , dritte, vierte] = row.cells;
     if (!benutzer || !benutzer.includes(',')) continue;
+
+    // Ein Kind kann pro Tag nur ein Essen gebucht haben — der erste Treffer
+    // gewinnt, jede weitere Zeile zum selben Kind ist die Dopplung.
+    const schluessel = norm(benutzer);
+    if (gesehen.has(schluessel)) continue;
+    gesehen.add(schluessel);
 
     bestellungen.push({
       benutzer,

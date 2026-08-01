@@ -718,6 +718,35 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                           {kitafinoVorschau.tage_abgefragt} Tage abgefragt, davon {kitafinoVorschau.tage_ohne_essen} ohne Essen
                         </p>
                       </div>
+                      {/* Geholte Daten einsehbar machen — sonst muesste man dem
+                          Abruf blind vertrauen, bevor Liste B ueberschrieben wird. */}
+                      <details className="mb-3">
+                        <summary className="cursor-pointer text-xs text-primary font-semibold select-none">
+                          Geholte Daten ansehen ({kitafinoVorschau.eintraege.length} Zeilen)
+                        </summary>
+                        <div className="max-h-64 overflow-y-auto rounded-lg border border-outline-variant/20 mt-2">
+                          <table className="w-full text-xs">
+                            <thead className="bg-surface-container sticky top-0">
+                              <tr>
+                                <th className="px-2 py-1 text-on-surface-variant font-medium text-left">Name</th>
+                                <th className="px-2 py-1 text-on-surface-variant font-medium text-left">Datum</th>
+                                <th className="px-2 py-1 text-on-surface-variant font-medium text-left">Menü</th>
+                                <th className="px-2 py-1 text-on-surface-variant font-medium text-left">ID</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {kitafinoVorschau.eintraege.map((e, i) => (
+                                <tr key={i} className="border-t border-outline-variant/10">
+                                  <td className="px-2 py-1 whitespace-nowrap">{e.vorname} {e.nachname}</td>
+                                  <td className="px-2 py-1 whitespace-nowrap">{fmtDate(e.datum)}</td>
+                                  <td className="px-2 py-1 text-on-surface-variant">{e.menu || '—'}</td>
+                                  <td className="px-2 py-1 font-mono text-[10px] text-on-surface-variant">{e.kitafino_id || '—'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </details>
                       <div className={`mb-3 p-2.5 rounded-lg text-xs border ${kitafinoVorschau.ist_teilzeitraum ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400' : 'bg-error/10 border-error/30 text-error'}`}>
                         <span className="material-symbols-outlined text-sm align-middle mr-1">
                           {kitafinoVorschau.ist_teilzeitraum ? 'merge' : 'warning'}
