@@ -29,7 +29,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
 
   // Edit-Modal
   const [editKind, setEditKind] = useState(null);
-  const [editForm, setEditForm] = useState({ nachname: '', vorname: '', klasse: '', notizen: '' });
+  const [editForm, setEditForm] = useState({ nachname: '', vorname: '', klasse: '', notizen: '', kitafino_id: '' });
 
   // Duplikat-Erkennung
   const [showDuplicates, setShowDuplicates] = useState(false);
@@ -297,7 +297,7 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
   // Kind bearbeiten
   const startEdit = (k) => {
     setEditKind(k);
-    setEditForm({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse || '', notizen: k.notizen || '' });
+    setEditForm({ nachname: k.nachname, vorname: k.vorname, klasse: k.klasse || '', notizen: k.notizen || '', kitafino_id: k.kitafino_id || '' });
   };
   const saveEdit = async () => {
     await API.post('kinder', { action: 'edit', id: editKind.id, ...editForm });
@@ -340,6 +340,18 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
       if (selectedKindId === typoId) setSelectedKindId(hauptId);
     }
   };
+
+  // kitafino-IDs, die mehr als einem Kind zugeordnet sind. Das passiert bei
+  // Namensdrehern oder Fehlzuordnungen und wird bewusst angezeigt statt per
+  // DB-Constraint verhindert — sonst schlüge der Abgleich hart fehl.
+  const kitafinoDoppelt = React.useMemo(() => {
+    const zaehler = new Map();
+    kinder.forEach(k => {
+      if (!k.kitafino_id) return;
+      zaehler.set(k.kitafino_id, (zaehler.get(k.kitafino_id) || 0) + 1);
+    });
+    return new Set([...zaehler].filter(([, n]) => n > 1).map(([id]) => id));
+  }, [kinder]);
 
   // Filter + Sortierung
   const filtered = kinder.filter(k =>
@@ -611,6 +623,25 @@ return (
                       <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
                       <span className="text-xs text-on-surface-variant font-medium">ID: #{akte.kind.id}</span>
                     </div>
+                    {/* kitafino-ID: stabiler Schlüssel des Caterers, kommt beim
+                        Abgleich automatisch von der gematchten Liste-B-Buchung. */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="material-symbols-outlined text-sm text-on-surface-variant">restaurant</span>
+                      {akte.kind.kitafino_id ? (
+                        <>
+                          <span className="text-xs font-mono text-on-surface bg-surface-container-low px-2 py-0.5 rounded border border-outline-variant/20">
+                            {akte.kind.kitafino_id}
+                          </span>
+                          {kitafinoDoppelt.has(akte.kind.kitafino_id) && (
+                            <span className="text-[10px] font-bold text-error bg-error/10 border border-error/30 px-2 py-0.5 rounded" title="Diese kitafino-ID ist mehreren Kindern zugeordnet — vermutlich ein Namensdreher oder eine Fehlzuordnung.">
+                              mehrfach vergeben
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-on-surface-variant italic">keine kitafino-ID</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -784,6 +815,11 @@ return (
               <div className="space-y-1">
                 <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">Klasse (optional)</label>
                 <input className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm" value={editForm.klasse} onChange={e => setEditForm({ ...editForm, klasse: e.target.value })} placeholder="Klasse eintragen" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">kitafino-ID (optional)</label>
+                <input className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg transition-all text-sm font-mono" value={editForm.kitafino_id} onChange={e => setEditForm({ ...editForm, kitafino_id: e.target.value })} placeholder="z. B. 70563-107" />
+                <p className="text-[11px] text-on-surface-variant">Wird beim Abgleich automatisch gesetzt. Leeren, um die Zuordnung aufzuheben.</p>
               </div>
               <div className="space-y-1">
                 <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">System-Notizen</label>

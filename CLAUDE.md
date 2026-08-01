@@ -44,7 +44,8 @@ Each function in `netlify/functions/` is a standalone serverless handler — one
 | `auth.js` | Login/logout/token validation/password change |
 | `ferienblock.js` | Holiday block CRUD |
 | `kinder.js` | Children master data, sync from lists, import |
-| `listen.js` | Bulk import Liste A (registrations) and Liste B (meal bookings) |
+| `listen.js` | Bulk import Liste A (registrations) and Liste B (meal bookings); supports a merge mode (`merge_von`/`merge_bis`) that replaces only a date range |
+| `kitafino.js` | Fetches Liste B directly from the caterer's facility portal (login + per-day scrape + roster for the stable `kitafino_id`). Credentials come from `KITAFINO_USER`, `KITAFINO_PASSWORD`, `KITAFINO_PROJEKT_ID` |
 | `abgleich.js` | Save/load reconciliation matches, dashboard stats |
 | `angebote.js` | Activity offers with day and child assignments |
 | `finanzen.js` | Financial calculations per child |

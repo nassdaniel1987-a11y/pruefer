@@ -528,9 +528,24 @@ exports.handler = async (event) => {
         if (!id) return respond(400, { error: 'id erforderlich' });
         const editId = parseInt(id, 10);
         if (isNaN(editId)) return respond(400, { error: 'Ungültige ID' });
+
+        // kitafino_id nur anfassen, wenn das Feld wirklich mitgeschickt wurde —
+        // sonst würde das normale Bearbeiten-Formular eine bestehende
+        // Zuordnung stillschweigend löschen. Leerer String = bewusst löschen.
+        const setKitafino = Object.prototype.hasOwnProperty.call(body, 'kitafino_id');
+        const kitafinoVal = setKitafino
+          ? (String(body.kitafino_id || '').trim() || null)
+          : null;
+
         const result = await client.query(
-          'UPDATE kinder SET nachname = COALESCE($1, nachname), vorname = COALESCE($2, vorname), klasse = $3, notizen = $4 WHERE id = $5 RETURNING *',
-          [nachname, vorname, klasse || null, notizen || null, editId]
+          `UPDATE kinder SET
+             nachname = COALESCE($1, nachname),
+             vorname  = COALESCE($2, vorname),
+             klasse   = $3,
+             notizen  = $4,
+             kitafino_id = CASE WHEN $6 THEN $7 ELSE kitafino_id END
+           WHERE id = $5 RETURNING *`,
+          [nachname, vorname, klasse || null, notizen || null, editId, setKitafino, kitafinoVal]
         );
         if (result.rows.length === 0) return respond(404, { error: 'Kind nicht gefunden' });
         return respond(200, { success: true, kind: result.rows[0] });

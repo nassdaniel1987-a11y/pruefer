@@ -368,6 +368,39 @@ exports.handler = async (event) => {
         console.log('Namen-Spalten nicht verfügbar:', e.message);
       }
 
+      // kitafino-ID vom gematchten Liste-B-Eintrag auf das Kind übertragen.
+      // Der Match verbindet Liste A (= das Kind) mit Liste B (= die Buchung
+      // samt ID). Verknüpft wird über den Namen aus Liste A, mit derselben
+      // vertauschungstoleranten Normalisierung wie der Unique-Index von kinder.
+      // Nur setzen, wenn noch keine ID hinterlegt ist — einmal zugeordnete IDs
+      // werden nie automatisch überschrieben, Korrekturen laufen von Hand.
+      try {
+        await client.query(`
+          UPDATE kinder k SET kitafino_id = sub.kitafino_id
+          FROM (
+            SELECT DISTINCT ON (
+              LEAST(LOWER(TRIM(la.nachname)), LOWER(TRIM(la.vorname))),
+              GREATEST(LOWER(TRIM(la.nachname)), LOWER(TRIM(la.vorname)))
+            )
+              LOWER(TRIM(la.nachname)) AS la_nach,
+              LOWER(TRIM(la.vorname))  AS la_vor,
+              lb.kitafino_id
+            FROM abgleich_matches am
+            JOIN liste_a la ON la.id = am.liste_a_id
+            JOIN liste_b lb ON lb.id = am.liste_b_id
+            WHERE am.abgleich_id = $1 AND lb.kitafino_id IS NOT NULL
+          ) sub
+          WHERE k.kitafino_id IS NULL
+            AND LEAST(LOWER(TRIM(k.nachname)), LOWER(TRIM(k.vorname)))
+                = LEAST(sub.la_nach, sub.la_vor)
+            AND GREATEST(LOWER(TRIM(k.nachname)), LOWER(TRIM(k.vorname)))
+                = GREATEST(sub.la_nach, sub.la_vor)
+        `, [abgleich_id]);
+      } catch (e) {
+        // Spalte existiert evtl. noch nicht (vor Migration 8) - kein Fehler
+        console.log('kitafino_id nicht verfügbar:', e.message);
+      }
+
       // Abgleich ist jetzt aktuell
       await client.query(`UPDATE abgleich SET veraltet = FALSE WHERE id = $1`, [abgleich_id]);
 
