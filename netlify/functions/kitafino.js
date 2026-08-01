@@ -19,6 +19,9 @@ const FACILITY_BASE = 'https://facility.kitafino.de/sys_k2/caterer';
 const PARALLEL_DAYS = 5;
 const MAX_DAYS = 70;
 
+// Das Portal antwortet auf Requests ohne erkennbaren Browser teils anders.
+const UA = 'Mozilla/5.0 (compatible; Pruefer/1.0; +Ferienversorgung)';
+
 const getClient = () => new Client({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -151,11 +154,26 @@ const login = async () => {
   }
 
   const jar = {};
+
+  // Erst die Loginmaske holen. Die PHP-Anwendung vergibt die Session beim
+  // Aufruf der Seite — ohne gültige PHPSESSID läuft der anschließende POST
+  // ins Leere oder in eine Redirect-Schleife.
+  const loginPage = await fetch(`${AUTH_BASE}/index.php?action=login`, {
+    redirect: 'manual',
+    headers: { 'User-Agent': UA }
+  });
+  collectCookies(loginPage, jar);
+
   let url = `${AUTH_BASE}/index.php?action=do_login`;
   let res = await fetch(url, {
     method: 'POST',
     redirect: 'manual',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': UA,
+      Cookie: jarToHeader(jar),
+      Referer: `${AUTH_BASE}/index.php?action=login`
+    },
     body: new URLSearchParams({ benutzername: user, passwort: pass, rememberme: '0' }).toString()
   });
   collectCookies(res, jar);
@@ -170,15 +188,22 @@ const login = async () => {
     if (!/^https:\/\/[a-z0-9.-]*kitafino\.de\//i.test(url)) break;
     res = await fetch(url, {
       redirect: 'manual',
-      headers: { Cookie: jarToHeader(jar) }
+      headers: { Cookie: jarToHeader(jar), 'User-Agent': UA }
     });
     collectCookies(res, jar);
     hops++;
   }
 
-  // Erfolg heißt: wir sind im Portal gelandet, nicht wieder auf der Loginmaske.
-  if (/action=login/i.test(url) || !Object.keys(jar).length) {
-    const err = new Error('Login bei kitafino abgelehnt — Zugangsdaten prüfen');
+  // Erfolg wird aktiv nachgewiesen, nicht aus dem Ausbleiben eines Fehlers
+  // geschlossen: bei einem gescheiterten Login liefert das Portal weiterhin
+  // HTTP 200 — nur eben die Loginmaske. Ohne diese Prüfung liefe der Abruf
+  // durch und meldete stillschweigend "0 Buchungen".
+  const probe = await fetch(`${FACILITY_BASE}/index.php?action=bestellungen`, {
+    headers: { Cookie: jarToHeader(jar), 'User-Agent': UA }
+  });
+  const probeHtml = await probe.text();
+  if (/name=["']passwort["']/i.test(probeHtml) || !/action=log_out/i.test(probeHtml)) {
+    const err = new Error('Login bei kitafino abgelehnt — Benutzername oder Passwort prüfen');
     err.code = 'LOGIN_FAILED';
     throw err;
   }
@@ -215,7 +240,11 @@ const fetchRoster = async (jar, projektId) => {
   const html = await portalGet(jar, `index.php?action=listen&pid=${encodeURIComponent(projektId)}`);
   // Die richtige Tabelle ist die mit der Spalte "Benutzer-ID".
   const table = extractTableByContent(html, /Benutzer-ID/i);
-  if (!table) return [];
+  if (!table) {
+    const err = new Error('Stammliste nicht lesbar — Portal nicht erreichbar oder Aufbau geändert');
+    err.code = 'PORTAL_CHANGED';
+    throw err;
+  }
 
   const roster = [];
   for (const row of parseRows(table)) {
@@ -242,7 +271,9 @@ const fetchRoster = async (jar, projektId) => {
 const parseDay = (html) => {
   const table = extractTable(html, /user_order_list/);
   const bestellungen = [];
-  if (!table) return { bestellungen };
+  // Ohne Tabelle ist die Antwort nicht die Tagesansicht — das ist ein Fehler
+  // und darf nicht als "keine Buchungen" durchgehen.
+  if (!table) return { bestellungen, hatTabelle: false };
 
   let mode = null;
   for (const row of parseRows(table)) {
@@ -265,7 +296,7 @@ const parseDay = (html) => {
       diaet: (vierte || '').trim()
     });
   }
-  return { bestellungen };
+  return { bestellungen, hatTabelle: true };
 };
 
 // "Nachname, Vorname [70563-27]" -> Bestandteile
@@ -284,6 +315,18 @@ const splitBenutzer = (raw) => {
 const ymd = (d) => {
   const p = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
+// DATE-Spalten liefert node-postgres als JS-Date. String(date) ergibt dann
+// "Tue May 26 2026 00:00:00 GMT+0200 (…)" — ein split('T') darauf liefert
+// Müll, mit dem sich Datumsgrenzen nicht vergleichen lassen.
+const toYmd = (value) => {
+  if (value instanceof Date) return ymd(value);
+  const s = String(value);
+  const iso = s.match(/^\d{4}-\d{2}-\d{2}/);
+  if (iso) return iso[0];
+  const parsed = new Date(s);
+  return isNaN(parsed) ? null : ymd(parsed);
 };
 
 // ─── Handler ───────────────────────────────────────────────
@@ -336,8 +379,11 @@ exports.handler = async (event) => {
       );
       if (blockRes.rows.length === 0) return respond(404, { error: 'Ferienblock nicht gefunden' });
 
-      const blockVon = String(blockRes.rows[0].startdatum).split('T')[0];
-      const blockBis = String(blockRes.rows[0].enddatum).split('T')[0];
+      const blockVon = toYmd(blockRes.rows[0].startdatum);
+      const blockBis = toYmd(blockRes.rows[0].enddatum);
+      if (!blockVon || !blockBis) {
+        return respond(500, { error: 'Ferienblock hat kein gültiges Start-/Enddatum' });
+      }
 
       // von/bis dürfen einengen, aber nie über den Block hinausgehen —
       // sonst würde der Merge-Modus Tage anfassen, die nicht zum Block gehören.
@@ -366,6 +412,7 @@ exports.handler = async (event) => {
 
       const eintraege = [];
       const tageOhneEssen = [];
+      let tageOhneTabelle = 0;
 
       for (let i = 0; i < tage.length; i += PARALLEL_DAYS) {
         const batch = tage.slice(i, i + PARALLEL_DAYS);
@@ -381,7 +428,8 @@ exports.handler = async (event) => {
         }));
 
         for (const r of results) {
-          if (r.bestellungen.length === 0) tageOhneEssen.push(r.datum);
+          if (!r.hatTabelle) tageOhneTabelle++;
+          else if (r.bestellungen.length === 0) tageOhneEssen.push(r.datum);
           for (const b of r.bestellungen) {
             const parsed = splitBenutzer(b.benutzer);
             const hit = rosterByCombined.get(norm(b.benutzer.replace(/\[\s*\d+-\d+\s*\]/, '').trim()))
@@ -399,6 +447,14 @@ exports.handler = async (event) => {
             });
           }
         }
+      }
+
+      // Wenn kein einziger Tag eine Tagesansicht lieferte, stimmt etwas
+      // grundsätzlich nicht — das darf nicht als "keine Buchungen" enden.
+      if (tageOhneTabelle === tage.length) {
+        return respond(502, {
+          error: 'Keine Tagesansicht erhalten — Portal nicht erreichbar oder Sitzung ungültig'
+        });
       }
 
       const kinder = new Set(eintraege.map(e => nameKey(e.nachname, e.vorname)));

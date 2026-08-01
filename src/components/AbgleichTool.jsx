@@ -154,7 +154,9 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     setKitafinoLoading(false);
     if (!res || res.error) return; // Fehlermeldung kommt bereits aus API._fetch
     if (!res.eintraege || res.eintraege.length === 0) {
-      toast.warn(`Keine Buchungen gefunden (${res.tage_abgefragt} Tage abgefragt)`);
+      // Zeitraum mitnennen: der Abruf wird auf den Ferienblock begrenzt,
+      // die tatsächlich geholten Tage können also von der Eingabe abweichen.
+      toast.warn(`Keine Buchungen im Zeitraum ${fmtDate(res.von)} – ${fmtDate(res.bis)} (${res.tage_abgefragt} Tage abgefragt)`);
       return;
     }
     setKitafinoVorschau(res);
