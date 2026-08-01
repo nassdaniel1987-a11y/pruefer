@@ -127,22 +127,53 @@ const nameKey = (nachname, vorname) => {
 };
 
 // ─── HTTP mit Cookie-Jar ───────────────────────────────────
-// Node-fetch hat keinen Cookie-Jar, also selbst mitführen.
-const jarToHeader = (jar) =>
-  Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ');
+// Node-fetch hat keinen Cookie-Jar, also selbst mitführen — und zwar
+// domain-bewusst: auth.kitafino.de und facility.kitafino.de vergeben je eine
+// eigene PHPSESSID. Ein Speicher nur nach Namen würde die eine mit der anderen
+// überschreiben und facility die fremde Sitzung vorsetzen, worauf das Portal
+// zurück auf die Loginmaske leitet.
+const newJar = () => [];
 
-const collectCookies = (res, jar) => {
+const hostOf = (url) => new URL(url).hostname;
+
+const cookieHeaderFor = (jar, url) => {
+  const host = hostOf(url);
+  return jar
+    .filter(c => c.hostOnly ? c.domain === host : (host === c.domain || host.endsWith('.' + c.domain)))
+    .map(c => `${c.name}=${c.value}`)
+    .join('; ');
+};
+
+const collectCookies = (res, jar, url) => {
   // getSetCookie() gibt alle Set-Cookie-Header einzeln (Node 18.14+),
   // sonst auf den zusammengefassten Header zurückfallen.
   const raw = typeof res.headers.getSetCookie === 'function'
     ? res.headers.getSetCookie()
     : (res.headers.get('set-cookie') ? [res.headers.get('set-cookie')] : []);
+  const reqHost = hostOf(url);
+
   for (const line of raw) {
-    const pair = line.split(';')[0];
+    const parts = line.split(';');
+    const pair = parts[0];
     const idx = pair.indexOf('=');
-    if (idx > 0) jar[pair.slice(0, idx).trim()] = pair.slice(idx + 1).trim();
+    if (idx <= 0) continue;
+    const name = pair.slice(0, idx).trim();
+    const value = pair.slice(idx + 1).trim();
+
+    const domAttr = parts.slice(1)
+      .map(p => p.trim())
+      .find(p => /^domain=/i.test(p));
+    const domain = domAttr ? domAttr.split('=')[1].trim().replace(/^\./, '') : reqHost;
+    const hostOnly = !domAttr;
+
+    const vorhanden = jar.find(c => c.name === name && c.domain === domain);
+    if (vorhanden) vorhanden.value = value;
+    else jar.push({ name, value, domain, hostOnly });
   }
 };
+
+const jarBeschreibung = (jar) =>
+  jar.length ? jar.map(c => `${c.name}@${c.domain}`).join(', ') : 'keine';
 
 // spur (optional) sammelt Diagnosedaten: Statuscodes, Weiterleitungsziele und
 // Cookie-*Namen*. Bewusst ohne Zugangsdaten, Cookie-Werte und Seiteninhalte —
@@ -157,17 +188,28 @@ const login = async (spur = null) => {
   }
   if (spur) spur.push(`Benutzername: ${user.length} Zeichen, Passwort: ${pass.length} Zeichen`);
 
-  const jar = {};
+  const jar = newJar();
 
-  // Erst die Loginmaske holen. Die PHP-Anwendung vergibt die Session beim
-  // Aufruf der Seite — ohne gültige PHPSESSID läuft der anschließende POST
-  // ins Leere oder in eine Redirect-Schleife.
-  const loginPage = await fetch(`${AUTH_BASE}/index.php?action=login`, {
+  // Zuerst facility ansteuern, damit dort eine eigene Sitzung entsteht. Ein
+  // Browser bringt die immer schon mit; ohne sie hat der Login bei auth
+  // nachher keine facility-Sitzung, an die er sich hängen kann.
+  const facilityUrl = `${FACILITY_BASE}/index.php?action=bestellungen`;
+  const facilitySeed = await fetch(facilityUrl, {
     redirect: 'manual',
     headers: { 'User-Agent': UA }
   });
-  collectCookies(loginPage, jar);
-  if (spur) spur.push(`Loginmaske: HTTP ${loginPage.status}, Cookies: ${Object.keys(jar).join(', ') || 'keine'}`);
+  collectCookies(facilitySeed, jar, facilityUrl);
+  if (spur) spur.push(`facility-Sitzung: HTTP ${facilitySeed.status}, Cookies: ${jarBeschreibung(jar)}`);
+
+  // Dann die Loginmaske. Die PHP-Anwendung vergibt die Session beim Aufruf
+  // der Seite — ohne gültige PHPSESSID läuft der POST ins Leere.
+  const loginUrl = `${AUTH_BASE}/index.php?action=login`;
+  const loginPage = await fetch(loginUrl, {
+    redirect: 'manual',
+    headers: { 'User-Agent': UA, Cookie: cookieHeaderFor(jar, loginUrl) }
+  });
+  collectCookies(loginPage, jar, loginUrl);
+  if (spur) spur.push(`Loginmaske: HTTP ${loginPage.status}, Cookies: ${jarBeschreibung(jar)}`);
 
   let url = `${AUTH_BASE}/index.php?action=do_login`;
   let res = await fetch(url, {
@@ -176,13 +218,14 @@ const login = async (spur = null) => {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       'User-Agent': UA,
-      Cookie: jarToHeader(jar),
-      Referer: `${AUTH_BASE}/index.php?action=login`
+      Cookie: cookieHeaderFor(jar, url),
+      Referer: loginUrl
     },
     body: new URLSearchParams({ benutzername: user, passwort: pass, rememberme: '0' }).toString()
   });
-  collectCookies(res, jar);
-  if (spur) spur.push(`do_login: HTTP ${res.status} -> ${res.headers.get('location') || 'keine Weiterleitung'}`);
+  collectCookies(res, jar, url);
+  const loginZiel = res.headers.get('location') || '';
+  if (spur) spur.push(`do_login: HTTP ${res.status} -> ${loginZiel || 'keine Weiterleitung'}`);
 
   // Redirect-Kette selbst verfolgen, damit die Cookies aller Zwischenschritte
   // im Jar landen (auth.kitafino.de -> facility.kitafino.de).
@@ -194,9 +237,9 @@ const login = async (spur = null) => {
     if (!/^https:\/\/[a-z0-9.-]*kitafino\.de\//i.test(url)) break;
     res = await fetch(url, {
       redirect: 'manual',
-      headers: { Cookie: jarToHeader(jar), 'User-Agent': UA }
+      headers: { Cookie: cookieHeaderFor(jar, url), 'User-Agent': UA }
     });
-    collectCookies(res, jar);
+    collectCookies(res, jar, url);
     hops++;
     if (spur) spur.push(`Hop ${hops}: ${url.replace(/^https:\/\//, '')} -> HTTP ${res.status}`);
   }
@@ -205,8 +248,8 @@ const login = async (spur = null) => {
   // geschlossen: bei einem gescheiterten Login liefert das Portal weiterhin
   // HTTP 200 — nur eben die Loginmaske. Ohne diese Prüfung liefe der Abruf
   // durch und meldete stillschweigend "0 Buchungen".
-  const probe = await fetch(`${FACILITY_BASE}/index.php?action=bestellungen`, {
-    headers: { Cookie: jarToHeader(jar), 'User-Agent': UA }
+  const probe = await fetch(facilityUrl, {
+    headers: { Cookie: cookieHeaderFor(jar, facilityUrl), 'User-Agent': UA }
   });
   const probeHtml = await probe.text();
   const hatPasswortfeld = /name=["']passwort["']/i.test(probeHtml);
@@ -215,10 +258,15 @@ const login = async (spur = null) => {
     const titel = (probeHtml.match(/<title[^>]*>([\s\S]{0,80}?)<\/title>/i) || [, ''])[1].trim();
     spur.push(`Portalprüfung: HTTP ${probe.status}, ${probeHtml.length} Zeichen, Titel "${titel}"`);
     spur.push(`Passwortfeld: ${hatPasswortfeld ? 'ja' : 'nein'}, Logout-Formular: ${hatLogout ? 'ja' : 'nein'}`);
-    spur.push(`Cookies gesamt: ${Object.keys(jar).join(', ') || 'keine'}`);
+    spur.push(`Cookies gesamt: ${jarBeschreibung(jar)}`);
   }
   if (hatPasswortfeld || !hatLogout) {
-    const err = new Error('Login bei kitafino abgelehnt — Benutzername oder Passwort prüfen');
+    // Der do_login-Redirect verrät, woran es lag: zeigt er auf das Portal,
+    // waren die Zugangsdaten richtig und es hakt an der Sitzung.
+    const zurueckAufLogin = /action=login/i.test(loginZiel);
+    const err = new Error(zurueckAufLogin
+      ? 'Login bei kitafino abgelehnt — Benutzername oder Passwort prüfen'
+      : 'Anmeldung akzeptiert, aber die Sitzung gilt im Portal nicht — Cookie-Übergabe prüfen');
     err.code = 'LOGIN_FAILED';
     err.spur = spur;
     throw err;
@@ -227,18 +275,21 @@ const login = async (spur = null) => {
 };
 
 const portalGet = async (jar, path) => {
-  const res = await fetch(`${FACILITY_BASE}/${path}`, {
-    headers: { Cookie: jarToHeader(jar) }
+  const ziel = `${FACILITY_BASE}/${path}`;
+  const res = await fetch(ziel, {
+    headers: { Cookie: cookieHeaderFor(jar, ziel), 'User-Agent': UA }
   });
   if (!res.ok) throw new Error(`kitafino antwortete mit ${res.status}`);
   return res.text();
 };
 
 const portalPost = async (jar, path, params) => {
-  const res = await fetch(`${FACILITY_BASE}/${path}`, {
+  const ziel = `${FACILITY_BASE}/${path}`;
+  const res = await fetch(ziel, {
     method: 'POST',
     headers: {
-      Cookie: jarToHeader(jar),
+      Cookie: cookieHeaderFor(jar, ziel),
+      'User-Agent': UA,
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: new URLSearchParams(params).toString()
