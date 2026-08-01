@@ -41,6 +41,12 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
   const [showPasteModal, setShowPasteModal] = useState(null); // 'A', 'B' oder null
   const [showFirebaseModal, setShowFirebaseModal] = useState(false);
   const [firebaseImportInfo, setFirebaseImportInfo] = useState(null); // { count, blockName, eintraege }
+  // kitafino-Abruf für Liste B
+  const [kitafinoVon, setKitafinoVon] = useState('');
+  const [kitafinoBis, setKitafinoBis] = useState('');
+  const [kitafinoLoading, setKitafinoLoading] = useState(false);
+  const [kitafinoVorschau, setKitafinoVorschau] = useState(null); // Antwort der Function
+  const [kitafinoImportInfo, setKitafinoImportInfo] = useState(null); // nach dem Speichern
 
   // Listen aus DB laden wenn Block gewählt
   useEffect(() => {
@@ -48,13 +54,18 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     setListA([]); setListB([]); setRawA(null); setRawB(null);
     setStep(1); setPotentialMatches([]); setReviewed({});
     setComparisonSummary(null); setUsedDbForA(false); setUsedDbForB(false);
+    setKitafinoVorschau(null); setKitafinoImportInfo(null);
+    // Zeitraum für den kitafino-Abruf mit dem Block vorbelegen
+    const b = blocks.find(x => String(x.id) === String(blockId));
+    setKitafinoVon(b ? String(b.startdatum).split('T')[0] : '');
+    setKitafinoBis(b ? String(b.enddatum).split('T')[0] : '');
     API.get('listen', { ferienblock_id: blockId, liste: 'A' }).then(d => {
       setListADb(Array.isArray(d) ? d : []);
     });
     API.get('listen', { ferienblock_id: blockId, liste: 'B' }).then(d => {
       setListBDb(Array.isArray(d) ? d : []);
     });
-  }, [blockId]);
+  }, [blockId, blocks]);
 
   const processImportArray = (json, which) => {
     // Prüfen ob erste Zeile ein echter Header ist (Texte) oder schon Daten (Zahlen/bekannte Namen)
@@ -125,6 +136,58 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       toast.error('Fehler beim Firebase-Import');
     }
     setIsLoading(false);
+  };
+
+  // ─── kitafino: Liste B direkt aus dem Portal holen ───────
+  // Zweistufig: erst abrufen und anzeigen, erst nach Bestätigung speichern.
+  // Ein Import überschreibt Liste B, das soll niemand versehentlich auslösen.
+  const handleKitafinoFetch = async () => {
+    if (!blockId) { toast.error('Bitte zuerst einen Ferienblock wählen'); return; }
+    setKitafinoLoading(true);
+    setKitafinoVorschau(null);
+    const res = await API.post('kitafino', {
+      action: 'fetch',
+      ferienblock_id: blockId,
+      von: kitafinoVon || undefined,
+      bis: kitafinoBis || undefined
+    });
+    setKitafinoLoading(false);
+    if (!res || res.error) return; // Fehlermeldung kommt bereits aus API._fetch
+    if (!res.eintraege || res.eintraege.length === 0) {
+      toast.warn(`Keine Buchungen gefunden (${res.tage_abgefragt} Tage abgefragt)`);
+      return;
+    }
+    setKitafinoVorschau(res);
+  };
+
+  const handleKitafinoConfirm = async () => {
+    const v = kitafinoVorschau;
+    if (!v) return;
+    setKitafinoLoading(true);
+    // Nur bei einem Teilzeitraum mergen — sonst normal komplett ersetzen.
+    const payload = {
+      ferienblock_id: blockId,
+      liste: 'B',
+      eintraege: v.eintraege
+    };
+    if (v.ist_teilzeitraum) { payload.merge_von = v.von; payload.merge_bis = v.bis; }
+
+    const res = await API.post('listen', payload);
+    if (res.error) { setKitafinoLoading(false); return; }
+
+    const freshB = await API.get('listen', { ferienblock_id: blockId, liste: 'B' });
+    setListBDb(Array.isArray(freshB) ? freshB : []);
+    setKitafinoImportInfo({
+      count: v.eintraege.length,
+      von: v.von,
+      bis: v.bis,
+      teilzeitraum: v.ist_teilzeitraum,
+      kinder: v.kinder_gesamt,
+      mitId: v.eintraege_mit_id
+    });
+    setKitafinoVorschau(null);
+    setKitafinoLoading(false);
+    toast.success(`${v.eintraege.length} Buchungen aus kitafino übernommen`);
   };
 
   const processAndUpload = async () => {
@@ -641,6 +704,50 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                       <p className="text-on-surface font-medium mb-2">{rawB.data.length} Zeilen geladen</p>
                       <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => { setRawB(null); setColMapB({ nachname: '', vorname: '', date: '', klasse: '' }); }}>Ändern / Löschen</button>
                     </div>
+                  ) : kitafinoVorschau ? (
+                    <div className="py-2">
+                      <div className="text-center mb-3">
+                        <span className="material-symbols-outlined text-3xl text-primary mb-1 block">cloud_download</span>
+                        <p className="text-on-surface font-medium">{kitafinoVorschau.eintraege.length} Buchungen gefunden</p>
+                        <p className="text-xs text-on-surface-variant">
+                          {kitafinoVorschau.kinder_gesamt} Kinder · {fmtDate(kitafinoVorschau.von)} – {fmtDate(kitafinoVorschau.bis)}
+                        </p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
+                          {kitafinoVorschau.tage_abgefragt} Tage abgefragt, davon {kitafinoVorschau.tage_ohne_essen} ohne Essen
+                        </p>
+                      </div>
+                      <div className={`mb-3 p-2.5 rounded-lg text-xs border ${kitafinoVorschau.ist_teilzeitraum ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400' : 'bg-error/10 border-error/30 text-error'}`}>
+                        <span className="material-symbols-outlined text-sm align-middle mr-1">
+                          {kitafinoVorschau.ist_teilzeitraum ? 'merge' : 'warning'}
+                        </span>
+                        {kitafinoVorschau.ist_teilzeitraum
+                          ? `Nur der Zeitraum ${fmtDate(kitafinoVorschau.von)} – ${fmtDate(kitafinoVorschau.bis)} wird ersetzt. Alle übrigen Tage des Blocks bleiben erhalten.`
+                          : 'Liste B wird für den gesamten Ferienblock ersetzt.'}
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="flex-1 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors" onClick={handleKitafinoConfirm}>
+                          Übernehmen
+                        </button>
+                        <button className="px-4 py-2 rounded-xl text-on-surface-variant text-sm hover:bg-surface-container transition-colors" onClick={() => setKitafinoVorschau(null)}>
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  ) : kitafinoImportInfo ? (
+                    <div className="py-2 text-center">
+                      <span className="material-symbols-outlined text-3xl text-emerald-500 mb-1 block">cloud_done</span>
+                      <p className="text-on-surface font-medium">{kitafinoImportInfo.count} Buchungen aus kitafino</p>
+                      <p className="text-xs text-on-surface-variant mb-1">
+                        {kitafinoImportInfo.kinder} Kinder · {fmtDate(kitafinoImportInfo.von)} – {fmtDate(kitafinoImportInfo.bis)}
+                        {kitafinoImportInfo.teilzeitraum && ' (Teilzeitraum)'}
+                      </p>
+                      <p className="text-[11px] text-on-surface-variant mb-3">
+                        {kitafinoImportInfo.mitId} von {kitafinoImportInfo.count} mit kitafino-ID
+                      </p>
+                      <button className="px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setKitafinoImportInfo(null)}>
+                        Erneut abrufen
+                      </button>
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-2">
                       <label className="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-xl p-6 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
@@ -651,6 +758,30 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                       <button className="w-full py-2.5 rounded-xl border-2 border-primary/30 text-primary font-semibold text-sm hover:bg-primary/10 transition-colors" onClick={() => setShowPasteModal('B')}>
                         oder Tabelle einfügen (Strg+V)
                       </button>
+
+                      {/* Direktabruf aus dem kitafino-Portal */}
+                      <div className="mt-1 pt-3 border-t border-outline-variant/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <label className="flex-1">
+                            <span className="block text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold mb-1">Von</span>
+                            <input type="date" value={kitafinoVon} onChange={e => setKitafinoVon(e.target.value)}
+                              className="w-full px-2 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/30 text-sm text-on-surface" />
+                          </label>
+                          <label className="flex-1">
+                            <span className="block text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold mb-1">Bis</span>
+                            <input type="date" value={kitafinoBis} onChange={e => setKitafinoBis(e.target.value)}
+                              className="w-full px-2 py-1.5 rounded-lg bg-surface-container-low border border-outline-variant/30 text-sm text-on-surface" />
+                          </label>
+                        </div>
+                        <button
+                          className="w-full py-2.5 rounded-xl border-2 border-secondary/30 text-secondary font-semibold text-sm hover:bg-secondary/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          onClick={handleKitafinoFetch}
+                          disabled={kitafinoLoading}
+                        >
+                          <span className="material-symbols-outlined text-sm">cloud_download</span>
+                          {kitafinoLoading ? 'Wird abgerufen…' : 'Von kitafino holen'}
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -39,6 +39,26 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
   const [regPw, setRegPw] = useState('');
   const [backupLoading, setBackupLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [kitafinoLoading, setKitafinoLoading] = useState(false);
+  const [kitafinoStatus, setKitafinoStatus] = useState(null); // { ok, text }
+
+  // Prüft Login und Erreichbarkeit des kitafino-Portals. Bewusst mit
+  // Klartext-Meldung, damit bei einer Portal-Änderung sofort klar ist,
+  // ob es an den Zugangsdaten oder an der Erreichbarkeit liegt.
+  const testKitafino = async () => {
+    setKitafinoLoading(true);
+    setKitafinoStatus(null);
+    const res = await API.post('kitafino', { action: 'test' });
+    setKitafinoLoading(false);
+    if (res && res.success) {
+      setKitafinoStatus({
+        ok: true,
+        text: `Verbindung steht — Einrichtung ${res.projekt_id}, ${res.benutzer_gesamt} Benutzer in der Stammliste.`
+      });
+    } else {
+      setKitafinoStatus({ ok: false, text: (res && res.error) || 'Verbindung fehlgeschlagen' });
+    }
+  };
   const [users, setUsers] = useState([]);
 
   const loadUsers = async () => {
@@ -303,6 +323,44 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
             <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-error hover:bg-error-container border border-outline-variant/10 transition-colors" onClick={onLogout}>
               <span className="material-symbols-outlined text-lg">logout</span>Abmelden
             </button>
+          </div>
+        </div>
+
+        {/* kitafino-Anbindung */}
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-2xl">restaurant</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-on-surface">kitafino-Anbindung</h3>
+              <p className="text-xs text-on-surface-variant">Liste B direkt aus dem Portal holen</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Die Zugangsdaten liegen als Umgebungsvariablen bei Netlify
+              (<code className="text-[11px]">KITAFINO_USER</code>,{' '}
+              <code className="text-[11px]">KITAFINO_PASSWORD</code>,{' '}
+              <code className="text-[11px]">KITAFINO_PROJEKT_ID</code>) und werden nie
+              in Prüfer gespeichert oder angezeigt.
+            </p>
+            <button
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/10 transition-colors ${kitafinoLoading ? 'opacity-50' : ''}`}
+              onClick={testKitafino}
+              disabled={kitafinoLoading}
+            >
+              <span className="material-symbols-outlined text-lg">wifi_tethering</span>
+              {kitafinoLoading ? 'Teste Verbindung...' : 'Verbindung testen'}
+            </button>
+            {kitafinoStatus && (
+              <div className={`p-3 rounded-xl text-sm border ${kitafinoStatus.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400' : 'bg-error/10 border-error/30 text-error'}`}>
+                <span className="material-symbols-outlined text-base align-middle mr-1.5">
+                  {kitafinoStatus.ok ? 'check_circle' : 'error'}
+                </span>
+                {kitafinoStatus.text}
+              </div>
+            )}
           </div>
         </div>
       </div>

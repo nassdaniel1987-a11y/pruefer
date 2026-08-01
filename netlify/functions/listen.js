@@ -73,7 +73,7 @@ exports.handler = async (event) => {
       const fbId = parseInt(ferienblock_id, 10);
       if (isNaN(fbId)) return respond(400, { error: 'Ungültige ferienblock_id' });
       const table = liste === 'A' ? 'liste_a' : 'liste_b';
-      const extraCols = liste === 'B' ? ', menu, kontostand' : '';
+      const extraCols = liste === 'B' ? ', menu, kontostand, kitafino_id' : '';
       const result = await client.query(
         `SELECT id, nachname, vorname, klasse, datum${extraCols}, created_at
          FROM ${table}
@@ -251,10 +251,23 @@ exports.handler = async (event) => {
       if (isNaN(fbIdImport)) return respond(400, { error: 'Ungültige ferienblock_id' });
       const table = liste === 'A' ? 'liste_a' : 'liste_b';
 
+      // ── Merge-Modus ──────────────────────────────────────
+      // Normalerweise ersetzt ein Import die komplette Liste des Blocks.
+      // Wird nur ein Teilzeitraum geliefert (z.B. beim kitafino-Abruf für
+      // einzelne Tage), dürfen die übrigen Tage nicht verloren gehen —
+      // sonst gälten sie anschließend als "kein Essen gebucht".
+      const mergeVon = body.merge_von || null;
+      const mergeBis = body.merge_bis || null;
+      const istMerge = Boolean(mergeVon && mergeBis);
+      const rangeFilter = istMerge ? ' AND datum BETWEEN $2 AND $3' : '';
+      const rangeParams = istMerge ? [mergeVon, mergeBis] : [];
+
       // ── Diff berechnen (alt vs. neu) für Import-Log ──
+      // Beim Merge nur den betroffenen Zeitraum vergleichen, sonst würde
+      // das Log alle übrigen Tage fälschlich als "weggefallen" melden.
       const oldRows = await client.query(
-        `SELECT nachname, vorname, datum FROM ${table} WHERE ferienblock_id = $1`,
-        [fbIdImport]
+        `SELECT nachname, vorname, datum FROM ${table} WHERE ferienblock_id = $1${rangeFilter}`,
+        [fbIdImport, ...rangeParams]
       );
       const oldPersonen = new Map();
       oldRows.rows.forEach(r => {
@@ -263,8 +276,11 @@ exports.handler = async (event) => {
         oldPersonen.get(key).tage.add(String(r.datum).split('T')[0]);
       });
 
-      // Bestehende Einträge überschreiben
-      await client.query(`DELETE FROM ${table} WHERE ferienblock_id = $1`, [fbIdImport]);
+      // Bestehende Einträge überschreiben (beim Merge nur im Zeitraum)
+      await client.query(
+        `DELETE FROM ${table} WHERE ferienblock_id = $1${rangeFilter}`,
+        [fbIdImport, ...rangeParams]
+      );
 
       if (eintraege.length === 0) return respond(200, { success: true, count: 0 });
 
@@ -297,19 +313,19 @@ exports.handler = async (event) => {
           const params = [];
           let idx = 1;
           for (const e of batch) {
-            values.push(`($${idx},$${idx+1},$${idx+2},$${idx+3},$${idx+4},$${idx+5},$${idx+6})`);
-            params.push(fbIdImport, e.nachname, e.vorname || '', e.klasse || '', e.datum, e.menu || '', e.kontostand || null);
-            idx += 7;
+            values.push(`($${idx},$${idx+1},$${idx+2},$${idx+3},$${idx+4},$${idx+5},$${idx+6},$${idx+7})`);
+            params.push(fbIdImport, e.nachname, e.vorname || '', e.klasse || '', e.datum, e.menu || '', e.kontostand || null, e.kitafino_id || null);
+            idx += 8;
           }
           await client.query(
-            `INSERT INTO liste_b (ferienblock_id, nachname, vorname, klasse, datum, menu, kontostand) VALUES ${values.join(',')}`,
+            `INSERT INTO liste_b (ferienblock_id, nachname, vorname, klasse, datum, menu, kontostand, kitafino_id) VALUES ${values.join(',')}`,
             params
           );
         }
         count += batch.length;
       }
 
-      // Ein kompletter Neuimport ersetzt die bisherigen Listen-IDs.
+      // Ein Import ersetzt die bisherigen Listen-IDs (beim Merge die des Zeitraums).
       // Vorhandene Abgleiche bleiben historisch erhalten, sind aber nicht mehr aktuell.
       await client.query(`UPDATE abgleich SET veraltet = TRUE WHERE ferienblock_id = $1`, [fbIdImport]);
 
@@ -337,10 +353,22 @@ exports.handler = async (event) => {
         // Bei erstem Import keine details speichern (null) — bei Folgeimporten immer details
         const detailsJson = istErsterImport ? null : JSON.stringify(details);
 
+        // "Gesamt" meint immer den ganzen Block. Beim Merge kennt newPersonen
+        // nur den geholten Zeitraum, also aus der DB nachzählen.
+        let gesamt = newPersonen.size;
+        if (istMerge) {
+          const total = await client.query(
+            `SELECT COUNT(DISTINCT LOWER(nachname || '|' || vorname)) AS n
+             FROM ${table} WHERE ferienblock_id = $1`,
+            [fbIdImport]
+          );
+          gesamt = parseInt(total.rows[0].n, 10) || 0;
+        }
+
         await client.query(
           `INSERT INTO import_log (ferienblock_id, liste, eintraege_neu, eintraege_weg, eintraege_gesamt, details)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [fbIdImport, liste, eintraegeNeu, eintraegeWeg, newPersonen.size, detailsJson]
+          [fbIdImport, liste, eintraegeNeu, eintraegeWeg, gesamt, detailsJson]
         );
       } catch (logErr) {
         console.error('Import-Log Fehler (nicht kritisch):', logErr.message);

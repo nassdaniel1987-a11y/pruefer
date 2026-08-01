@@ -174,6 +174,22 @@ exports.handler = async (event) => {
       results.push('⚠ import_log: ' + e.message);
     }
 
+    // ── Migration 8: kitafino-ID an Liste B und Kindern ──
+    // Bewusst ohne UNIQUE auf kinder.kitafino_id: bei Namensdrehern können
+    // anfangs zwei Kinder-Zeilen dieselbe ID bekommen. Das soll sichtbar
+    // gemacht (Kinder-Verzeichnis) und nicht mit einem DB-Fehler quittiert werden.
+    try {
+      await client.query(`
+        ALTER TABLE liste_b ADD COLUMN IF NOT EXISTS kitafino_id VARCHAR(40);
+        ALTER TABLE kinder  ADD COLUMN IF NOT EXISTS kitafino_id VARCHAR(40);
+        CREATE INDEX IF NOT EXISTS idx_liste_b_kitafino ON liste_b(kitafino_id);
+        CREATE INDEX IF NOT EXISTS idx_kinder_kitafino ON kinder(kitafino_id);
+      `);
+      results.push('✓ Spalte "kitafino_id" in liste_b und kinder hinzugefügt');
+    } catch (e) {
+      results.push('⚠ kitafino_id-Spalten: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
