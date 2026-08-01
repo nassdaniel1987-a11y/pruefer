@@ -56,7 +56,11 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
         text: `Verbindung steht — Einrichtung ${res.projekt_id}, ${res.benutzer_gesamt} Benutzer in der Stammliste.`
       });
     } else {
-      setKitafinoStatus({ ok: false, text: (res && res.error) || 'Verbindung fehlgeschlagen' });
+      setKitafinoStatus({
+        ok: false,
+        text: (res && res.error) || 'Verbindung fehlgeschlagen',
+        spur: res && res.spur
+      });
     }
   };
   const [users, setUsers] = useState([]);
@@ -359,6 +363,14 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
                   {kitafinoStatus.ok ? 'check_circle' : 'error'}
                 </span>
                 {kitafinoStatus.text}
+                {kitafinoStatus.spur && kitafinoStatus.spur.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs opacity-80">Details zur Verbindung</summary>
+                    <ul className="mt-1.5 space-y-0.5 font-mono text-[11px] opacity-90">
+                      {kitafinoStatus.spur.map((z, i) => <li key={i}>{z}</li>)}
+                    </ul>
+                  </details>
+                )}
               </div>
             )}
           </div>

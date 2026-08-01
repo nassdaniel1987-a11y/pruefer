@@ -144,7 +144,10 @@ const collectCookies = (res, jar) => {
   }
 };
 
-const login = async () => {
+// spur (optional) sammelt Diagnosedaten: Statuscodes, Weiterleitungsziele und
+// Cookie-*Namen*. Bewusst ohne Zugangsdaten, Cookie-Werte und Seiteninhalte —
+// die Antwortseiten enthalten Kindernamen.
+const login = async (spur = null) => {
   const user = process.env.KITAFINO_USER;
   const pass = process.env.KITAFINO_PASSWORD;
   if (!user || !pass) {
@@ -152,6 +155,7 @@ const login = async () => {
     err.code = 'NO_CREDENTIALS';
     throw err;
   }
+  if (spur) spur.push(`Benutzername: ${user.length} Zeichen, Passwort: ${pass.length} Zeichen`);
 
   const jar = {};
 
@@ -163,6 +167,7 @@ const login = async () => {
     headers: { 'User-Agent': UA }
   });
   collectCookies(loginPage, jar);
+  if (spur) spur.push(`Loginmaske: HTTP ${loginPage.status}, Cookies: ${Object.keys(jar).join(', ') || 'keine'}`);
 
   let url = `${AUTH_BASE}/index.php?action=do_login`;
   let res = await fetch(url, {
@@ -177,6 +182,7 @@ const login = async () => {
     body: new URLSearchParams({ benutzername: user, passwort: pass, rememberme: '0' }).toString()
   });
   collectCookies(res, jar);
+  if (spur) spur.push(`do_login: HTTP ${res.status} -> ${res.headers.get('location') || 'keine Weiterleitung'}`);
 
   // Redirect-Kette selbst verfolgen, damit die Cookies aller Zwischenschritte
   // im Jar landen (auth.kitafino.de -> facility.kitafino.de).
@@ -192,6 +198,7 @@ const login = async () => {
     });
     collectCookies(res, jar);
     hops++;
+    if (spur) spur.push(`Hop ${hops}: ${url.replace(/^https:\/\//, '')} -> HTTP ${res.status}`);
   }
 
   // Erfolg wird aktiv nachgewiesen, nicht aus dem Ausbleiben eines Fehlers
@@ -202,9 +209,18 @@ const login = async () => {
     headers: { Cookie: jarToHeader(jar), 'User-Agent': UA }
   });
   const probeHtml = await probe.text();
-  if (/name=["']passwort["']/i.test(probeHtml) || !/action=log_out/i.test(probeHtml)) {
+  const hatPasswortfeld = /name=["']passwort["']/i.test(probeHtml);
+  const hatLogout = /action=log_out/i.test(probeHtml);
+  if (spur) {
+    const titel = (probeHtml.match(/<title[^>]*>([\s\S]{0,80}?)<\/title>/i) || [, ''])[1].trim();
+    spur.push(`Portalprüfung: HTTP ${probe.status}, ${probeHtml.length} Zeichen, Titel "${titel}"`);
+    spur.push(`Passwortfeld: ${hatPasswortfeld ? 'ja' : 'nein'}, Logout-Formular: ${hatLogout ? 'ja' : 'nein'}`);
+    spur.push(`Cookies gesamt: ${Object.keys(jar).join(', ') || 'keine'}`);
+  }
+  if (hatPasswortfeld || !hatLogout) {
     const err = new Error('Login bei kitafino abgelehnt — Benutzername oder Passwort prüfen');
     err.code = 'LOGIN_FAILED';
+    err.spur = spur;
     throw err;
   }
   return jar;
@@ -359,13 +375,24 @@ exports.handler = async (event) => {
 
     // ── Verbindungstest ──
     if (body.action === 'test') {
-      const jar = await login();
-      const roster = await fetchRoster(jar, projektId);
-      return respond(200, {
-        success: true,
-        projekt_id: projektId,
-        benutzer_gesamt: roster.length
-      });
+      const spur = [];
+      try {
+        const jar = await login(spur);
+        const roster = await fetchRoster(jar, projektId);
+        return respond(200, {
+          success: true,
+          projekt_id: projektId,
+          benutzer_gesamt: roster.length,
+          spur
+        });
+      } catch (e) {
+        // Beim Test die Diagnose mitgeben — sonst ist ein Fehlschlag von
+        // aussen nicht unterscheidbar (falsche Daten? Portal? Weiterleitung?).
+        return respond(e.code === 'NO_CREDENTIALS' ? 400 : 502, {
+          error: e.message,
+          spur: e.spur || spur
+        });
+      }
     }
 
     // ── Buchungen abrufen ──
