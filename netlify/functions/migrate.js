@@ -221,6 +221,31 @@ exports.handler = async (event) => {
       results.push('⚠ Sitzungen aufräumen: ' + e.message);
     }
 
+    // ── Migration 11: Einstellungen und Protokoll des Automatiklaufs ──
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS einstellungen (
+          schluessel VARCHAR(100) PRIMARY KEY,
+          wert JSONB NOT NULL,
+          geaendert_am TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS automatik_log (
+          id SERIAL PRIMARY KEY,
+          gestartet_am TIMESTAMPTZ DEFAULT NOW(),
+          ferienblock_id INTEGER REFERENCES ferienblock(id) ON DELETE SET NULL,
+          erfolg BOOLEAN,
+          meldung TEXT,
+          kennzahlen JSONB
+        );
+        CREATE INDEX IF NOT EXISTS idx_automatik_log_zeit
+          ON automatik_log (gestartet_am DESC);
+      `);
+      results.push('✓ Tabellen "einstellungen" und "automatik_log" erstellt');
+    } catch (e) {
+      results.push('⚠ Automatik-Tabellen: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

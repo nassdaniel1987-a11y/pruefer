@@ -67,6 +67,9 @@ Each function in `netlify/functions/` is a standalone handler — one per domain
 | `angebote.js` | Activity offers with day and child assignments |
 | `finanzen.js` | Financial calculations per child |
 | `backup.js` | Full data export/import |
+| `einstellungen.js` | Key/value app settings (allow-listed keys only) and the automation log |
+| `taeglicher-abgleich.js` | **Scheduled** daily run (see below). Exports `fuehreAus` — the actual job |
+| `automatik-jetzt.js` | Triggers the same job over HTTP for the "Jetzt testen" button, since a `schedule()`-wrapped handler is not reachable via HTTP |
 | `setup-db.js` | Initial schema creation. **Protected** — needs `SETUP_SECRET` or a valid session |
 | `migrate.js` | Idempotent schema migrations. **Protected** the same way |
 
@@ -75,6 +78,28 @@ Shared function helpers in `netlify/functions/utils/`:
 - `datum.js` — `toYmd()`, the single correct way to turn a DB date into `YYYY-MM-DD` (see pitfall below)
 - `nameMatch.js` — CommonJS mirror of `src/utils/matching.js`
 - `guard.js` — access check for the maintenance endpoints
+- `import.js` — bulk import for both lists, incl. merge mode and import log. Used by `listen.js` and the scheduled run
+- `kitafinoClient.js` — all portal knowledge (login, roster, per-day fetch)
+- `firebase.js` — decrypts and shapes Liste A from the Firebase realtime DB
+- `vergleich.js` — server-side reconciliation (see below)
+- `bericht.js` / `mail.js` — daily report as HTML/text, and the Resend transport
+
+### Daily automatic reconciliation
+
+`taeglicher-abgleich.js` runs `schedule('1 7,8 * * *', …)`. Netlify schedules in
+**UTC only**, so 09:01 German time shifts with daylight saving — hence two cron
+candidates plus a check whether it is currently 9 o'clock in `Europe/Berlin`.
+
+The job only runs when a Ferienblock covers today. It fetches both lists, imports
+them, computes the comparison, saves it as a **new** Abgleich (leaving previous
+ones untouched), mails the report, and writes to `automatik_log` — including on
+failure, so a silent breakdown becomes visible.
+
+**Automatic matching only accepts scores ≥ 75** (`STRONG_MATCH_THRESHOLD`).
+Pairs between 60 and 74 are deliberately *not* matched; they are returned as
+`unsicher` and listed in their own section of the mail. Consequence to keep in
+mind: those entries also appear under `nur_in_a` / `nur_in_b` in the stored
+Abgleich, because there is no match type for "undecided".
 
 Functions have their own `package.json` with `pg` and `bcryptjs`, and stay CommonJS even though the frontend package is `"type": "module"`.
 
@@ -86,6 +111,10 @@ Functions have their own `package.json` with `pg` and `bcryptjs`, and stay Commo
 | `SETUP_SECRET` | Guards `setup-db` and `migrate` (passed as `?secret=` or `X-Setup-Secret`) |
 | `SETUP_ADMIN_PASSWORD` | Optional. Otherwise `setup-db` generates a random admin password and returns it once |
 | `KITAFINO_USER`, `KITAFINO_PASSWORD`, `KITAFINO_PROJEKT_ID` | Caterer portal credentials |
+| `FIREBASE_PASSWORD` | Decrypts the Liste A payload (password of the offline app) |
+| `RESEND_API_KEY` | Mail delivery |
+| `MAIL_ABSENDER` | Sender address. Defaults to the Resend test sender, which only delivers to the Resend account owner |
+| `MAIL_EMPFAENGER` | Fallback recipient when none is configured in the settings |
 
 ### Database
 

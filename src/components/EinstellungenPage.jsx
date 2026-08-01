@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
 import { confirmDialog } from '../utils/confirm';
+import { fmtDateTime } from '../utils/helpers';
 
 const THEMES = [
   {
@@ -63,6 +64,58 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
       });
     }
   };
+  // ─── Automatischer Abgleich ───────────────────────────────
+  const [autoAktiv, setAutoAktiv] = useState(false);
+  const [autoEmpfaenger, setAutoEmpfaenger] = useState('');
+  const [autoLaeufe, setAutoLaeufe] = useState([]);
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [autoTestLaeuft, setAutoTestLaeuft] = useState(false);
+  const [autoStatus, setAutoStatus] = useState(null); // { ok, text }
+
+  const ladeAutomatik = async () => {
+    const res = await API.post('einstellungen', { action: 'get' });
+    if (!res || res.error) return;
+    setAutoAktiv(res.einstellungen?.automatik_aktiv === true);
+    setAutoEmpfaenger((res.einstellungen?.automatik_empfaenger || []).join(', '));
+    setAutoLaeufe(res.laeufe || []);
+  };
+
+  useEffect(() => { ladeAutomatik(); }, []);
+
+  const speichereAutomatik = async (aktiv, empfaengerText) => {
+    setAutoLoading(true);
+    const adressen = empfaengerText.split(',').map(s => s.trim()).filter(Boolean);
+    const a = await API.post('einstellungen', { action: 'set', schluessel: 'automatik_aktiv', wert: aktiv });
+    const b = await API.post('einstellungen', { action: 'set', schluessel: 'automatik_empfaenger', wert: adressen });
+    setAutoLoading(false);
+    if (a?.error || b?.error) { toast.error('Speichern fehlgeschlagen'); return; }
+    toast.success('Einstellungen gespeichert');
+    ladeAutomatik();
+  };
+
+  // Führt denselben Lauf sofort aus — sonst müsste man bis zum nächsten
+  // Morgen warten, um zu sehen, ob die Kette funktioniert.
+  const testeAutomatik = async () => {
+    setAutoTestLaeuft(true);
+    setAutoStatus(null);
+    const res = await API.post('automatik-jetzt', {});
+    setAutoTestLaeuft(false);
+    if (!res || res.error) {
+      setAutoStatus({ ok: false, text: (res && res.error) || 'Lauf fehlgeschlagen' });
+    } else if (res.uebersprungen) {
+      setAutoStatus({ ok: true, text: res.meldung });
+    } else {
+      const k = res.kennzahlen || {};
+      setAutoStatus({
+        ok: res.mail_ok,
+        text: res.mail_ok
+          ? `${res.block}: ${k.nurInA} ohne Essen, ${k.nurInB} nicht angemeldet, ${k.unsicher} unsicher. Bericht verschickt.`
+          : `Abgleich lief durch (${k.nurInA} ohne Essen, ${k.nurInB} nicht angemeldet), aber: ${res.meldung}`
+      });
+    }
+    ladeAutomatik();
+  };
+
   const [users, setUsers] = useState([]);
 
   const loadUsers = async () => {
@@ -371,6 +424,101 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
                     </ul>
                   </details>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Automatischer Abgleich */}
+        <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary">
+              <span className="material-symbols-outlined text-2xl">schedule</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-on-surface">Automatischer Abgleich</h3>
+              <p className="text-xs text-on-surface-variant">Täglich um 09:01 mit Bericht per Mail</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary"
+                checked={autoAktiv}
+                onChange={e => { setAutoAktiv(e.target.checked); speichereAutomatik(e.target.checked, autoEmpfaenger); }}
+                disabled={autoLoading}
+              />
+              <span className="text-sm text-on-surface">
+                Täglich um 09:01 automatisch abgleichen
+                <span className="block text-xs text-on-surface-variant mt-0.5">
+                  Holt Liste A aus Firebase und Liste B aus kitafino, speichert einen neuen
+                  Abgleich und verschickt den Bericht. Läuft nur, wenn gerade ein Ferienblock aktiv ist.
+                </span>
+              </span>
+            </label>
+
+            <div className="space-y-1">
+              <label className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider">Empfänger</label>
+              <input
+                type="text"
+                className="w-full bg-surface-container-low border-0 border-b border-outline-variant/30 focus:border-primary focus:ring-0 px-3 py-2 rounded-t-lg text-sm"
+                placeholder="name@beispiel.de"
+                value={autoEmpfaenger}
+                onChange={e => setAutoEmpfaenger(e.target.value)}
+                onBlur={() => speichereAutomatik(autoAktiv, autoEmpfaenger)}
+              />
+              <p className="text-[11px] text-on-surface-variant">
+                Der Versand läuft über die Resend-Testadresse und erreicht damit vorerst nur
+                die Adresse, mit der das Resend-Konto angelegt wurde. Für weitere Empfänger
+                wird eine eigene, verifizierte Absenderdomain gebraucht.
+              </p>
+            </div>
+
+            <button
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/10 transition-colors ${autoTestLaeuft ? 'opacity-50' : ''}`}
+              onClick={testeAutomatik}
+              disabled={autoTestLaeuft}
+            >
+              <span className="material-symbols-outlined text-lg">play_circle</span>
+              {autoTestLaeuft ? 'Lauf läuft — das dauert einen Moment...' : 'Jetzt testen (holt Daten und schickt Bericht)'}
+            </button>
+
+            {autoStatus && (
+              <div className={`p-3 rounded-xl text-sm border ${autoStatus.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400' : 'bg-error/10 border-error/30 text-error'}`}>
+                <span className="material-symbols-outlined text-base align-middle mr-1.5">
+                  {autoStatus.ok ? 'check_circle' : 'error'}
+                </span>
+                {autoStatus.text}
+              </div>
+            )}
+
+            {/* Protokoll — damit ein stiller Ausfall auffällt */}
+            {autoLaeufe.length > 0 && (
+              <div>
+                <h4 className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider mb-2">Letzte Läufe</h4>
+                <div className="space-y-1.5">
+                  {autoLaeufe.slice(0, 5).map(l => (
+                    <div key={l.id} className="flex items-start gap-2 text-xs p-2 rounded-lg bg-surface-container-low">
+                      <span className={`material-symbols-outlined text-sm mt-0.5 ${l.erfolg ? 'text-emerald-600' : 'text-error'}`}>
+                        {l.erfolg ? 'check_circle' : 'error'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-on-surface">{fmtDateTime(l.gestartet_am)}</span>
+                        {l.block_name && <span className="text-on-surface-variant"> · {l.block_name}</span>}
+                        {l.kennzahlen && (
+                          <span className="block text-on-surface-variant">
+                            {l.kennzahlen.nurInA} ohne Essen · {l.kennzahlen.nurInB} nicht angemeldet
+                            {l.kennzahlen.unsicher > 0 && ` · ${l.kennzahlen.unsicher} unsicher`}
+                          </span>
+                        )}
+                        {l.meldung && !l.erfolg && <span className="block text-error">{l.meldung}</span>}
+                        {l.meldung && l.erfolg && !l.kennzahlen && <span className="block text-on-surface-variant">{l.meldung}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

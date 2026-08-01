@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "dependencies": {
     "pg": "^8.11.3",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "crypto-js": "^4.2.0",
+    "@netlify/functions": "^2.8.2"
   }
 }

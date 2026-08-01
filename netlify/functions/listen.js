@@ -5,6 +5,7 @@
 
 const { Client } = require('pg');
 const { toYmd } = require('./utils/datum');
+const { importiereListe } = require('./utils/import');
 
 const getClient = () => new Client({
   connectionString: process.env.DATABASE_URL,
@@ -243,139 +244,24 @@ exports.handler = async (event) => {
         return respond(200, { success: true, deleted: result.rowCount });
       }
 
-      // Bulk-Import (schnell: 1 Query pro Batch statt 1 pro Zeile)
+      // Bulk-Import — die eigentliche Arbeit macht utils/import.js, damit der
+      // tägliche Automatiklauf exakt denselben Weg nimmt.
       const { ferienblock_id, liste, eintraege } = body;
       if (!ferienblock_id || !liste || !Array.isArray(eintraege)) {
         return respond(400, { error: 'ferienblock_id, liste und eintraege erforderlich' });
       }
       const fbIdImport = parseInt(ferienblock_id, 10);
       if (isNaN(fbIdImport)) return respond(400, { error: 'Ungültige ferienblock_id' });
-      const table = liste === 'A' ? 'liste_a' : 'liste_b';
 
-      // ── Merge-Modus ──────────────────────────────────────
-      // Normalerweise ersetzt ein Import die komplette Liste des Blocks.
-      // Wird nur ein Teilzeitraum geliefert (z.B. beim kitafino-Abruf für
-      // einzelne Tage), dürfen die übrigen Tage nicht verloren gehen —
-      // sonst gälten sie anschließend als "kein Essen gebucht".
-      const mergeVon = body.merge_von || null;
-      const mergeBis = body.merge_bis || null;
-      const istMerge = Boolean(mergeVon && mergeBis);
-      const rangeFilter = istMerge ? ' AND datum BETWEEN $2 AND $3' : '';
-      const rangeParams = istMerge ? [mergeVon, mergeBis] : [];
-
-      // ── Diff berechnen (alt vs. neu) für Import-Log ──
-      // Beim Merge nur den betroffenen Zeitraum vergleichen, sonst würde
-      // das Log alle übrigen Tage fälschlich als "weggefallen" melden.
-      const oldRows = await client.query(
-        `SELECT nachname, vorname, datum FROM ${table} WHERE ferienblock_id = $1${rangeFilter}`,
-        [fbIdImport, ...rangeParams]
-      );
-      const oldPersonen = new Map();
-      oldRows.rows.forEach(r => {
-        const key = (r.nachname + '|' + r.vorname).toLowerCase();
-        if (!oldPersonen.has(key)) oldPersonen.set(key, { nachname: r.nachname, vorname: r.vorname, tage: new Set() });
-        oldPersonen.get(key).tage.add(toYmd(r.datum));
+      const ergebnis = await importiereListe(client, {
+        ferienblockId: fbIdImport,
+        liste,
+        eintraege,
+        mergeVon: body.merge_von || null,
+        mergeBis: body.merge_bis || null,
       });
 
-      // Bestehende Einträge überschreiben (beim Merge nur im Zeitraum)
-      await client.query(
-        `DELETE FROM ${table} WHERE ferienblock_id = $1${rangeFilter}`,
-        [fbIdImport, ...rangeParams]
-      );
-
-      if (eintraege.length === 0) return respond(200, { success: true, count: 0 });
-
-      // Gültige Einträge filtern
-      const valid = eintraege.filter(e => e.nachname && e.datum);
-      if (valid.length === 0) return respond(200, { success: true, count: 0 });
-
-      // Batch-Insert: max 200 pro Query (Postgres hat ein Parameter-Limit)
-      const BATCH = 200;
-      let count = 0;
-
-      for (let i = 0; i < valid.length; i += BATCH) {
-        const batch = valid.slice(i, i + BATCH);
-
-        if (liste === 'A') {
-          const values = [];
-          const params = [];
-          let idx = 1;
-          for (const e of batch) {
-            values.push(`($${idx},$${idx+1},$${idx+2},$${idx+3},$${idx+4})`);
-            params.push(fbIdImport, e.nachname, e.vorname || '', e.klasse || '', e.datum);
-            idx += 5;
-          }
-          await client.query(
-            `INSERT INTO liste_a (ferienblock_id, nachname, vorname, klasse, datum) VALUES ${values.join(',')}`,
-            params
-          );
-        } else {
-          const values = [];
-          const params = [];
-          let idx = 1;
-          for (const e of batch) {
-            values.push(`($${idx},$${idx+1},$${idx+2},$${idx+3},$${idx+4},$${idx+5},$${idx+6},$${idx+7})`);
-            params.push(fbIdImport, e.nachname, e.vorname || '', e.klasse || '', e.datum, e.menu || '', e.kontostand || null, e.kitafino_id || null);
-            idx += 8;
-          }
-          await client.query(
-            `INSERT INTO liste_b (ferienblock_id, nachname, vorname, klasse, datum, menu, kontostand, kitafino_id) VALUES ${values.join(',')}`,
-            params
-          );
-        }
-        count += batch.length;
-      }
-
-      // Ein Import ersetzt die bisherigen Listen-IDs (beim Merge die des Zeitraums).
-      // Vorhandene Abgleiche bleiben historisch erhalten, sind aber nicht mehr aktuell.
-      await client.query(`UPDATE abgleich SET veraltet = TRUE WHERE ferienblock_id = $1`, [fbIdImport]);
-
-      // ── Import-Log speichern ──
-      try {
-        const newPersonen = new Map();
-        const valid2 = eintraege.filter(e => e.nachname && e.datum);
-        valid2.forEach(e => {
-          const key = (e.nachname + '|' + (e.vorname || '')).toLowerCase();
-          if (!newPersonen.has(key)) newPersonen.set(key, { nachname: e.nachname, vorname: e.vorname || '', tage: new Set() });
-          newPersonen.get(key).tage.add(toYmd(e.datum));
-        });
-
-        const details = [];
-        for (const [key, p] of newPersonen) {
-          if (!oldPersonen.has(key)) details.push({ aktion: 'neu', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
-        }
-        for (const [key, p] of oldPersonen) {
-          if (!newPersonen.has(key)) details.push({ aktion: 'weg', nachname: p.nachname, vorname: p.vorname, tage: [...p.tage].sort() });
-        }
-
-        const istErsterImport = oldPersonen.size === 0;
-        const eintraegeNeu = istErsterImport ? newPersonen.size : details.filter(d => d.aktion === 'neu').length;
-        const eintraegeWeg = details.filter(d => d.aktion === 'weg').length;
-        // Bei erstem Import keine details speichern (null) — bei Folgeimporten immer details
-        const detailsJson = istErsterImport ? null : JSON.stringify(details);
-
-        // "Gesamt" meint immer den ganzen Block. Beim Merge kennt newPersonen
-        // nur den geholten Zeitraum, also aus der DB nachzählen.
-        let gesamt = newPersonen.size;
-        if (istMerge) {
-          const total = await client.query(
-            `SELECT COUNT(DISTINCT LOWER(nachname || '|' || vorname)) AS n
-             FROM ${table} WHERE ferienblock_id = $1`,
-            [fbIdImport]
-          );
-          gesamt = parseInt(total.rows[0].n, 10) || 0;
-        }
-
-        await client.query(
-          `INSERT INTO import_log (ferienblock_id, liste, eintraege_neu, eintraege_weg, eintraege_gesamt, details)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [fbIdImport, liste, eintraegeNeu, eintraegeWeg, gesamt, detailsJson]
-        );
-      } catch (logErr) {
-        console.error('Import-Log Fehler (nicht kritisch):', logErr.message);
-      }
-
-      return respond(201, { success: true, count });
+      return respond(201, { success: true, count: ergebnis.count });
     }
 
     return respond(405, { error: 'Method Not Allowed' });
