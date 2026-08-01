@@ -182,6 +182,40 @@ const fuehreAus = async (client, { heute, erzwingen = false }) => {
   };
 };
 
+// Scheitert der Lauf, muss das auffallen. Nur ins Protokoll zu schreiben
+// reicht nicht — dort schaut niemand nach, solange er nichts vermisst.
+const meldeFehler = async (client, fehler) => {
+  try {
+    const einstellungen = await leseEinstellungen(client);
+    const empfaenger = (einstellungen.automatik_empfaenger || []).length > 0
+      ? einstellungen.automatik_empfaenger
+      : (process.env.MAIL_EMPFAENGER ? [process.env.MAIL_EMPFAENGER] : []);
+    if (empfaenger.length === 0) return;
+
+    const appUrl = process.env.URL || 'https://pruefer.netlify.app';
+    await sendeMail({
+      an: empfaenger,
+      betreff: 'Prüfer: automatischer Abgleich fehlgeschlagen',
+      html: `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:600px">
+        <h2 style="margin:0 0 8px">Der automatische Abgleich ist heute nicht durchgelaufen</h2>
+        <p style="background:#fdecea;border-left:4px solid #d32f2f;padding:10px 14px;margin:16px 0">
+          ${String(fehler.message).replace(/</g, '&lt;')}
+        </p>
+        <p style="font-size:14px;color:#555">
+          Die Listen wurden möglicherweise nicht aktualisiert. Du kannst den Abgleich
+          jederzeit von Hand im Abgleich-Tool durchführen.
+        </p>
+        <p><a href="${appUrl}/einstellungen">Einstellungen öffnen</a></p>
+      </div>`,
+      text: `Der automatische Abgleich ist heute nicht durchgelaufen.\n\n${fehler.message}\n\n${appUrl}/einstellungen`,
+    });
+  } catch (e) {
+    // Auch der Fehlerbericht kann scheitern (kein Schlüssel, kein Empfänger).
+    // Dann bleibt das Protokoll als letzte Spur.
+    console.error('Fehlerbericht konnte nicht verschickt werden:', e.message);
+  }
+};
+
 // ─── Geplanter Aufruf ──────────────────────────────────────
 const geplanterLauf = async () => {
   const { datum, stunde } = berlinJetzt();
@@ -208,6 +242,7 @@ const geplanterLauf = async () => {
   } catch (err) {
     console.error('Automatiklauf fehlgeschlagen:', err);
     try { await protokolliere(client, { erfolg: false, meldung: err.message }); } catch { /* egal */ }
+    await meldeFehler(client, err);
     return { statusCode: 500, body: err.message };
   } finally {
     try { await client.end(); } catch { /* egal */ }
