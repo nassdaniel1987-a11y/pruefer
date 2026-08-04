@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { API } from '../utils/api';
 import { fmtDate } from '../utils/helpers';
+import { printTagesansicht } from '../utils/print';
 import { TagesansichtSkeleton } from './Skeleton';
 
 // ─── TAGESANSICHT ─────────────────────────────────────
@@ -276,7 +277,7 @@ const TagesansichtPage = ({ blocks }) => {
                       </div>
                     </div>
                     <button
-                      onClick={() => window.print()}
+                      onClick={() => printTagesansicht(selectedDate, sortedDetail, block?.name, hasAbgleich)}
                       className="no-print flex items-center gap-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface px-4 py-2 rounded-xl font-bold transition-colors border border-outline-variant/30 text-sm"
                       title="Tagesansicht drucken"
                     >

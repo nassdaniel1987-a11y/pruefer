@@ -52,4 +52,103 @@ const printFehlendeKinder = (title, kinder, blockName) => {
   setTimeout(() => w.print(), 400);
 };
 
-export { printFehlendeKinder };
+const printTagesansicht = (date, kinder, blockName, hasAbgleich) => {
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  
+  const dObj = new Date(date);
+  const dayStr = `${String(dObj.getDate()).padStart(2, '0')}.${String(dObj.getMonth() + 1).padStart(2, '0')}.${dObj.getFullYear()}`;
+  const title = `Tagesansicht: ${dayStr}`;
+
+  let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 10pt; margin: 1.5cm; color: #222; }
+  h1 { font-size: 14pt; margin-bottom: 4px; }
+  .meta { font-size: 9pt; color: #666; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th { background: #f0f0f0; font-weight: bold; text-align: left; padding: 5px 6px; border: 1px solid #ccc; font-size: 9pt; }
+  td { padding: 4px 6px; border: 1px solid #ddd; font-size: 9pt; }
+  tr:nth-child(even) { background: #fafafa; }
+  .status-ok { color: #16a34a; font-weight: bold; }
+  .status-error { color: #dc2626; font-weight: bold; }
+  .status-warn { color: #d97706; font-weight: bold; }
+  .status-a { color: #0284c7; font-weight: bold; }
+  .status-b { color: #16a34a; font-weight: bold; }
+  .summary { margin-top: 12px; font-size: 9pt; color: #666; border-top: 1px solid #ddd; padding-top: 6px; }
+  .legende { margin-top: 16px; font-size: 8.5pt; color: #555; border: 1px solid #ddd; border-radius: 4px; padding: 8px 10px; background: #f9f9f9; }
+  @media print { @page { margin: 1.5cm; } }
+</style></head><body>
+<h1>${title}</h1>
+<div class="meta">${blockName ? 'Ferienblock: ' + blockName + ' · ' : ''}Erstellt: ${dateStr} ${timeStr} · ${kinder.length} Kinder</div>
+<table><thead><tr><th>#</th><th>Nachname</th><th>Vorname</th><th>Klasse</th><th>Status</th></tr></thead><tbody>`;
+
+  let countOk = 0;
+  let countNoFood = 0;
+  let countNotRegistered = 0;
+
+  kinder.forEach((k, i) => {
+    let statusHtml = '';
+    
+    if (hasAbgleich) {
+      if (k.inA && k.inB) {
+        statusHtml = \`<span class="status-ok">OK</span>\`;
+        countOk++;
+      } else if (k.inA && !k.inB) {
+        statusHtml = \`<span class="status-error">Kein Essen</span>\`;
+        countNoFood++;
+      } else if (!k.inA && k.inB) {
+        statusHtml = \`<span class="status-warn">Nicht angemeldet</span>\`;
+        countNotRegistered++;
+      }
+    } else {
+      if (k.inA && k.inB) {
+        statusHtml = \`<span class="status-a">Liste A</span> &amp; <span class="status-b">Liste B</span>\`;
+      } else if (k.inA) {
+        statusHtml = \`<span class="status-a">Liste A</span>\`;
+      } else if (k.inB) {
+        statusHtml = \`<span class="status-b">Liste B</span>\`;
+      }
+    }
+
+    html += \`<tr><td>\${i + 1}</td><td><b>\${k.nachname || ''}</b></td><td>\${k.vorname || ''}</td><td>\${k.klasse || '–'}</td><td>\${statusHtml}</td></tr>\`;
+  });
+
+  html += \`</tbody></table>
+<div class="summary">
+  Gesamt: \${kinder.length} Kinder
+\`;
+
+  if (hasAbgleich) {
+    html += \`  (OK: \${countOk} · Kein Essen: \${countNoFood} · Nicht angemeldet: \${countNotRegistered})\`;
+  }
+
+  html += \`
+</div>
+<div class="legende"><b>Legende:</b><br><br>
+\`;
+
+  if (hasAbgleich) {
+    html += \`
+  <b>OK</b> = Kind ist angemeldet und Essen ist gebucht &nbsp;|&nbsp;
+  <b>Kein Essen</b> = Kind ist angemeldet, aber es wurde kein Essen beim Caterer gebucht &nbsp;|&nbsp;
+  <b>Nicht angemeldet</b> = Essen wurde gebucht, aber das Kind steht nicht auf der Anmeldeliste
+\`;
+  } else {
+    html += \`
+  <b>Liste A</b> = Kind steht auf der Anmeldeliste &nbsp;|&nbsp;
+  <b>Liste B</b> = Essen ist gebucht
+\`;
+  }
+
+  html += \`
+</div>
+</body></html>\`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+};
+
+export { printFehlendeKinder, printTagesansicht };
