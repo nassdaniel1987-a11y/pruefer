@@ -92,58 +92,58 @@ const printTagesansicht = (date, kinder, blockName, hasAbgleich) => {
     
     if (hasAbgleich) {
       if (k.inA && k.inB) {
-        statusHtml = \`<span class="status-ok">OK</span>\`;
+        statusHtml = `<span class="status-ok">OK</span>`;
         countOk++;
       } else if (k.inA && !k.inB) {
-        statusHtml = \`<span class="status-error">Kein Essen</span>\`;
+        statusHtml = `<span class="status-error">Kein Essen</span>`;
         countNoFood++;
       } else if (!k.inA && k.inB) {
-        statusHtml = \`<span class="status-warn">Nicht angemeldet</span>\`;
+        statusHtml = `<span class="status-warn">Nicht angemeldet</span>`;
         countNotRegistered++;
       }
     } else {
       if (k.inA && k.inB) {
-        statusHtml = \`<span class="status-a">Liste A</span> &amp; <span class="status-b">Liste B</span>\`;
+        statusHtml = `<span class="status-a">Liste A</span> &amp; <span class="status-b">Liste B</span>`;
       } else if (k.inA) {
-        statusHtml = \`<span class="status-a">Liste A</span>\`;
+        statusHtml = `<span class="status-a">Liste A</span>`;
       } else if (k.inB) {
-        statusHtml = \`<span class="status-b">Liste B</span>\`;
+        statusHtml = `<span class="status-b">Liste B</span>`;
       }
     }
 
-    html += \`<tr><td>\${i + 1}</td><td><b>\${k.nachname || ''}</b></td><td>\${k.vorname || ''}</td><td>\${k.klasse || '–'}</td><td>\${statusHtml}</td></tr>\`;
+    html += `<tr><td>${i + 1}</td><td><b>${k.nachname || ''}</b></td><td>${k.vorname || ''}</td><td>${k.klasse || '–'}</td><td>${statusHtml}</td></tr>`;
   });
 
-  html += \`</tbody></table>
+  html += `</tbody></table>
 <div class="summary">
-  Gesamt: \${kinder.length} Kinder
-\`;
+  Gesamt: ${kinder.length} Kinder
+`;
 
   if (hasAbgleich) {
-    html += \`  (OK: \${countOk} · Kein Essen: \${countNoFood} · Nicht angemeldet: \${countNotRegistered})\`;
+    html += `  (OK: ${countOk} · Kein Essen: ${countNoFood} · Nicht angemeldet: ${countNotRegistered})`;
   }
 
-  html += \`
+  html += `
 </div>
 <div class="legende"><b>Legende:</b><br><br>
-\`;
+`;
 
   if (hasAbgleich) {
-    html += \`
+    html += `
   <b>OK</b> = Kind ist angemeldet und Essen ist gebucht &nbsp;|&nbsp;
   <b>Kein Essen</b> = Kind ist angemeldet, aber es wurde kein Essen beim Caterer gebucht &nbsp;|&nbsp;
   <b>Nicht angemeldet</b> = Essen wurde gebucht, aber das Kind steht nicht auf der Anmeldeliste
-\`;
+`;
   } else {
-    html += \`
+    html += `
   <b>Liste A</b> = Kind steht auf der Anmeldeliste &nbsp;|&nbsp;
   <b>Liste B</b> = Essen ist gebucht
-\`;
+`;
   }
 
-  html += \`
+  html += `
 </div>
-</body></html>\`;
+</body></html>`;
 
   const w = window.open('', '_blank');
   w.document.write(html);
