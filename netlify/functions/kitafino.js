@@ -1,6 +1,14 @@
-// kitafino-Anbindung: Buchungen (Liste B) aus dem Einrichtungs-Portal holen.
+// kitafino-Anbindung: Buchungen (Liste B) und Stammliste aus dem
+// Einrichtungs-Portal holen.
+//
 // POST { action:'test' }                              -> Login prüfen
 // POST { action:'fetch', ferienblock_id, von?, bis? } -> Buchungen abrufen
+// POST { action:'stamm_laden' }                       -> Stammliste holen und
+//                                                        Eindeutiges verknüpfen
+// POST { action:'stamm_liste' }                       -> gespeicherte Stammliste
+// POST { action:'stamm_vorschlaege' }                 -> offene Verknüpfungen
+// POST { action:'verknuepfen', kind_id, kitafino_id } -> Vorschlag bestätigen
+// POST { action:'loesen', kind_id }                   -> Verknüpfung lösen
 //
 // Die eigentliche Portal-Logik steckt in utils/kitafinoClient.js, damit der
 // tägliche Automatiklauf denselben Weg nimmt.
@@ -8,6 +16,9 @@
 const { Client } = require('pg');
 const { toYmd } = require('./utils/datum');
 const { login, fetchRoster, holeBuchungen } = require('./utils/kitafinoClient');
+const {
+  speichereRoster, verknuepfeEindeutige, verknuepfe, loese, listeStamm,
+} = require('./utils/kitafinoStamm');
 
 const getClient = () => new Client({
   connectionString: process.env.DATABASE_URL,
@@ -82,6 +93,59 @@ exports.handler = async (event) => {
           spur: e.spur || spur
         });
       }
+    }
+
+    // ── Stammliste holen und ablegen ──
+    // Holt alle Benutzer der Einrichtung mit ihrer stabilen Benutzer-ID und
+    // verknüpft anschließend, was zweifelsfrei ist. Alles Uneindeutige kommt
+    // als Vorschlag zurück.
+    if (body.action === 'stamm_laden') {
+      try {
+        const jar = await login();
+        const roster = await fetchRoster(jar, projektId);
+        const gespeichert = await speichereRoster(client, roster);
+        const verknuepfung = await verknuepfeEindeutige(client);
+        return respond(200, { success: true, ...gespeichert, ...verknuepfung });
+      } catch (e) {
+        return respond(e.code === 'NO_CREDENTIALS' ? 400 : 502, { error: e.message });
+      }
+    }
+
+    // ── Gespeicherte Stammliste mit Verknüpfungsstatus ──
+    if (body.action === 'stamm_liste') {
+      try {
+        return respond(200, { benutzer: await listeStamm(client) });
+      } catch (e) {
+        return respond(500, { error: e.message });
+      }
+    }
+
+    // ── Offene Verknüpfungen, ohne das Portal zu behelligen ──
+    if (body.action === 'stamm_vorschlaege') {
+      try {
+        return respond(200, await verknuepfeEindeutige(client));
+      } catch (e) {
+        return respond(500, { error: e.message });
+      }
+    }
+
+    // ── Vorschlag bestätigen ──
+    if (body.action === 'verknuepfen') {
+      try {
+        const ok = await verknuepfe(client, {
+          kindId: parseInt(body.kind_id, 10),
+          kitafinoId: String(body.kitafino_id || '').trim(),
+        });
+        return respond(ok ? 200 : 404, ok ? { success: true } : { error: 'Kind nicht gefunden' });
+      } catch (e) {
+        return respond(400, { error: e.message });
+      }
+    }
+
+    // ── Verknüpfung lösen ──
+    if (body.action === 'loesen') {
+      const ok = await loese(client, parseInt(body.kind_id, 10));
+      return respond(ok ? 200 : 404, ok ? { success: true } : { error: 'Kind nicht gefunden' });
     }
 
     // ── Buchungen abrufen ──

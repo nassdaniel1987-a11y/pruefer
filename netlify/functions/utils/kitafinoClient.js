@@ -453,6 +453,10 @@ const holeBuchungen = async ({ von, bis, projektId, spur = null }) => {
 
   return {
     eintraege,
+    // Die Stammliste wird oben ohnehin geholt, um den Buchungen ihre ID
+    // zuzuordnen. Sie mitzugeben kostet nichts und erspart dem Aufrufer
+    // einen zweiten Portalabruf.
+    roster,
     von,
     bis,
     tageAbgefragt: tage.length,

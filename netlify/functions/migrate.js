@@ -271,6 +271,40 @@ exports.handler = async (event) => {
       results.push('⚠ namens_zuordnung: ' + e.message);
     }
 
+    // ── Migration 13: kitafino-Stammliste ──
+    // Alle Benutzer der Einrichtung mit ihrer stabilen Benutzer-ID. Die Liste
+    // wird bei jedem Buchungsabruf ohnehin geholt (kitafinoClient.holeBuchungen)
+    // und war bisher nach dem Aufruf wieder weg.
+    //
+    // Die Verknüpfung zu unseren Kindern bekommt bewusst KEINE Spalte hier:
+    // kinder.kitafino_id gibt es bereits und wird von abgleich.js und dem
+    // Kinder-Verzeichnis benutzt. Zwei Orte für dieselbe Beziehung würden
+    // auseinanderlaufen.
+    //
+    // Die Spalte "Gruppe/Klasse" des Portals wird nicht übernommen — sie
+    // enthält dort für alle Benutzer den Einrichtungsnamen, keine Klasse.
+    //
+    // Einträge werden nie gelöscht: ein Kind, das die Einrichtung verlässt,
+    // soll seine Historie behalten. zuletzt_gesehen zeigt stattdessen an,
+    // was veraltet ist.
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS kitafino_benutzer (
+          kitafino_id     VARCHAR(40) PRIMARY KEY,
+          nachname        TEXT NOT NULL,
+          vorname         TEXT NOT NULL,
+          status          TEXT,
+          zuerst_gesehen  TIMESTAMPTZ DEFAULT NOW(),
+          zuletzt_gesehen TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_kitafino_benutzer_name
+          ON kitafino_benutzer (LOWER(nachname), LOWER(vorname));
+      `);
+      results.push('✓ Tabelle "kitafino_benutzer" erstellt');
+    } catch (e) {
+      results.push('⚠ kitafino_benutzer: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

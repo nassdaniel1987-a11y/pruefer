@@ -17,6 +17,7 @@ const { importiereListe } = require('./import');
 const { vergleiche } = require('./vergleich');
 const { ladeZuordnungen } = require('./zuordnungen');
 const { synchronisiereKinder } = require('./kinderSync');
+const { speichereRoster, verknuepfeEindeutige, ladeIdIndex } = require('./kitafinoStamm');
 const { baueBericht } = require('./bericht');
 const { sendeMail } = require('./mail');
 const { leseEinstellungen } = require('../einstellungen');
@@ -89,15 +90,37 @@ const fuehreAbgleichAus = async (client, { heute, erzwingen = false, blockId = n
     kinderSync = { uebernommen: 0, meldung: 'fehlgeschlagen: ' + e.message };
   }
 
+  // ── kitafino-Stammliste fortschreiben ──
+  // `holeBuchungen` hat sie ohnehin geholt, um den Buchungen ihre ID
+  // zuzuordnen — das Speichern kostet keine weitere Anfrage. Danach wird
+  // verknüpft, was zweifelsfrei ist; Vorschläge bleiben dem Menschen
+  // vorbehalten und werden hier nicht berechnet.
+  // Muss vor dem Vergleich laufen, damit neue Verknüpfungen sofort wirken.
+  let stamm = null;
+  try {
+    const gespeichert = await speichereRoster(client, b.roster);
+    const verknuepft = await verknuepfeEindeutige(client, { nurAutomatisch: true });
+    stamm = { ...gespeichert, ...verknuepft };
+  } catch (e) {
+    console.error('kitafino-Stammliste nicht verarbeitet:', e.message);
+    stamm = { gesamt: 0, neu: 0, verknuepft: 0, offen: null };
+  }
+
   // ── Vergleich auf dem frisch gespeicherten Stand ──
-  // Die gemerkten Entscheidungen kommen mit, damit einmal geklärte Namenspaare
-  // nicht jeden Morgen erneut als unsicher gemeldet werden.
-  const [zeilenA, zeilenB, zuordnungen] = await Promise.all([
+  // Zwei Hilfen kommen mit: die gemerkten Namensentscheidungen, damit einmal
+  // geklärte Paare nicht erneut als unsicher gemeldet werden, und der
+  // ID-Index, über den verknüpfte Kinder unabhängig von der Schreibweise
+  // zugeordnet werden. `kitafino_id` muss dafür mitgelesen werden.
+  const [zeilenA, zeilenB, zuordnungen, idIndex] = await Promise.all([
     client.query('SELECT id, nachname, vorname, klasse, datum FROM liste_a WHERE ferienblock_id = $1', [block.id]),
-    client.query('SELECT id, nachname, vorname, klasse, datum FROM liste_b WHERE ferienblock_id = $1', [block.id]),
+    client.query('SELECT id, nachname, vorname, klasse, datum, kitafino_id FROM liste_b WHERE ferienblock_id = $1', [block.id]),
     ladeZuordnungen(client),
+    ladeIdIndex(client).catch(e => {
+      console.warn('ID-Index nicht lesbar, Abgleich läuft über Namen:', e.message);
+      return new Map();
+    }),
   ]);
-  const ergebnis = vergleiche(zeilenA.rows, zeilenB.rows, zuordnungen);
+  const ergebnis = vergleiche(zeilenA.rows, zeilenB.rows, zuordnungen, idIndex);
 
   // ── Als eigenen Abgleich speichern; bestehende bleiben unangetastet ──
   const neuerAbgleich = await client.query(
@@ -175,6 +198,10 @@ const fuehreAbgleichAus = async (client, { heute, erzwingen = false, blockId = n
       kitafino_eintraege: b.eintraege.length,
       empfaenger: mailSenden ? empfaenger.length : 0,
       kinder_sync: kinderSync?.uebernommen ?? 0,
+      stamm_gesamt: stamm?.gesamt ?? 0,
+      stamm_neu: stamm?.neu ?? 0,
+      stamm_verknuepft: stamm?.verknuepft ?? 0,
+      stamm_offen: stamm?.offen ?? null,
     },
     ergebnis,
   };

@@ -39,7 +39,16 @@ const zuEintrag = (zeile) => ({
   vorname: zeile.vorname || '',
   klasse: zeile.klasse || '',
   date: toYmd(zeile.datum),
+  kitafinoId: zeile.kitafino_id || null,
 });
+
+// Vertauschungstoleranter Namensschlüssel für den ID-Index.
+// Muss zu kitafinoStamm.nameKey passen — dort wird der Index gebaut.
+const idSchluessel = (nachname, vorname) => {
+  const a = String(nachname || '').trim().toLowerCase();
+  const b = String(vorname || '').trim().toLowerCase();
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+};
 
 /**
  * Vergleicht zwei Listen.
@@ -50,14 +59,22 @@ const zuEintrag = (zeile) => ({
  *   Namenspaare, Schlüssel `"name a|||name b"` (klein, getrimmt) auf
  *   `'gleich'` oder `'verschieden'`. Optional, damit Aufrufer ohne Gedächtnis
  *   unverändert funktionieren.
+ * @param {Map|Object} [idIndex] — Namensschlüssel (`"müller|hans"`, vertauschungs-
+ *   tolerant) auf die kitafino-ID des Kindes. Damit wird über die ID statt über
+ *   den Namen zugeordnet. Ebenfalls optional.
  * @returns {{matchRows:Array, nurInA:Array, nurInB:Array, unsicher:Array, kennzahlen:Object}}
  */
-const vergleiche = (zeilenA, zeilenB, zuordnungen) => {
+const vergleiche = (zeilenA, zeilenB, zuordnungen, idIndex) => {
   // Map und einfaches Objekt gleichermaßen zulassen.
   const holeEntscheidung = (nameA, nameB) => {
     if (!zuordnungen) return null;
     const k = zuordnungsSchluessel(nameA, nameB);
     return (zuordnungen instanceof Map ? zuordnungen.get(k) : zuordnungen[k]) || null;
+  };
+  const holeId = (nachname, vorname) => {
+    if (!idIndex) return null;
+    const k = idSchluessel(nachname, vorname);
+    return (idIndex instanceof Map ? idIndex.get(k) : idIndex[k]) || null;
   };
 
   const listA = zeilenA.map(zuEintrag);
@@ -65,12 +82,48 @@ const vergleiche = (zeilenA, zeilenB, zuordnungen) => {
 
   const schluessel = (e) => `${e.name}|${e.date}`;
 
+  // ── Zuordnung über die kitafino-ID ────────────────────────
+  // Läuft vor allem anderen: wo ein Kind mit seiner kitafino-ID verknüpft ist
+  // und die Buchung dieselbe ID trägt, steht die Zuordnung fest. Schreibweise,
+  // Umlaute, Doppelnamen und vertauschte Vor-/Nachnamen spielen dann keine
+  // Rolle mehr. Diese Paare nehmen am Namensvergleich nicht mehr teil.
+  const idPaare = [];
+  const perIdA = new Set();
+  const perIdB = new Set();
+
+  if (idIndex && (idIndex instanceof Map ? idIndex.size : Object.keys(idIndex).length)) {
+    const bNachIdUndTag = new Map();
+    for (const e of listB) {
+      if (!e.kitafinoId) continue;
+      const k = `${e.kitafinoId}|${e.date}`;
+      if (!bNachIdUndTag.has(k)) bNachIdUndTag.set(k, []);
+      bNachIdUndTag.get(k).push(e);
+    }
+
+    for (const eA of listA) {
+      const id = holeId(eA.nachname, eA.vorname);
+      if (!id) continue;
+      const kandidaten = bNachIdUndTag.get(`${id}|${eA.date}`) || [];
+      // Ein Buchungseintrag darf nur einmal vergeben werden, sonst zählt ein
+      // Kind doppelt.
+      const frei = kandidaten.find(x => !perIdB.has(x.dbId));
+      if (!frei) continue;
+      idPaare.push({ a: eA, b: frei, id });
+      perIdA.add(eA.dbId);
+      perIdB.add(frei.dbId);
+    }
+  }
+
+  // Ab hier wird nur noch mit dem gearbeitet, was die ID nicht schon geklärt hat.
+  const restA = perIdA.size ? listA.filter(e => !perIdA.has(e.dbId)) : listA;
+  const restB = perIdB.size ? listB.filter(e => !perIdB.has(e.dbId)) : listB;
+
   // ── Exakttreffer ──
-  const mapB = new Map(listB.map(i => [schluessel(i), i]));
-  const mapA = new Map(listA.map(i => [schluessel(i), i]));
-  const exactA = listA.filter(e => mapB.has(schluessel(e)));
-  const nonA = listA.filter(e => !mapB.has(schluessel(e)));
-  const nonB = listB.filter(e => !mapA.has(schluessel(e)));
+  const mapB = new Map(restB.map(i => [schluessel(i), i]));
+  const mapA = new Map(restA.map(i => [schluessel(i), i]));
+  const exactA = restA.filter(e => mapB.has(schluessel(e)));
+  const nonA = restA.filter(e => !mapB.has(schluessel(e)));
+  const nonB = restB.filter(e => !mapA.has(schluessel(e)));
 
   // ── Fuzzy-Kandidaten, nur innerhalb desselben Tages ──
   const byDate = nonB.reduce((acc, i) => { (acc[i.date] = acc[i.date] || []).push(i); return acc; }, {});
@@ -124,6 +177,19 @@ const vergleiche = (zeilenA, zeilenB, zuordnungen) => {
   const matchRows = [];
   const zugeordnetA = new Set();
   const zugeordnetB = new Set();
+
+  // Die ID-Treffer zuerst — sie sind die sichersten, die es gibt.
+  // match_typ bleibt bewusst 'exact': ein eigener Typ würde jede Auswertung
+  // und jeden Filter in der Oberfläche brechen.
+  for (const p of idPaare) {
+    matchRows.push({
+      liste_a_id: p.a.dbId, liste_b_id: p.b.dbId,
+      match_typ: 'exact', score: 100,
+      grund: `Über kitafino-ID ${p.id} zugeordnet`
+    });
+    zugeordnetA.add(p.a.dbId);
+    zugeordnetB.add(p.b.dbId);
+  }
 
   for (const eA of exactA) {
     const eB = mapB.get(schluessel(eA));
@@ -193,6 +259,9 @@ const vergleiche = (zeilenA, zeilenB, zuordnungen) => {
       eintraegeB: listB.length,
       kinderA: eindeutig(listA),
       kinderB: eindeutig(listB),
+      // ueberId und exakt sind überschneidungsfrei: was die ID geklärt hat,
+      // läuft nicht mehr durch den Namensvergleich.
+      ueberId: idPaare.length,
       exakt: exactA.length,
       automatisch: matchRows.filter(m => m.match_typ === 'fuzzy_accepted').length,
       nurInA: nurInA.length,

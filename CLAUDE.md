@@ -62,7 +62,7 @@ Each function in `netlify/functions/` is a standalone handler — one per domain
 | `ferienblock.js` | Holiday block CRUD |
 | `kinder.js` | Children master data, sync from lists, import |
 | `listen.js` | Bulk import of Liste A and Liste B; supports a merge mode (`merge_von`/`merge_bis`) that replaces only a date range instead of the whole block |
-| `kitafino.js` | Fetches Liste B straight from the caterer's facility portal (see below) |
+| `kitafino.js` | Fetches bookings straight from the caterer's facility portal (see below), and manages the roster (`stamm_laden`, `stamm_liste`, `stamm_vorschlaege`, `verknuepfen`, `loesen`) |
 | `abgleich.js` | Save/load reconciliation matches, dashboard stats, propagates `kitafino_id` onto children. `action:jetzt_abgleichen` runs a full reconciliation on demand (no mail) |
 | `angebote.js` | Activity offers with day and child assignments |
 | `backup.js` | Full data export/import |
@@ -86,6 +86,7 @@ Shared function helpers in `netlify/functions/utils/`:
 - `kinderSync.js` — upsert children from the registrations into `kinder`. No deletes, no questions — safe to run unattended
 - `zuordnungen.js` — read/write the remembered name-pair decisions (`namens_zuordnung`)
 - `zuordnungToken.js` — HMAC-signed tokens (over `SETUP_SECRET`) for the decision links in the mail
+- `kitafinoStamm.js` — the caterer's roster (`kitafino_benutzer`) and its link to our children. Stores the roster, links what is unambiguous, and builds the id index for the comparison
 - `bericht.js` / `mail.js` — daily report as HTML/text, and the Resend transport
 
 ### Daily automatic reconciliation
@@ -109,6 +110,45 @@ Pairs between 60 and 74 are deliberately *not* matched; they are returned as
 `unsicher` and listed in their own section of the mail. Consequence to keep in
 mind: those entries also appear under `nur_in_a` / `nur_in_b` in the stored
 Abgleich, because there is no match type for "undecided".
+
+### Matching by kitafino id
+
+Name comparison is the fallback, not the primary key. kitafino keeps a stable
+user id per child (`70563-27`), and three pieces were already in place but never
+joined up: `fetchRoster` returns every child with an id, `holeBuchungen` fetches
+the roster on every run anyway (to attach ids to bookings), and
+`liste_b.kitafino_id` is populated from it.
+
+`kitafino_benutzer` now stores that roster. The **link** lives in
+`kinder.kitafino_id` — deliberately not duplicated onto the roster table, since
+two places for one relationship drift apart.
+
+Why the chain holds:
+
+```
+liste_a  --(exact name)-->  kinder  --(kitafino_id)-->  liste_b
+```
+
+`kinder` is populated from the registrations via `kinderSync`, so its names are
+*identical* to `liste_a` — no fuzzy step needed. And `liste_b.kitafino_id` comes
+from kitafino's own roster, so it is exact within kitafino. Once a child is
+linked, its reconciliation is exact regardless of spelling.
+
+`vergleiche(zeilenA, zeilenB, zuordnungen, idIndex)` takes the index as an
+optional fourth argument and runs an id pass **before** any name comparison;
+matched pairs drop out of the name logic entirely. `match_typ` stays `'exact'`
+(a new type would break every filter in the UI); `grund` names the id.
+`kennzahlen.ueberId` and `kennzahlen.exakt` are disjoint.
+
+**Auto-linking is deliberately strict.** A pair is linked without asking only
+when the name matches exactly (swap-tolerant), exactly one child matches,
+exactly one roster entry matches, and the child has no id yet. Merely *similar*
+names — including umlaut variants like Müller/Mueller — go to a suggestion list
+in the Kinder-Verzeichnis. A wrong link would be permanent, would silently
+misdirect the reconciliation, and would barely be noticed.
+
+Note: the manual 4-step wizard in `AbgleichTool.jsx` compares client-side and
+does **not** use ids. The one-click path and the nightly run do.
 
 ### Remembered name-pair decisions
 
@@ -146,7 +186,7 @@ Functions have their own `package.json` with `pg` and `bcryptjs`, and stay Commo
 
 ### Database
 
-PostgreSQL with cascading foreign keys. Core tables: `users`, `sessions`, `login_versuche`, `ferienblock`, `liste_a`, `liste_b`, `abgleich`, `abgleich_matches`, `import_log`, `kinder`, `angebote`, `angebot_tage`, `angebot_kinder`, `einstellungen`, `automatik_log`, `namens_zuordnung`.
+PostgreSQL with cascading foreign keys. Core tables: `users`, `sessions`, `login_versuche`, `ferienblock`, `liste_a`, `liste_b`, `abgleich`, `abgleich_matches`, `import_log`, `kinder`, `angebote`, `angebot_tage`, `angebot_kinder`, `einstellungen`, `automatik_log`, `namens_zuordnung`, `kitafino_benutzer`.
 
 Schema is initialized via `setup-db` and evolved via `migrate`. Both are idempotent.
 
@@ -178,6 +218,7 @@ Things that will bite you here:
 - A failed login still answers HTTP 200 with the login mask, so success is verified explicitly by probing for the logout form.
 - The day view emits every section **twice** with identical content — entries are deduplicated per day, otherwise every booking counts double.
 - The "Gruppe/Klasse" column holds the facility name, not a class, and the balance column only holds categories ("über € 5"). Neither is imported.
+- The roster (`action=listen`) is the **only** place carrying the stable `kitafino_id`; the day view does not. `holeBuchungen` joins it in by name and also returns the roster, so persisting it costs no extra request.
 
 ## Pitfalls
 

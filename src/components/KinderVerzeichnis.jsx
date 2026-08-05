@@ -128,6 +128,56 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     setDayEditLoading(prev => ({ ...prev, [key]: false }));
   };
 
+  // ─── kitafino-Zuordnung ───────────────────────────────────
+  // Hängt an einem Kind erst einmal die kitafino-ID, ist sein Abgleich exakt —
+  // unabhängig davon, wie der Name geschrieben wird.
+  const [stammLaeuft, setStammLaeuft] = useState(false);
+  const [stammModal, setStammModal] = useState(null); // { verknuepft, neu, gesamt, vorschlaege, offen }
+
+  const ladeStammliste = async () => {
+    setStammLaeuft(true);
+    const res = await API.post('kitafino', { action: 'stamm_laden' });
+    setStammLaeuft(false);
+    if (!res || res.error) return; // Meldung kommt aus API
+    setStammModal(res);
+    if (res.verknuepft > 0) {
+      toast.success(`${res.verknuepft} Kinder automatisch verknüpft`);
+      loadKinder(filterBlock);
+    }
+  };
+
+  const zeigeOffeneZuordnungen = async () => {
+    setStammLaeuft(true);
+    const res = await API.post('kitafino', { action: 'stamm_vorschlaege' });
+    setStammLaeuft(false);
+    if (!res || res.error) return;
+    setStammModal({ ...res, nurAnzeige: true });
+  };
+
+  const uebernehmeVorschlag = async (kindId, kitafinoId) => {
+    const res = await API.post('kitafino', { action: 'verknuepfen', kind_id: kindId, kitafino_id: kitafinoId });
+    if (!res || res.error) return;
+    toast.success('Verknüpft');
+    setStammModal(m => m && ({
+      ...m,
+      verknuepft: (m.verknuepft || 0) + 1,
+      offen: Math.max(0, (m.offen || 1) - 1),
+      vorschlaege: (m.vorschlaege || []).filter(v => v.kind.id !== kindId),
+    }));
+    loadKinder(filterBlock);
+    // Ist gerade die Akte dieses Kindes offen, muss sie die neue ID zeigen.
+    if (selectedKindId === kindId) {
+      API.get('kinder', { id: kindId }).then(d => setAkte(d.kind ? d : null));
+    }
+  };
+
+  const verwerfeVorschlag = (kindId) => {
+    setStammModal(m => m && ({
+      ...m,
+      vorschlaege: (m.vorschlaege || []).filter(v => v.kind.id !== kindId),
+    }));
+  };
+
   // Fuzzy-Sync: Preview laden
   const [syncPreview, setSyncPreview] = useState(null); // null = Modal zu
   const [syncDecisions, setSyncDecisions] = useState({}); // key=incoming-key, value: 'merge'|'create'
@@ -354,6 +404,13 @@ const KinderVerzeichnis = ({ blocks, onNavigate, initialKindId }) => {
     return new Set([...zaehler].filter(([, n]) => n > 1).map(([id]) => id));
   }, [kinder]);
 
+  // Kinder ohne kitafino-ID: für die muss der Abgleich weiterhin über den
+  // Namen raten. Die Zahl gehört sichtbar in die Werkzeugleiste.
+  const offeneKinder = React.useMemo(
+    () => kinder.filter(k => !k.kitafino_id).length,
+    [kinder]
+  );
+
   // Filter + Sortierung
   const filtered = kinder.filter(k =>
     (k.nachname + ' ' + k.vorname + ' ' + (k.klasse || ''))
@@ -444,6 +501,27 @@ return (
               <button className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-surface-container-lowest border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors disabled:opacity-50" title="Sync" disabled={syncing} onClick={syncFromLists}>
                 <span className="material-symbols-outlined text-[16px]">{syncing ? 'hourglass_empty' : 'sync'}</span> <span className="hidden sm:inline">Sync</span>
               </button>
+              <button
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-surface-container-lowest border border-outline-variant/30 text-on-surface rounded-xl hover:bg-surface-container-high transition-colors disabled:opacity-50"
+                title="Stammliste von kitafino holen und Kinder über ihre ID verknüpfen"
+                disabled={stammLaeuft}
+                onClick={ladeStammliste}
+              >
+                <span className="material-symbols-outlined text-[16px]">{stammLaeuft ? 'hourglass_empty' : 'link'}</span>
+                <span className="hidden sm:inline">kitafino</span>
+              </button>
+              {offeneKinder > 0 && (
+                <button
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-amber-400/40 text-amber-700 dark:text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 transition-colors disabled:opacity-50"
+                  title="Diese Kinder haben noch keine kitafino-ID — für sie muss der Abgleich raten"
+                  disabled={stammLaeuft}
+                  onClick={zeigeOffeneZuordnungen}
+                >
+                  <span className="material-symbols-outlined text-[16px]">link_off</span>
+                  <span>{offeneKinder}</span>
+                  <span className="hidden sm:inline">ohne ID</span>
+                </button>
+              )}
               {kinder.length > 1 && (
                 <button className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-outline-variant/30 ${showDuplicates ? 'bg-primary text-white' : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container-high'} transition-colors`} onClick={() => setShowDuplicates(!showDuplicates)}>
                   <span className="material-symbols-outlined text-[16px]">content_copy</span> <span className="hidden sm:inline">Duplikate</span>
@@ -830,6 +908,104 @@ return (
             <div className="flex justify-end gap-3 mt-8">
               <button className="px-5 py-2.5 text-sm font-bold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors" onClick={() => setEditKind(null)}>Abbrechen</button>
               <button className="px-6 py-2.5 text-sm font-bold bg-primary text-on-primary border border-primary-container/20 rounded-xl shadow-sm hover:opacity-90 hover:scale-[1.02] transition-all" onClick={saveEdit}>Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* kitafino-Zuordnung */}
+      {stammModal && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setStammModal(null)}>
+          <div className="bg-surface-container-lowest rounded-3xl w-full max-w-2xl shadow-2xl border border-outline-variant/20 overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/10 shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-on-surface">kitafino-Zuordnung</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  {stammModal.nurAnzeige
+                    ? `${stammModal.offen} Kinder ohne kitafino-ID`
+                    : `${stammModal.gesamt ?? 0} Einträge geladen · ${stammModal.neu ?? 0} neu · ${stammModal.verknuepft ?? 0} automatisch verknüpft`}
+                </p>
+              </div>
+              <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setStammModal(null)}>
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            <div className="px-6 py-3 bg-surface-container/50 border-b border-outline-variant/10 shrink-0 text-xs text-on-surface-variant">
+              Ein Kind mit kitafino-ID wird beim Abgleich <b>über die ID</b> zugeordnet — Schreibweise,
+              Umlaute und vertauschte Namen spielen dann keine Rolle mehr.
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-2">
+              {(stammModal.vorschlaege || []).length === 0 ? (
+                <div className="text-center py-8">
+                  <span className="material-symbols-outlined text-4xl text-emerald-500">check_circle</span>
+                  <p className="text-sm font-bold text-on-surface mt-2">
+                    {stammModal.offen > 0
+                      ? 'Keine passenden kitafino-Einträge gefunden'
+                      : 'Alle Kinder sind verknüpft'}
+                  </p>
+                  {stammModal.offen > 0 && (
+                    <p className="text-xs text-on-surface-variant mt-1">
+                      {stammModal.offen} Kinder haben keine ID. Für sie läuft der Abgleich weiter über den Namen.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                (stammModal.vorschlaege || []).map(v => (
+                  <div key={v.kind.id} className="bg-surface-container-low rounded-xl p-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                      <div className="text-sm">
+                        <span className="font-bold text-on-surface">{v.kind.nachname}, {v.kind.vorname}</span>
+                        {v.kind.klasse && <span className="text-on-surface-variant"> · {v.kind.klasse}</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {v.action === 'ambiguous' && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-700 dark:text-amber-400">
+                            mehrdeutig
+                          </span>
+                        )}
+                        <button
+                          className="text-xs font-bold text-on-surface-variant hover:text-on-surface transition-colors"
+                          onClick={() => verwerfeVorschlag(v.kind.id)}
+                        >
+                          Später
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {v.kandidaten.map(kand => (
+                        <div key={kand.kitafino_id} className="flex items-center justify-between gap-2 flex-wrap bg-surface-container-lowest rounded-lg px-3 py-2">
+                          <div className="text-sm min-w-0">
+                            <span className="text-on-surface">{kand.nachname}, {kand.vorname}</span>
+                            <span className="block text-xs text-on-surface-variant font-mono">{kand.kitafino_id}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold ${kand.score >= 90 ? 'text-emerald-600' : 'text-on-surface-variant'}`}>
+                              {kand.score}
+                            </span>
+                            <button
+                              className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-bold hover:bg-primary/90 transition-colors"
+                              onClick={() => uebernehmeVorschlag(v.kind.id, kand.kitafino_id)}
+                            >
+                              Verknüpfen
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-outline-variant/10 shrink-0 flex justify-end">
+              <button
+                className="px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-sm font-bold hover:bg-outline-variant/20 transition-colors"
+                onClick={() => setStammModal(null)}
+              >
+                Schließen
+              </button>
             </div>
           </div>
         </div>

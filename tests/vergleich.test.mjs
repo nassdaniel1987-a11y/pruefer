@@ -242,6 +242,143 @@ describe('vergleiche — gemerkte Namenszuordnungen', () => {
   });
 });
 
+describe('vergleiche — Zuordnung über die kitafino-ID', () => {
+  // Der eigentliche Sinn: hängt an einem Kind die kitafino-ID, ist die
+  // Zuordnung exakt — unabhängig davon, wie der Name geschrieben wird.
+  const zeileB = (nachname, vorname, datum, kitafino_id) =>
+    ({ ...zeile(nachname, vorname, datum), kitafino_id });
+
+  const index = (nachname, vorname, id) =>
+    new Map([[`${nachname.toLowerCase()}|${vorname.toLowerCase()}`.split('|').sort().join('|'), id]]);
+
+  test('abweichende Schreibweise wird trotzdem zugeordnet', () => {
+    // "Müller" in der Anmeldung, "Mueller" bei der Buchung — über den Namen
+    // wäre das bestenfalls unsicher, über die ID ist es eindeutig.
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      [zeileB('Mueller', 'Hans', '2026-08-03', '70563-27')],
+      null,
+      index('Müller', 'Hans', '70563-27')
+    );
+    assert.equal(r.nurInA.length, 0);
+    assert.equal(r.nurInB.length, 0);
+    assert.equal(r.unsicher.length, 0);
+    const zugeordnet = r.matchRows.filter(m => m.liste_a_id && m.liste_b_id);
+    assert.equal(zugeordnet.length, 1);
+    assert.equal(zugeordnet[0].match_typ, 'exact');
+    assert.match(zugeordnet[0].grund, /kitafino-ID 70563-27/);
+    assert.equal(r.kennzahlen.ueberId, 1);
+  });
+
+  test('völlig anderer Name, gleiche ID — die ID gewinnt', () => {
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      [zeileB('Schmidt-Müller', 'Johannes', '2026-08-03', '70563-27')],
+      null,
+      index('Müller', 'Hans', '70563-27')
+    );
+    assert.equal(r.nurInA.length, 0);
+    assert.equal(r.nurInB.length, 0);
+  });
+
+  test('mehrere Tage werden einzeln zugeordnet', () => {
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03'), zeile('Müller', 'Hans', '2026-08-04')],
+      [zeileB('Mueller', 'Hans', '2026-08-03', '70563-27'),
+       zeileB('Mueller', 'Hans', '2026-08-04', '70563-27')],
+      null,
+      index('Müller', 'Hans', '70563-27')
+    );
+    assert.equal(r.kennzahlen.ueberId, 2);
+    assert.equal(r.nurInA.length, 0);
+    assert.equal(r.nurInB.length, 0);
+  });
+
+  test('die ID gilt nur am selben Tag', () => {
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      [zeileB('Mueller', 'Hans', '2026-08-04', '70563-27')],
+      null,
+      index('Müller', 'Hans', '70563-27')
+    );
+    assert.equal(r.kennzahlen.ueberId, 0);
+    assert.equal(r.nurInA.length, 1);
+    assert.equal(r.nurInB.length, 1);
+  });
+
+  test('eine Buchung wird nicht zweimal vergeben', () => {
+    // Zwei Anmeldetage, aber nur eine Buchung: der zweite Tag bleibt offen.
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03'), zeile('Müller', 'Hans', '2026-08-03')],
+      [zeileB('Mueller', 'Hans', '2026-08-03', '70563-27')],
+      null,
+      index('Müller', 'Hans', '70563-27')
+    );
+    assert.equal(r.kennzahlen.ueberId, 1);
+    assert.equal(r.nurInA.length, 1);
+    assert.equal(r.nurInB.length, 0);
+  });
+
+  test('ohne ID auf der Buchung greift wieder der Namensvergleich', () => {
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      null,
+      index('Müller', 'Hans', '70563-27')
+    );
+    assert.equal(r.kennzahlen.ueberId, 0);
+    assert.equal(r.kennzahlen.exakt, 1, 'muss über den Namen laufen');
+    assert.equal(r.nurInA.length, 0);
+  });
+
+  test('ein unverknüpftes Kind läuft weiter über den Namen', () => {
+    const r = vergleiche(
+      [zeile('Meier', 'Anna', '2026-08-03')],
+      [zeileB('Meier', 'Anna', '2026-08-03', '70563-99')],
+      null,
+      index('Müller', 'Hans', '70563-27') // ein anderes Kind
+    );
+    assert.equal(r.kennzahlen.ueberId, 0);
+    assert.equal(r.kennzahlen.exakt, 1);
+  });
+
+  test('leerer Index ändert nichts', () => {
+    const listen = () => [
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      [zeile('Mueller', 'Hans', '2026-08-03')],
+    ];
+    const [a1, b1] = listen();
+    const ohne = vergleiche(a1, b1);
+    const [a2, b2] = listen();
+    const mit = vergleiche(a2, b2, null, new Map());
+    assert.equal(mit.nurInA.length, ohne.nurInA.length);
+    assert.equal(mit.nurInB.length, ohne.nurInB.length);
+    assert.equal(mit.kennzahlen.exakt, ohne.kennzahlen.exakt);
+    assert.equal(mit.kennzahlen.ueberId, 0);
+  });
+
+  test('ein einfaches Objekt tut es auch', () => {
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      [zeileB('Mueller', 'Hans', '2026-08-03', '70563-27')],
+      null,
+      { 'hans|müller': '70563-27' }
+    );
+    assert.equal(r.kennzahlen.ueberId, 1);
+  });
+
+  test('Kennzahlen zählen weiterhin alle Einträge', () => {
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      [zeileB('Mueller', 'Hans', '2026-08-03', '70563-27')],
+      null,
+      index('Müller', 'Hans', '70563-27')
+    );
+    assert.equal(r.kennzahlen.eintraegeA, 1);
+    assert.equal(r.kennzahlen.eintraegeB, 1);
+  });
+});
+
 describe('Kennzahlen', () => {
   test('zählen Kinder, nicht Zeilen', () => {
     const r = vergleiche(
