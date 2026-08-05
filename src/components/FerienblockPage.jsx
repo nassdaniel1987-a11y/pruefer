@@ -151,7 +151,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
                       <div className="space-y-3">
                         <div>
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1"><span className="material-symbols-outlined text-xs">assignment</span>Liste A ({d?.a.length || 0})</span>
+                            <span className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1"><span className="material-symbols-outlined text-xs">assignment</span>Anmeldungen ({d?.a.length || 0})</span>
                             <div className="flex gap-1">
                               <button className="p-1 rounded text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => reloadDetail(b.id)}><span className="material-symbols-outlined text-sm">refresh</span></button>
                               {d?.a.length > 0 && <button className="px-2 py-0.5 text-[10px] font-bold rounded text-error hover:bg-error/10 transition-colors" onClick={() => clearListe(b.id, 'A')}>Leeren</button>}
@@ -175,7 +175,7 @@ const FerienblockPage = ({ blocks, onReload }) => {
                         </div>
                         <div>
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1"><span className="material-symbols-outlined text-xs">bookmark_added</span>Liste B ({d?.b.length || 0})</span>
+                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1"><span className="material-symbols-outlined text-xs">bookmark_added</span>Essensbuchungen ({d?.b.length || 0})</span>
                             {d?.b.length > 0 && <button className="px-2 py-0.5 text-[10px] font-bold rounded text-error hover:bg-error/10 transition-colors" onClick={() => clearListe(b.id, 'B')}>Leeren</button>}
                           </div>
                           {!d?.b.length ? (

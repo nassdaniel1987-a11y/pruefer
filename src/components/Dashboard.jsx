@@ -2,10 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ladeXLSX } from '../utils/xlsx';
 import { API } from '../utils/api';
 import { toast } from '../utils/toast';
-import { fmtDate, fmtDateTime } from '../utils/helpers';
+import { fmtDate } from '../utils/helpers';
 import { printFehlendeKinder } from '../utils/print';
-import Spinner from './Spinner';
-import { DashboardSkeleton, Skel } from './Skeleton';
+import { Skel } from './Skeleton';
 
 // DASHBOARD
 const Dashboard = ({ blocks, onNavigate, onReload }) => {
@@ -74,10 +73,55 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
 
   const vals = Object.values(blockDetail);
   const gesamtKinderA = vals.reduce((s, d) => s + (d?.kinder_a || 0), 0);
-  const gesamtKinderB = vals.reduce((s, d) => s + (d?.kinder_b || 0), 0);
-  const gesamtMatches = vals.reduce((s, d) => s + (d?.matches ?? 0), 0);
   const gesamtFehltInB = vals.reduce((s, d) => s + (d?.nur_in_a ?? 0), 0);
   const hatAbgleich = vals.some(d => d?.letzter_abgleich);
+
+  // ── "Heute" ──────────────────────────────────────────
+  // Zeigt, was heute zu tun ist. Der gespeicherte Abgleich umfasst immer den
+  // ganzen Block; hier wird auf den heutigen Tag eingegrenzt — dieselbe
+  // Eingrenzung, die der tägliche Bericht serverseitig vornimmt.
+  const heute = new Date().toISOString().split('T')[0];
+  const ymd = (v) => String(v || '').split('T')[0];
+
+  const laufenderBlock = useMemo(
+    () => blocks.find(b => ymd(b.startdatum) <= heute && heute <= ymd(b.enddatum)) || null,
+    [blocks, heute]
+  );
+
+  // Details des laufenden Blocks von sich aus laden — für "Heute" darf der
+  // Nutzer nicht erst irgendwo klicken müssen.
+  useEffect(() => {
+    if (!laufenderBlock) return;
+    const d = blockDetail[laufenderBlock.id];
+    if (!d?.letzter_abgleich) return;
+    if (abgleichDetail[laufenderBlock.id]) return;
+    API.get('abgleich', { abgleich_id: d.letzter_abgleich.id }).then(res => {
+      setAbgleichDetail(prev => ({ ...prev, [laufenderBlock.id]: res }));
+    });
+  }, [laufenderBlock, blockDetail]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const heuteFaelle = useMemo(() => {
+    if (!laufenderBlock) return null;
+    const matches = abgleichDetail[laufenderBlock.id]?.matches;
+    if (!matches) return null;
+    const sammle = (typ, prefix) => {
+      const map = new Map();
+      matches
+        .filter(m => m.match_typ === typ && ymd(m[prefix + '_datum']) === heute)
+        .forEach(m => {
+          const key = ((m[prefix + '_nachname'] || '') + '|' + (m[prefix + '_vorname'] || '')).toLowerCase();
+          if (!map.has(key)) map.set(key, {
+            nachname: m[prefix + '_nachname'], vorname: m[prefix + '_vorname'], klasse: m[prefix + '_klasse'] || ''
+          });
+        });
+      return [...map.values()].sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'));
+    };
+    return { ohneEssen: sammle('nur_in_a', 'a'), nichtAngemeldet: sammle('nur_in_b', 'b') };
+  }, [laufenderBlock, abgleichDetail, heute]);
+
+  // Steuert die Spaltenaufteilung: ohne aufgeklapptes Detail bekommen die
+  // Blockkarten die volle Breite statt zwei Dritteln.
+  const detailOffen = Boolean(expandedBlock || expandedNurB);
 
   // Excel-Export: Fehlende Kinder
   const exportFehlende = async () => {
@@ -118,66 +162,92 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
 
   return (
     <div className="space-y-8 pb-20">
-      {/* Hero Welcome */}
+      {/* Heute */}
       <section>
-        <div className="relative p-8 rounded-3xl bg-gradient-to-br from-primary to-primary-container text-white overflow-hidden">
-          <div className="relative z-10">
-            <h3 className="text-3xl font-extrabold tracking-tight mb-2">Willkommen zurück.</h3>
-            <p className="text-white/80 max-w-md font-medium">
+        {!laufenderBlock ? (
+          <div className="p-6 rounded-3xl bg-surface-container-low/50">
+            <h3 className="text-xl font-extrabold text-on-surface mb-1">Heute läuft keine Ferienbetreuung.</h3>
+            <p className="text-sm text-on-surface-variant">
               {blocks.length > 0
-                ? `${blocks.length} Ferienblöcke angelegt. ${hatAbgleich && gesamtFehltInB > 0 ? `${gesamtFehltInB} Kinder ohne Buchung.` : 'Alle Systeme laufen stabil.'}`
-                : 'Noch kein Ferienblock angelegt. Erstelle jetzt deinen ersten Block.'}
+                ? 'Kein Ferienblock deckt den heutigen Tag ab. Die Übersicht unten zeigt alle Blöcke.'
+                : 'Noch kein Ferienblock angelegt. Lege den ersten an, um loszulegen.'}
             </p>
           </div>
-          <span className="material-symbols-outlined absolute -right-8 -bottom-8 text-[180px] text-white/5 opacity-20 rotate-12">shield</span>
-        </div>
+        ) : (
+          <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-br from-primary to-primary-container text-white">
+            <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
+              <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight">Heute — {laufenderBlock.name}</h3>
+              <span className="text-white/70 text-sm font-medium">{fmtDate(heute)}</span>
+            </div>
+
+            {heuteFaelle === null ? (
+              <p className="text-white/80 font-medium">
+                {blockDetail[laufenderBlock.id]?.letzter_abgleich
+                  ? 'Lade die heutigen Fälle …'
+                  : 'Für diesen Block gibt es noch keinen Abgleich.'}
+              </p>
+            ) : heuteFaelle.ohneEssen.length === 0 && heuteFaelle.nichtAngemeldet.length === 0 ? (
+              <p className="text-white/90 font-medium">
+                Keine Abweichungen für heute. Alle Anmeldungen haben eine passende Essensbuchung.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { titel: 'Kein Essen gebucht', liste: heuteFaelle.ohneEssen },
+                  { titel: 'Essen gebucht, nicht angemeldet', liste: heuteFaelle.nichtAngemeldet },
+                ].filter(g => g.liste.length > 0).map(g => (
+                  <div key={g.titel} className="bg-white/10 rounded-2xl p-4">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-white/70 mb-2">
+                      {g.titel} ({g.liste.length})
+                    </div>
+                    <ul className="space-y-1">
+                      {g.liste.slice(0, 6).map((k, i) => (
+                        <li key={i} className="text-sm font-medium">
+                          {k.nachname}, {k.vorname}
+                          {k.klasse && <span className="text-white/60 ml-1">· {k.klasse}</span>}
+                        </li>
+                      ))}
+                      {g.liste.length > 6 && (
+                        <li className="text-xs text-white/70 pt-1">und {g.liste.length - 6} weitere</li>
+                      )}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              className="mt-5 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors text-sm font-bold"
+              onClick={() => onNavigate('tagesansicht')}
+            >
+              Zur Tagesansicht
+            </button>
+          </div>
+        )}
       </section>
 
-      {/* Stat Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined text-3xl">calendar_today</span>
-            </div>
-            {blocks.length > 0 && <span className="text-[10px] font-bold text-primary px-2 py-1 bg-primary/10 rounded-full">LIVE</span>}
+      {/* Kennzahlen über alle Blöcke */}
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-surface-container-lowest p-6 rounded-2xl">
+          <div className="w-12 h-12 rounded-xl bg-tertiary-container/10 flex items-center justify-center text-tertiary mb-4">
+            <span className="material-symbols-outlined text-3xl">diversity_3</span>
           </div>
-          <p className="text-sm font-medium text-on-surface-variant">Ferienblöcke</p>
-          <h4 className="text-3xl font-extrabold text-on-surface mt-1">{blocks.length}</h4>
-        </div>
-        <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 rounded-xl bg-tertiary-container/10 flex items-center justify-center text-tertiary">
-              <span className="material-symbols-outlined text-3xl">diversity_3</span>
-            </div>
-          </div>
-          <p className="text-sm font-medium text-on-surface-variant">Kinder in A</p>
+          <p className="text-sm font-medium text-on-surface-variant">Angemeldete Kinder</p>
           <h4 className="text-3xl font-extrabold text-on-surface mt-1">{gesamtKinderA}</h4>
         </div>
-        <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default">
-          <div className="flex justify-between items-start mb-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-              <span className="material-symbols-outlined text-3xl">check_circle</span>
-            </div>
-          </div>
-          <p className="text-sm font-medium text-on-surface-variant">{hatAbgleich ? 'Übereinstimmung' : 'Kinder in B'}</p>
-          <h4 className="text-3xl font-extrabold text-on-surface mt-1">{hatAbgleich ? gesamtMatches : gesamtKinderB}</h4>
-        </div>
-        <div className="bg-surface-container-lowest p-6 rounded-2xl transition-all hover:bg-surface-container-low cursor-default relative overflow-hidden">
+        <div className="bg-surface-container-lowest p-6 rounded-2xl relative overflow-hidden">
           {hatAbgleich && gesamtFehltInB > 0 && <div className="absolute top-0 right-0 w-1.5 h-full bg-error"></div>}
-          <div className="flex justify-between items-start mb-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${hatAbgleich && gesamtFehltInB > 0 ? 'bg-error/10 text-error' : 'bg-primary/10 text-primary'}`}>
-              <span className="material-symbols-outlined text-3xl">{hatAbgleich ? 'warning' : 'account_balance_wallet'}</span>
-            </div>
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${hatAbgleich && gesamtFehltInB > 0 ? 'bg-error/10 text-error' : 'bg-primary/10 text-primary'}`}>
+            <span className="material-symbols-outlined text-3xl">{hatAbgleich ? 'warning' : 'sync_alt'}</span>
           </div>
-          <p className="text-sm font-medium text-on-surface-variant">{hatAbgleich ? 'Fehlt in B' : 'Abgleich'}</p>
+          <p className="text-sm font-medium text-on-surface-variant">{hatAbgleich ? 'Kein Essen gebucht' : 'Noch kein Abgleich'}</p>
           <h4 className={`text-3xl font-extrabold mt-1 ${hatAbgleich && gesamtFehltInB > 0 ? 'text-error' : 'text-on-surface'}`}>{hatAbgleich ? gesamtFehltInB : '–'}</h4>
         </div>
       </section>
 
       {/* Block Cards */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-        <div className="xl:col-span-2 space-y-6">
+      <div className={`grid gap-8 items-start ${detailOffen ? 'grid-cols-1 xl:grid-cols-3' : 'grid-cols-1'}`}>
+        <div className={`space-y-6 ${detailOffen ? 'xl:col-span-2' : ''}`}>
           <div className="flex justify-between items-end px-2">
             <div>
               <h3 className="text-xl font-extrabold text-on-surface">Aktuelle Ferienblöcke</h3>
@@ -192,6 +262,9 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                   <span className="material-symbols-outlined text-sm">download</span>Excel
                 </button>
               </>}
+              <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={onReload}>
+                <span className="material-symbols-outlined text-sm">refresh</span>Aktualisieren
+              </button>
             </div>
           </div>
 
@@ -249,15 +322,6 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
                             {d.letzter_abgleich?.veraltet && <span className="bg-amber-400/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><span className="material-symbols-outlined text-[10px]">sync_problem</span>veraltet</span>}
                           </div>
                         )}
-                        {d?.eintraege_b > 0 && b.preis_pro_tag && (
-                          <div className="bg-surface-container-low px-3 py-2 rounded-xl">
-                            <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">Geschätzte Kosten</div>
-                            <div className="text-sm font-extrabold text-primary">
-                              {(d.eintraege_b * parseFloat(b.preis_pro_tag)).toFixed(2)} €
-                              <span className="text-[10px] font-medium text-on-surface-variant ml-1">({d.eintraege_b} × {parseFloat(b.preis_pro_tag).toFixed(2)} €)</span>
-                            </div>
-                          </div>
-                        )}
                         <div className="flex gap-2 pt-1 flex-wrap">
                           {hatErgebnis && d.letzter_abgleich?.veraltet && (
                             <p className="w-full text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
@@ -308,8 +372,8 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
           )}
         </div>
 
-        {/* Expanded Detail (right column or below) */}
-        <div className="space-y-6">
+        {/* Aufgeklapptes Detail — nur vorhanden, wenn wirklich etwas offen ist */}
+        <div className={`space-y-6 ${detailOffen ? '' : 'hidden'}`}>
           {expandedBlock && abgleichDetail[expandedBlock]?.matches ? (() => {
             const am = abgleichDetail[expandedBlock].matches;
             const fehlende = am.filter(m => m.match_typ === 'nur_in_a');
@@ -428,15 +492,6 @@ const Dashboard = ({ blocks, onNavigate, onReload }) => {
             ) : null;
           })() : null}
 
-          {!expandedBlock && !expandedNurB && !loadingAbgleich[expandedBlock] && (
-            <div className="bg-surface-container-low/50 rounded-3xl p-6">
-              <h3 className="text-xl font-extrabold text-on-surface mb-2">Quick Info</h3>
-              <p className="text-sm text-on-surface-variant mb-4">Wähle "Kein Essen gebucht" oder "Nicht angemeldet" bei einem Block, um die Details hier zu sehen.</p>
-              <button className="w-full py-3 bg-surface-container-highest rounded-xl text-xs font-extrabold uppercase tracking-widest text-on-surface-variant hover:bg-outline-variant/20 transition-colors" onClick={onReload}>
-                Daten aktualisieren
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 
+// Gleiche Reihenfolge und Gruppierung wie in der Sidebar (App.jsx). In der
+// Topbar wird die Gruppe nur als Trennstrich gezeigt — für Überschriften ist
+// hier kein Platz.
 const NAV_ITEMS = [
   { id: 'dashboard',    icon: 'dashboard',      label: 'Dashboard' },
-  { id: 'ferienblock',  icon: 'calendar_month', label: 'Ferienblöcke' },
-  { id: 'kinder',       icon: 'child_care',     label: 'Kinder' },
-  { id: 'angebote',     icon: 'local_offer',    label: 'Angebote' },
-  { id: 'abgleich',     icon: 'sync_alt',       label: 'Abgleich' },
-  { id: 'tagesansicht', icon: 'today',          label: 'Tagesansicht' },
-  { id: 'klassen',      icon: 'groups',         label: 'Klassen' },
-  { id: 'finanzen',     icon: 'payments',       label: 'Finanzen' },
-  { id: 'verlauf',      icon: 'history',        label: 'Verlauf' },
-  { id: 'einstellungen',icon: 'settings',       label: 'Einstellungen' },
+
+  { id: 'tagesansicht', icon: 'today',          label: 'Tagesansicht',  gruppe: 'Täglich' },
+  { id: 'abgleich',     icon: 'sync_alt',       label: 'Abgleich',      gruppe: 'Täglich' },
+
+  { id: 'ferienblock',  icon: 'calendar_month', label: 'Ferienblöcke',  gruppe: 'Stammdaten' },
+  { id: 'kinder',       icon: 'child_care',     label: 'Kinder',        gruppe: 'Stammdaten' },
+  { id: 'angebote',     icon: 'local_offer',    label: 'Angebote',      gruppe: 'Stammdaten' },
+  { id: 'klassen',      icon: 'groups',         label: 'Klassen',       gruppe: 'Stammdaten' },
+
+  { id: 'verlauf',      icon: 'history',        label: 'Verlauf',       gruppe: 'Auswertung' },
+  { id: 'einstellungen',icon: 'settings',       label: 'Einstellungen', gruppe: 'Auswertung' },
 ];
 
 const TOPBAR_BG   = '#2d4a35';
@@ -19,7 +24,7 @@ const NAV_COLOR   = '#d4edda';
 const NAV_DIM     = 'rgba(168,197,160,0.55)';
 const BORDER_LINE = 'rgba(168,197,160,0.15)';
 
-const AuroraLayout = ({ page, navigate, user, setTheme, onLogout, children }) => {
+const AuroraLayout = ({ page, navigate, user, setTheme, onLogout, blockWahl, children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const shortLabel = (label) =>
@@ -68,13 +73,20 @@ const AuroraLayout = ({ page, navigate, user, setTheme, onLogout, children }) =>
           className="hidden md:flex no-scrollbar"
           style={{ flex: 1, display: 'flex', gap: '2px', alignItems: 'center', overflowX: 'auto' }}
         >
-          {NAV_ITEMS.map(n => {
+          {NAV_ITEMS.map((n, i) => {
             const active = page === n.id;
+            const gruppenwechsel = i > 0 && n.gruppe !== NAV_ITEMS[i - 1].gruppe;
             return (
+              <React.Fragment key={n.id}>
+              {gruppenwechsel && (
+                <div
+                  title={n.gruppe}
+                  style={{ width: '1px', height: '22px', background: BORDER_LINE, flexShrink: 0, margin: '0 4px' }}
+                />
+              )}
               <button
-                key={n.id}
                 onClick={() => navigate(n.id)}
-                title={n.label}
+                title={n.gruppe ? `${n.gruppe} — ${n.label}` : n.label}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -112,6 +124,7 @@ const AuroraLayout = ({ page, navigate, user, setTheme, onLogout, children }) =>
                   {shortLabel(n.label)}
                 </span>
               </button>
+              </React.Fragment>
             );
           })}
         </nav>
@@ -306,6 +319,14 @@ const AuroraLayout = ({ page, navigate, user, setTheme, onLogout, children }) =>
       {/* ── CONTENT ── */}
       <main style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} className="no-scrollbar">
         <div style={{ maxWidth: '1440px', margin: '0 auto', padding: '1.5rem 2rem 4rem' }}>
+          {blockWahl && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <span style={{ fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', opacity: 0.6 }}>
+                Ferienblock
+              </span>
+              {blockWahl}
+            </div>
+          )}
           {children}
         </div>
       </main>

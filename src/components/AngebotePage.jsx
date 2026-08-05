@@ -388,8 +388,8 @@ const AngebotePage = ({ blocks }) => {
                           <thead><tr className="bg-surface-container-low">
                             <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Name</th>
                             <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Klasse</th>
-                            <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Liste A</th>
-                            <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Liste B</th>
+                            <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Angemeldet</th>
+                            <th className="text-center px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Essen</th>
                             <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider text-outline">Status</th>
                             <th className="px-4 py-3"></th>
                           </tr></thead>

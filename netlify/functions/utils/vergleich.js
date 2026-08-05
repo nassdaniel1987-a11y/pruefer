@@ -19,6 +19,11 @@ const REVIEW_MATCH_THRESHOLD = 60;
 
 const firstNameToken = (name) => tokenizeName(name)[0] || '';
 
+// Schlüssel für gemerkte Zuordnungen. Muss zu dem passen, was zuordnung.js
+// in die Tabelle schreibt — deshalb hier zentral definiert.
+const zuordnungsSchluessel = (nameA, nameB) =>
+  `${String(nameA || '').trim().toLowerCase()}|||${String(nameB || '').trim().toLowerCase()}`;
+
 const hasSameFirstName = (nameA, nameB) => {
   const a = firstNameToken(nameA);
   const b = firstNameToken(nameB);
@@ -41,9 +46,20 @@ const zuEintrag = (zeile) => ({
  *
  * @param {Array} zeilenA — Zeilen aus liste_a
  * @param {Array} zeilenB — Zeilen aus liste_b
+ * @param {Map|Object} [zuordnungen] — gemerkte Entscheidungen über unsichere
+ *   Namenspaare, Schlüssel `"name a|||name b"` (klein, getrimmt) auf
+ *   `'gleich'` oder `'verschieden'`. Optional, damit Aufrufer ohne Gedächtnis
+ *   unverändert funktionieren.
  * @returns {{matchRows:Array, nurInA:Array, nurInB:Array, unsicher:Array, kennzahlen:Object}}
  */
-const vergleiche = (zeilenA, zeilenB) => {
+const vergleiche = (zeilenA, zeilenB, zuordnungen) => {
+  // Map und einfaches Objekt gleichermaßen zulassen.
+  const holeEntscheidung = (nameA, nameB) => {
+    if (!zuordnungen) return null;
+    const k = zuordnungsSchluessel(nameA, nameB);
+    return (zuordnungen instanceof Map ? zuordnungen.get(k) : zuordnungen[k]) || null;
+  };
+
   const listA = zeilenA.map(zuEintrag);
   const listB = zeilenB.map(zuEintrag);
 
@@ -74,13 +90,21 @@ const vergleiche = (zeilenA, zeilenB) => {
       const bestScore = Math.max(score, scoreSwapped);
       const sameFirstName = hasSameFirstName(eA.name, eB.name)
         || (swappedIsBetter && hasSameFirstName(eA.name, eBswapped));
-      const isStrong = bestScore >= STRONG_MATCH_THRESHOLD;
+
+      // Eine einmal getroffene Entscheidung schlägt den Punktwert. Sonst
+      // stünde dasselbe Paar jeden Morgen erneut zur Prüfung.
+      const entscheidung = holeEntscheidung(eA.name, eB.name);
+      if (entscheidung === 'verschieden') continue;
+
+      const isStrong = entscheidung === 'gleich' || bestScore >= STRONG_MATCH_THRESHOLD;
       const isReview = sameFirstName && bestScore >= REVIEW_MATCH_THRESHOLD;
 
       const grundBasis = swappedIsBetter ? reasonSwapped : reason;
-      const grund = isReview && !isStrong
-        ? `${grundBasis}; gleicher Vorname - bitte manuell prüfen`
-        : grundBasis;
+      const grund = entscheidung === 'gleich'
+        ? `${grundBasis}; manuell bestätigt`
+        : (isReview && !isStrong
+          ? `${grundBasis}; gleicher Vorname - bitte manuell prüfen`
+          : grundBasis);
 
       if (isStrong || isReview) {
         const key = `${eA.name.toLowerCase()}|||${eB.name.toLowerCase()}`;
@@ -193,4 +217,7 @@ const proKind = (eintraege) => {
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 };
 
-module.exports = { vergleiche, proKind, STRONG_MATCH_THRESHOLD, REVIEW_MATCH_THRESHOLD };
+module.exports = {
+  vergleiche, proKind, zuordnungsSchluessel,
+  STRONG_MATCH_THRESHOLD, REVIEW_MATCH_THRESHOLD,
+};

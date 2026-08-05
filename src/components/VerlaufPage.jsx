@@ -5,8 +5,7 @@ import Spinner from './Spinner';
 import VergleichView from './VergleichView';
 
 // VERLAUF
-const VerlaufPage = ({ blocks }) => {
-  const [blockId, setBlockId] = useState(blocks[0]?.id || '');
+const VerlaufPage = ({ blockId }) => {
   const [verlauf, setVerlauf] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openId, setOpenId] = useState(null);
@@ -73,10 +72,6 @@ const VerlaufPage = ({ blocks }) => {
           <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Verlauf</h2>
         </div>
         <div className="flex items-center gap-3">
-          <select className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-2 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20" value={blockId} onChange={e => setBlockId(e.target.value)}>
-            <option value="">Alle Blöcke</option>
-            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
           {compareMode && compareIds.length === 2 && (
             <button className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold shadow-lg shadow-primary/20" onClick={doDiff} disabled={compareLoading}>{compareLoading ? 'Laden...' : 'Vergleichen'}</button>
           )}

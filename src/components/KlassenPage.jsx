@@ -6,8 +6,7 @@ import { fmtDate } from '../utils/helpers';
 import Spinner from './Spinner';
 
 // ─── KLASSEN-ZUSAMMENFASSUNG ──────────────────────────
-const KlassenPage = ({ blocks }) => {
-  const [blockId, setBlockId] = useState(blocks[0]?.id || '');
+const KlassenPage = ({ blocks, blockId }) => {
   const [listA, setListA] = useState([]);
   const [listB, setListB] = useState([]);
   const [abgleichMatches, setAbgleichMatches] = useState([]);
@@ -129,14 +128,10 @@ const KlassenPage = ({ blocks }) => {
       <div>
         <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Verwaltung</span>
         <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Klassen & Einteilung</h2>
-        <p className="text-sm text-on-surface-variant mt-1">Übersicht aller Klassen und der Verteilung auf Listen A/B.</p>
+        <p className="text-sm text-on-surface-variant mt-1">Übersicht aller Klassen sowie der Anmeldungen und Essensbuchungen.</p>
       </div>
 
       <div className="flex items-center gap-3">
-        <select className="bg-surface-container-lowest text-sm border border-outline-variant/20 rounded-xl focus:ring-2 focus:ring-primary outline-none px-4 py-2.5 font-bold text-on-surface shadow-sm cursor-pointer" value={blockId} onChange={e => setBlockId(e.target.value)}>
-          <option value="">Block wählen</option>
-          {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
         {blockId && !loading && klassenData.length > 0 && (
           <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl text-on-surface-variant hover:bg-surface-container-low border border-outline-variant/20 transition-colors" onClick={exportKlassen}>
             <span className="material-symbols-outlined text-base">download</span>Excel
@@ -155,7 +150,7 @@ const KlassenPage = ({ blocks }) => {
               <div className="text-2xl font-extrabold text-primary">{totalKlassen}</div>
             </div>
             <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">
-              <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Kinder (Liste A)</div>
+              <div className="text-[11px] font-bold text-outline uppercase tracking-wider mb-1">Kinder (angemeldet)</div>
               <div className="text-2xl font-extrabold text-emerald-600">{totalKinderA}</div>
             </div>
             <div className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/10">

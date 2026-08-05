@@ -20,8 +20,14 @@ const hasSameFirstName = (nameA, nameB) => {
   return a.length >= 3 && a === b;
 };
 
-const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
-  const [blockId, setBlockId] = useState(initialBlockId || (blocks[0]?.id || ''));
+const AbgleichTool = ({ blocks, blockId, onReload }) => {
+  // Hauptweg ist der Ein-Klick-Abgleich; der Assistent bleibt für Excel und
+  // Einfügen erreichbar, weil es dafür serverseitig keine Entsprechung gibt.
+  const [manuellerModus, setManuellerModus] = useState(false);
+  const [laeuftAbgleich, setLaeuftAbgleich] = useState(false);
+  const [laufErgebnis, setLaufErgebnis] = useState(null);
+  const [entschieden, setEntschieden] = useState({});
+
   const [step, setStep] = useState(1);
   const [listA, setListA] = useState([]);
   const [listB, setListB] = useState([]);
@@ -55,6 +61,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
     setStep(1); setPotentialMatches([]); setReviewed({});
     setComparisonSummary(null); setUsedDbForA(false); setUsedDbForB(false);
     setKitafinoVorschau(null); setKitafinoImportInfo(null);
+    setLaufErgebnis(null); setEntschieden({}); setManuellerModus(false);
     // Zeitraum für den kitafino-Abruf mit dem Block vorbelegen
     const b = blocks.find(x => String(x.id) === String(blockId));
     setKitafinoVon(b ? String(b.startdatum).split('T')[0] : '');
@@ -66,6 +73,38 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
       setListBDb(Array.isArray(d) ? d : []);
     });
   }, [blockId, blocks]);
+
+  // ─── Ein-Klick-Abgleich ────────────────────────────────────
+  // Serverseitig derselbe Ablauf wie im Nachtlauf, nur ohne Mail.
+  const jetztAbgleichen = async () => {
+    if (!blockId) return;
+    setLaeuftAbgleich(true);
+    setLaufErgebnis(null);
+    setEntschieden({});
+    const res = await API.post('abgleich', { action: 'jetzt_abgleichen', ferienblock_id: blockId });
+    setLaeuftAbgleich(false);
+    if (!res || res.error) return; // Meldung kommt bereits aus API
+
+    setLaufErgebnis(res);
+    const k = res.kennzahlen || {};
+    toast.success(`Abgleich gespeichert — ${k.nurInA} ohne Essen, ${k.nurInB} nicht angemeldet`);
+
+    // Listen neu einlesen, damit der Assistent denselben Stand zeigt.
+    API.get('listen', { ferienblock_id: blockId, liste: 'A' }).then(d => setListADb(Array.isArray(d) ? d : []));
+    API.get('listen', { ferienblock_id: blockId, liste: 'B' }).then(d => setListBDb(Array.isArray(d) ? d : []));
+    if (onReload) onReload();
+  };
+
+  // Merkt die Entscheidung dauerhaft — dasselbe, was der Link in der Mail tut.
+  const entscheideZuordnung = async (u, entscheidung) => {
+    const schluessel = `${u.nameA}|${u.nameB}`;
+    const res = await API.post('zuordnung', {
+      action: 'merken', nameA: u.nameA, nameB: u.nameB, entscheidung,
+    });
+    if (!res || res.error) return;
+    setEntschieden(prev => ({ ...prev, [schluessel]: entscheidung }));
+    toast.success(entscheidung === 'gleich' ? 'Als dasselbe Kind gemerkt' : 'Als verschiedene Kinder gemerkt');
+  };
 
   const processImportArray = (json, which) => {
     // Prüfen ob erste Zeile ein echter Header ist (Texte) oder schon Daten (Zahlen/bekannte Namen)
@@ -247,7 +286,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
         klasse: colMapA.klasse ? hA.indexOf(colMapA.klasse) : hA.findIndex(x => /klasse/i.test(x)),
       };
       newA = rawA.data.map(row => buildEntry(row, hA, colMapA, extraColsA)).filter(Boolean);
-      validateEntries(newA, 'Liste A');
+      validateEntries(newA, 'Anmeldungen');
       await API.post('listen', { ferienblock_id: blockId, liste: 'A', eintraege: newA });
     }
 
@@ -261,7 +300,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
         kontostand: h.findIndex(x => /konto/i.test(x)),
       };
       newB = rawB.data.map(row => buildEntry(row, h, colMapB, extraCols)).filter(Boolean);
-      validateEntries(newB, 'Liste B');
+      validateEntries(newB, 'Essensbuchungen');
       await API.post('listen', { ferienblock_id: blockId, liste: 'B', eintraege: newB });
     }
 
@@ -567,22 +606,121 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
         <div>
           <span className="text-xs font-bold text-primary tracking-[0.1em] uppercase">Daten-Vergleich</span>
           <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Abgleich-Tool</h2>
-          <p className="text-sm text-on-surface-variant mt-1">Vergleiche Anmeldungen (A) mit Essensbuchungen (B)</p>
+          <p className="text-sm text-on-surface-variant mt-1">Anmeldungen mit Essensbuchungen vergleichen</p>
         </div>
       </div>
 
-      {/* Ferienblock Auswahl */}
-      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10 mb-4">
-        <label className="block text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">Ferienblock</label>
-        <select className="w-full border-b-2 border-outline-variant bg-transparent py-2 text-on-surface focus:outline-none focus:border-primary transition-colors"
-          value={blockId} onChange={e => setBlockId(e.target.value)}>
-          <option value="">– Block wählen –</option>
-          {blocks.map(b => <option key={b.id} value={b.id}>{b.name} ({fmtDate(b.startdatum)} – {fmtDate(b.enddatum)})</option>)}
-        </select>
-      </div>
-
-      {blockId && (
+      {blockId && !manuellerModus && (
         <>
+          {/* Hauptweg: alles auf einen Knopf */}
+          <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant/10">
+            <h3 className="text-lg font-extrabold text-on-surface">Abgleich durchführen</h3>
+            <p className="text-sm text-on-surface-variant mt-1 mb-4">
+              Holt die Anmeldungen aus Firebase und die Essensbuchungen aus kitafino,
+              vergleicht sie und speichert das Ergebnis. Bereits entschiedene Namenspaare
+              werden dabei berücksichtigt.
+            </p>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <button
+                className="px-5 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                onClick={jetztAbgleichen}
+                disabled={laeuftAbgleich}
+              >
+                {laeuftAbgleich ? 'Läuft …' : 'Jetzt abgleichen'}
+              </button>
+              <button
+                className="px-4 py-2.5 rounded-xl text-sm font-bold text-on-surface-variant border border-outline-variant/30 hover:bg-surface-container-low transition-colors"
+                onClick={() => setManuellerModus(true)}
+              >
+                Daten manuell laden (Excel/Einfügen)
+              </button>
+            </div>
+
+            {laeuftAbgleich && (
+              <p className="text-xs text-on-surface-variant mt-3">
+                Beide Listen werden abgerufen — das dauert je nach Blocklänge etwas.
+              </p>
+            )}
+
+            {laufErgebnis && (
+              <div className="mt-5 pt-5 border-t border-outline-variant/20">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  {[
+                    { label: 'Zugeordnet', wert: (laufErgebnis.kennzahlen.exakt || 0) + (laufErgebnis.kennzahlen.automatisch || 0), farbe: 'text-emerald-500' },
+                    { label: 'Kein Essen gebucht', wert: laufErgebnis.kennzahlen.nurInA, farbe: 'text-error' },
+                    { label: 'Nicht angemeldet', wert: laufErgebnis.kennzahlen.nurInB, farbe: 'text-amber-600' },
+                    { label: 'Unsicher', wert: laufErgebnis.kennzahlen.unsicher, farbe: 'text-on-surface' },
+                  ].map(k => (
+                    <div key={k.label} className="bg-surface-container-low rounded-xl p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{k.label}</div>
+                      <div className={`text-2xl font-extrabold ${k.farbe}`}>{k.wert}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {laufErgebnis.unsicher?.length > 0 ? (
+                  <>
+                    <h4 className="text-sm font-bold text-on-surface mb-1">Bitte entscheiden</h4>
+                    <p className="text-xs text-on-surface-variant mb-3">
+                      Diese Namenspaare ähneln sich zu sehr zum Ignorieren und zu wenig für eine
+                      automatische Zuordnung. Die Entscheidung gilt dauerhaft.
+                    </p>
+                    <div className="space-y-2">
+                      {laufErgebnis.unsicher.map((u, i) => (
+                        <div key={i} className="flex items-center gap-3 flex-wrap bg-surface-container-low rounded-xl p-3">
+                          <div className="flex-1 min-w-[200px] text-sm">
+                            <span className="font-bold text-on-surface">{u.nameA}</span>
+                            <span className="text-on-surface-variant"> ↔ </span>
+                            <span className="font-bold text-on-surface">{u.nameB}</span>
+                            <span className="block text-xs text-on-surface-variant">
+                              {u.score} Punkte · {u.tage?.length || 0} Tage
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-bold hover:bg-emerald-500/20 transition-colors disabled:opacity-40"
+                              disabled={entschieden[`${u.nameA}|${u.nameB}`]}
+                              onClick={() => entscheideZuordnung(u, 'gleich')}
+                            >
+                              Dasselbe Kind
+                            </button>
+                            <button
+                              className="px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant text-xs font-bold hover:bg-outline-variant/20 transition-colors disabled:opacity-40"
+                              disabled={entschieden[`${u.nameA}|${u.nameB}`]}
+                              onClick={() => entscheideZuordnung(u, 'verschieden')}
+                            >
+                              Verschiedene
+                            </button>
+                          </div>
+                          {entschieden[`${u.nameA}|${u.nameB}`] && (
+                            <span className="text-xs font-bold text-emerald-600 w-full">
+                              ✓ gemerkt — wirkt ab dem nächsten Abgleich
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-on-surface-variant">Keine unsicheren Namenspaare — nichts weiter zu tun.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {blockId && manuellerModus && (
+        <>
+          <button
+            className="flex items-center gap-1 text-sm font-bold text-on-surface-variant hover:text-on-surface transition-colors"
+            onClick={() => setManuellerModus(false)}
+          >
+            <span className="material-symbols-outlined text-base">arrow_back</span>
+            Zurück zum Ein-Klick-Abgleich
+          </button>
+
           {/* Wizard */}
           <div className="flex items-center gap-2 bg-surface-container-lowest rounded-2xl p-3 shadow-sm border border-outline-variant/10">
             {['Daten laden', 'Spalten zuordnen', 'Prüfen', 'Ergebnis'].map((n, i) => (
@@ -632,7 +770,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   <div className="flex items-center justify-between mb-3">
                     <span className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-base text-primary">assignment</span>
-                      Liste A – Anmeldungen
+                      Anmeldungen
                     </span>
                   </div>
                   {rawA ? (
@@ -699,7 +837,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                   <div className="flex items-center justify-between mb-3">
                     <span className="font-semibold text-on-surface flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-base text-primary">restaurant</span>
-                      Liste B – Essensbuchungen
+                      Essensbuchungen
                     </span>
                   </div>
                   {rawB ? (
@@ -755,7 +893,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                         </span>
                         {kitafinoVorschau.ist_teilzeitraum
                           ? `Nur der Zeitraum ${fmtDate(kitafinoVorschau.von)} – ${fmtDate(kitafinoVorschau.bis)} wird ersetzt. Alle übrigen Tage des Blocks bleiben erhalten.`
-                          : 'Liste B wird für den gesamten Ferienblock ersetzt.'}
+                          : 'Die Essensbuchungen werden für den gesamten Ferienblock ersetzt.'}
                       </div>
                       <div className="flex gap-2">
                         <button className="flex-1 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:bg-primary/90 transition-colors" onClick={handleKitafinoConfirm}>
@@ -836,14 +974,14 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                 <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
                   <div className="font-semibold text-on-surface mb-3 flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-base text-primary">view_column</span>
-                    Liste A – Spalten
+                    Anmeldungen – Spalten
                   </div>
                   <ColMapper raw={rawA} colMap={colMapA} onChange={setColMapA} label="A" />
                 </div>
                 <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border border-outline-variant/10">
                   <div className="font-semibold text-on-surface mb-3 flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-base text-primary">view_column</span>
-                    Liste B – Spalten
+                    Essensbuchungen – Spalten
                   </div>
                   <ColMapper raw={rawB} colMap={colMapB} onChange={setColMapB} label="B" />
                 </div>
@@ -870,8 +1008,8 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                     {usedDbForA && usedDbForB
                       ? 'Beide Listen stammen aus der Datenbank (kein neuer Upload).'
                       : usedDbForA
-                        ? 'Liste A stammt aus der Datenbank — nur Liste B wurde neu hochgeladen.'
-                        : 'Liste B stammt aus der Datenbank — nur Liste A wurde neu hochgeladen.'}
+                        ? 'Die Anmeldungen stammen aus der Datenbank — nur die Essensbuchungen wurden neu hochgeladen.'
+                        : 'Die Essensbuchungen stammen aus der Datenbank — nur die Anmeldungen wurden neu hochgeladen.'}
                     {' '}Für einen komplett frischen Vergleich beide Listen hochladen.
                   </div>
                 </div>
@@ -937,7 +1075,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr,auto,1fr] items-center gap-6 md:gap-12">
                         {/* Liste A */}
                         <div className="space-y-1 text-left">
-                          <span className="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste A (Bestehend)</span>
+                          <span className="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Anmeldung</span>
                           <h3 className="text-lg font-bold text-on-surface truncate" title={group.nameA}>
                             {analysis.tokensA.map((t, i) => <span key={i} className={t.matched ? '' : 'text-error line-through decoration-2 opacity-80'}>{t.token}{' '}</span>)}
                           </h3>
@@ -959,7 +1097,7 @@ const AbgleichTool = ({ blocks, initialBlockId, onReload }) => {
 
                         {/* Liste B */}
                         <div className="space-y-1 md:text-right">
-                          <span className="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Liste B (Neu)</span>
+                          <span className="text-[10px] font-bold text-primary/60 tracking-wider uppercase">Essensbuchung</span>
                           <h3 className="text-lg font-bold text-on-surface truncate" title={group.nameB}>
                             {analysis.tokensB.map((t, i) => <span key={i} className={t.matched ? '' : 'text-tertiary underline decoration-2'}>{t.token}{' '}</span>)}
                           </h3>

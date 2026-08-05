@@ -4,7 +4,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Project Overview
 
-Prüfer is a German-language holiday childcare management system ("Ferienversorgung"). It reconciles children's registrations (Liste A) against meal bookings from a caterer (Liste B) using fuzzy name matching, and handles billing/financial calculations.
+Prüfer is a German-language holiday childcare management system ("Ferienversorgung"). It reconciles children's registrations (Liste A) against meal bookings from a caterer (Liste B) using fuzzy name matching.
 
 ## Tech Stack
 
@@ -63,12 +63,12 @@ Each function in `netlify/functions/` is a standalone handler — one per domain
 | `kinder.js` | Children master data, sync from lists, import |
 | `listen.js` | Bulk import of Liste A and Liste B; supports a merge mode (`merge_von`/`merge_bis`) that replaces only a date range instead of the whole block |
 | `kitafino.js` | Fetches Liste B straight from the caterer's facility portal (see below) |
-| `abgleich.js` | Save/load reconciliation matches, dashboard stats, propagates `kitafino_id` onto children |
+| `abgleich.js` | Save/load reconciliation matches, dashboard stats, propagates `kitafino_id` onto children. `action:jetzt_abgleichen` runs a full reconciliation on demand (no mail) |
 | `angebote.js` | Activity offers with day and child assignments |
-| `finanzen.js` | Financial calculations per child |
 | `backup.js` | Full data export/import |
 | `einstellungen.js` | Key/value app settings (allow-listed keys only) and the automation log |
-| `taeglicher-abgleich.js` | **Scheduled** daily run (see below). Exports `fuehreAus` — the actual job |
+| `taeglicher-abgleich.js` | **Scheduled** daily run (see below). Only scheduling, logging and the failure mail — the job itself is `utils/abgleichLauf.js`. Still exports `fuehreAus` as an alias |
+| `zuordnung.js` | Decisions on uncertain name pairs. Signed-link flow from the mail (GET shows a confirmation page, POST writes) and the session-authenticated management actions |
 | `automatik-jetzt.js` | Triggers the same job over HTTP for the "Jetzt testen" button, since a `schedule()`-wrapped handler is not reachable via HTTP |
 | `setup-db.js` | Initial schema creation. **Protected** — needs `SETUP_SECRET` or a valid session |
 | `migrate.js` | Idempotent schema migrations. **Protected** the same way |
@@ -82,6 +82,10 @@ Shared function helpers in `netlify/functions/utils/`:
 - `kitafinoClient.js` — all portal knowledge (login, roster, per-day fetch)
 - `firebase.js` — decrypts and shapes Liste A from the Firebase realtime DB
 - `vergleich.js` — server-side reconciliation (see below)
+- `abgleichLauf.js` — **one full reconciliation run**: fetch both lists, import, sync children, compare, store, optionally mail. Shared by the cron job, "Jetzt testen" and the one-click button; options `{blockId, mailSenden, erzwingen}`
+- `kinderSync.js` — upsert children from the registrations into `kinder`. No deletes, no questions — safe to run unattended
+- `zuordnungen.js` — read/write the remembered name-pair decisions (`namens_zuordnung`)
+- `zuordnungToken.js` — HMAC-signed tokens (over `SETUP_SECRET`) for the decision links in the mail
 - `bericht.js` / `mail.js` — daily report as HTML/text, and the Resend transport
 
 ### Daily automatic reconciliation
@@ -91,10 +95,10 @@ Shared function helpers in `netlify/functions/utils/`:
 candidates plus a check whether it is currently 9 o'clock in `Europe/Berlin`.
 
 The job only runs when a Ferienblock covers today. It fetches both lists, imports
-them, computes the comparison, saves it as a **new** Abgleich (leaving previous
-ones untouched), mails the report, and writes to `automatik_log` — including on
-failure, so a silent breakdown becomes visible. A failed run also triggers its
-own mail; the log alone would go unnoticed.
+them, upserts the children into `kinder`, computes the comparison, saves it as a
+**new** Abgleich (leaving previous ones untouched), mails the report, and writes
+to `automatik_log` — including on failure, so a silent breakdown becomes visible.
+A failed run also triggers its own mail; the log alone would go unnoticed.
 
 **Scope:** the comparison always covers the whole block, but the mail lists only
 **today's** discrepancies (block-wide totals stay in the header). Reporting the
@@ -105,6 +109,25 @@ Pairs between 60 and 74 are deliberately *not* matched; they are returned as
 `unsicher` and listed in their own section of the mail. Consequence to keep in
 mind: those entries also appear under `nur_in_a` / `nur_in_b` in the stored
 Abgleich, because there is no match type for "undecided".
+
+### Remembered name-pair decisions
+
+Without a memory, `vergleiche()` re-derives the same `unsicher` pairs every
+morning and the mail repeats them for weeks. `namens_zuordnung` stores a decision
+per name pair (`gleich` / `verschieden`), deliberately **not** scoped to a
+Ferienblock — a pair means the same thing everywhere.
+
+`vergleiche(zeilenA, zeilenB, zuordnungen)` takes them as an optional third
+argument: `gleich` is treated as a strong match regardless of score,
+`verschieden` drops the pair entirely. Callers without a memory behave exactly as
+before.
+
+Decisions are made either in the UI or straight from the mail. The mail links
+carry an HMAC token signed with `SETUP_SECRET`; **`GET` only renders a
+confirmation page and never writes**, because mail scanners and preview services
+fetch every link in the background. Only the button's `POST` stores the decision.
+Without `SETUP_SECRET` no links are emitted at all. Every decision is listed and
+revocable under Einstellungen.
 
 Functions have their own `package.json` with `pg` and `bcryptjs`, and stay CommonJS even though the frontend package is `"type": "module"`.
 
@@ -123,7 +146,7 @@ Functions have their own `package.json` with `pg` and `bcryptjs`, and stay Commo
 
 ### Database
 
-PostgreSQL with cascading foreign keys. Core tables: `users`, `sessions`, `login_versuche`, `ferienblock`, `liste_a`, `liste_b`, `abgleich`, `abgleich_matches`, `import_log`, `kinder`, `angebote`, `angebot_tage`, `angebot_kinder`.
+PostgreSQL with cascading foreign keys. Core tables: `users`, `sessions`, `login_versuche`, `ferienblock`, `liste_a`, `liste_b`, `abgleich`, `abgleich_matches`, `import_log`, `kinder`, `angebote`, `angebot_tage`, `angebot_kinder`, `einstellungen`, `automatik_log`, `namens_zuordnung`.
 
 Schema is initialized via `setup-db` and evolved via `migrate`. Both are idempotent.
 

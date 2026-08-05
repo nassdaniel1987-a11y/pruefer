@@ -843,7 +843,7 @@ return (
             <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/10 shrink-0">
               <div>
                 <h2 className="text-lg font-bold text-on-surface">Sync-Vorschau</h2>
-                <p className="text-xs text-on-surface-variant mt-0.5">{syncPreview.length} Einträge aus Liste A geprüft</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">{syncPreview.length} Einträge aus den Anmeldungen geprüft</p>
               </div>
               <button className="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors" onClick={() => setSyncPreview(null)}>
                 <span className="material-symbols-outlined text-base">close</span>

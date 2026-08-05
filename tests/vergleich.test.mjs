@@ -178,6 +178,70 @@ describe('proKind', () => {
   });
 });
 
+describe('vergleiche — gemerkte Namenszuordnungen', () => {
+  // "Hans Müller" gegen "Hans Meier": gleicher Vorname, Nachname zu
+  // unterschiedlich für eine automatische Zuordnung. Genau der Fall, den ein
+  // Mensch einmal entscheiden soll — und der danach nie wieder auftauchen darf.
+  const listen = () => [
+    [zeile('Müller', 'Hans', '2026-08-03')],
+    [zeile('Meier', 'Hans', '2026-08-03')],
+  ];
+  const schluessel = 'hans müller|||hans meier';
+
+  test('ohne Entscheidung bleibt das Paar unsicher', () => {
+    const [a, b] = listen();
+    const r = vergleiche(a, b);
+    assert.equal(r.unsicher.length, 1);
+    assert.equal(r.nurInA.length, 1);
+    assert.equal(r.nurInB.length, 1);
+  });
+
+  test('"gleich" ordnet das Paar zu, trotz zu niedrigem Punktwert', () => {
+    const [a, b] = listen();
+    const r = vergleiche(a, b, new Map([[schluessel, 'gleich']]));
+    assert.equal(r.unsicher.length, 0, 'darf nicht mehr zur Prüfung anstehen');
+    assert.equal(r.nurInA.length, 0);
+    assert.equal(r.nurInB.length, 0);
+    const zugeordnet = r.matchRows.filter(m => m.liste_a_id && m.liste_b_id);
+    assert.equal(zugeordnet.length, 1);
+    assert.equal(zugeordnet[0].match_typ, 'fuzzy_accepted');
+    assert.match(zugeordnet[0].grund, /manuell bestätigt/);
+  });
+
+  test('"verschieden" lässt beide Seiten offen, aber ohne Rückfrage', () => {
+    const [a, b] = listen();
+    const r = vergleiche(a, b, new Map([[schluessel, 'verschieden']]));
+    assert.equal(r.unsicher.length, 0, 'darf nicht mehr zur Prüfung anstehen');
+    assert.equal(r.nurInA.length, 1);
+    assert.equal(r.nurInB.length, 1);
+    const zugeordnet = r.matchRows.filter(m => m.liste_a_id && m.liste_b_id);
+    assert.equal(zugeordnet.length, 0);
+  });
+
+  test('ein einfaches Objekt tut es auch', () => {
+    const [a, b] = listen();
+    const r = vergleiche(a, b, { [schluessel]: 'gleich' });
+    assert.equal(r.unsicher.length, 0);
+  });
+
+  test('eine fremde Entscheidung ändert nichts', () => {
+    const [a, b] = listen();
+    const r = vergleiche(a, b, new Map([['ganz andere|||namen', 'gleich']]));
+    assert.equal(r.unsicher.length, 1);
+  });
+
+  test('starke Treffer bleiben stark, auch ohne Eintrag', () => {
+    // Absicherung, dass das Gedächtnis nur ergänzt und nichts wegnimmt.
+    const r = vergleiche(
+      [zeile('Müller', 'Hans', '2026-08-03')],
+      [zeile('Mueller', 'Hans', '2026-08-03')],
+      new Map()
+    );
+    assert.equal(r.nurInA.length, 0);
+    assert.equal(r.nurInB.length, 0);
+  });
+});
+
 describe('Kennzahlen', () => {
   test('zählen Kinder, nicht Zeilen', () => {
     const r = vergleiche(

@@ -8,6 +8,7 @@
 
 const { Client } = require('pg');
 const { calcScore } = require('./utils/nameMatch');
+const { synchronisiereKinder, cleanName } = require('./utils/kinderSync');
 
 const getClient = () => new Client({
   connectionString: process.env.DATABASE_URL,
@@ -35,8 +36,8 @@ const validateToken = async (client, event) => {
   return result.rows.length > 0 ? result.rows[0].user_id : null;
 };
 
-// Bereinigt einen Namen: trimmt und entfernt abschließende Kommas (z.B. "Müller," → "Müller")
-const cleanName = (s) => (s || '').trim().replace(/,+$/, '').trim();
+// cleanName ("Müller," → "Müller") kommt aus utils/kinderSync, damit Import und
+// Synchronisation Namen garantiert gleich bereinigen.
 
 // Prüft ob ein Name schon in der kinder-Tabelle existiert (auch vertauscht)
 const findExistingKind = async (client, nachname, vorname) => {
@@ -332,66 +333,9 @@ exports.handler = async (event) => {
 
       // ── Sync: Aus bestehenden Listen A automatisch übernehmen (schnell) ──
       if (body.action === 'sync') {
-        const rawListeA = await client.query(`
-          SELECT nachname, vorname, klasse
-          FROM liste_a 
-          WHERE nachname IS NOT NULL AND vorname IS NOT NULL
-        `);
-
-        // Auch hier deduplizieren, um Konflikte in derselben Anfrage zu vermeiden
-        const uniqueSet = new Map();
-        for (const e of rawListeA.rows) {
-          const n = cleanName(e.nachname);
-          const v = cleanName(e.vorname);
-          if (!n || !v) continue;
-          const nl = n.toLowerCase();
-          const vl = v.toLowerCase();
-          const key = nl < vl ? `${nl}|${vl}` : `${vl}|${nl}`;
-
-          if (!uniqueSet.has(key)) {
-            uniqueSet.set(key, { nachname: n, vorname: v, klasse: e.klasse?.trim() || null });
-          } else {
-            if (e.klasse && !uniqueSet.get(key).klasse) {
-              uniqueSet.get(key).klasse = e.klasse.trim();
-            }
-          }
-        }
-
-        const toInsert = Array.from(uniqueSet.values());
-
-        if (toInsert.length === 0) {
-          return respond(200, { success: true, message: 'Keine validen Kinder in Liste A gefunden' });
-        }
-
-        const BATCH = 200;
-        let inserted = 0;
-        
-        for (let i = 0; i < toInsert.length; i += BATCH) {
-          const batch = toInsert.slice(i, i + BATCH);
-          const values = [];
-          const params = [];
-          let idx = 1;
-          
-          for (const e of batch) {
-            values.push(`($${idx}, $${idx+1}, $${idx+2})`);
-            params.push(e.nachname, e.vorname, e.klasse);
-            idx += 3;
-          }
-
-          await client.query(`
-            INSERT INTO kinder (nachname, vorname, klasse) 
-            VALUES ${values.join(',')}
-            ON CONFLICT (GREATEST(LOWER(TRIM(nachname)), LOWER(TRIM(vorname))), LEAST(LOWER(TRIM(nachname)), LOWER(TRIM(vorname)))) 
-            DO UPDATE SET klasse = COALESCE(NULLIF(EXCLUDED.klasse, ''), kinder.klasse)
-          `, params);
-          
-          inserted += batch.length;
-        }
-
-        return respond(200, {
-          success: true,
-          message: `${inserted} eindeutige Kinder aus Liste A synchronisiert bzw. zusammengeführt`
-        });
+        // Dieselbe Logik nutzt der Nachtlauf (utils/abgleichLauf.js).
+        const { meldung } = await synchronisiereKinder(client);
+        return respond(200, { success: true, message: meldung });
       }
 
       // ── Sync Preview: Fuzzy-Vorschau ohne DB-Schreibzugriff ──

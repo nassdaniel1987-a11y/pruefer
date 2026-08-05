@@ -103,29 +103,6 @@ export const KinderSkeleton = () => (
   </div>
 );
 
-// Finanzen Skeleton
-export const FinanzenSkeleton = () => (
-  <div className="space-y-6 pb-20">
-    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-      <div className="space-y-2">
-        <Skel className="h-3 w-40" />
-        <Skel className="h-10 w-32" />
-      </div>
-      <Skel className="h-10 w-40 rounded-xl" />
-    </div>
-    {/* Stat Cards */}
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl space-y-2">
-          <Skel className="h-3 w-20" />
-          <Skel className="h-8 w-16" />
-        </div>
-      ))}
-    </div>
-    <TableSkeleton rows={8} cols={4} />
-  </div>
-);
-
 // Tagesansicht Skeleton
 export const TagesansichtSkeleton = () => (
   <div className="space-y-6 pb-20">

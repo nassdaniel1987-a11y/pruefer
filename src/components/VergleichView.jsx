@@ -44,7 +44,7 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
       return <span style={{ fontSize: '0.75rem' }}><span className="badge badge-green" style={{ marginRight: '0.25rem' }}>✓ OK</span><span className="badge badge-orange">✗ Fehlt</span></span>;
     }
     if (statuses.includes('matched')) return <span className="badge badge-green">✓ OK</span>;
-    if (statuses.includes('missing')) return <span className="badge badge-orange">✗ Fehlt in B</span>;
+    if (statuses.includes('missing')) return <span className="badge badge-orange">✗ Kein Essen gebucht</span>;
     return null;
   };
 
@@ -70,7 +70,7 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
     {
       key: 'neuFehlend', title: 'Buchung verloren (noch angemeldet)', icon: '💔', badge: 'badge-red',
       changed: true, border: 'rgba(220,53,69,0.5)',
-      items: diff.neuFehlend, getMatch: e => e.neu, desc: 'Waren vorher Treffer, aber die Buchung in Liste B fehlt jetzt.'
+      items: diff.neuFehlend, getMatch: e => e.neu, desc: 'Waren vorher Treffer, aber die Essensbuchung fehlt jetzt.'
     },
     {
       key: 'entfallenOk', title: 'Nicht mehr angemeldet (waren Treffer)', icon: '🔴', badge: 'badge-red',
@@ -92,7 +92,7 @@ const VergleichView = ({ matchesOld, matchesNew, abgleichOld, abgleichNew }) => 
       key: 'nurBNeu', title: 'Essen neu gebucht (nicht angemeldet)', icon: '🍽️', badge: 'badge-orange',
       changed: true, border: 'rgba(251,146,60,0.5)',
       items: (diff.nurBNeu || []).map(m => ({ match: m })), getMatch: e => ({ a_nachname: e.match.b_nachname, a_vorname: e.match.b_vorname, a_datum: e.match.b_datum, a_klasse: e.match.b_klasse }),
-      desc: 'Neu in Liste B aufgetaucht, aber keine Ferienanmeldung vorhanden.'
+      desc: 'Neu bei den Essensbuchungen aufgetaucht, aber keine Ferienanmeldung vorhanden.'
     },
     {
       key: 'unveraendertFehlend', title: 'Weiterhin fehlend', icon: '⚠', badge: 'badge-orange',

@@ -33,8 +33,8 @@ const printFehlendeKinder = (title, kinder, blockName) => {
 
   const isNurB = title.toLowerCase().includes('nicht angemeldet');
   const legendeText = isNurB
-    ? `<b>Essen gebucht — nicht angemeldet:</b> Diese Kinder haben eine Essens-Buchung beim Caterer (Liste B), sind aber <b>nicht</b> in der Ferienanmeldungsliste (Liste A) eingetragen. Bitte prüfen, ob eine Anmeldung fehlt oder ob die Buchung storniert werden muss.`
-    : `<b>Kein Essen gebucht:</b> Diese Kinder sind in der Ferienanmeldungsliste (Liste A) eingetragen, haben aber <b>keine</b> Essens-Buchung beim Caterer (Liste B). Bitte prüfen, ob die Buchung noch nachgeholt werden muss.`;
+    ? `<b>Essen gebucht — nicht angemeldet:</b> Diese Kinder haben eine Essens-Buchung beim Caterer, sind aber <b>nicht</b> in der Ferienanmeldungsliste eingetragen. Bitte prüfen, ob eine Anmeldung fehlt oder ob die Buchung storniert werden muss.`
+    : `<b>Kein Essen gebucht:</b> Diese Kinder sind in der Ferienanmeldungsliste eingetragen, haben aber <b>keine</b> Essens-Buchung beim Caterer. Bitte prüfen, ob die Buchung noch nachgeholt werden muss.`;
 
   html += `</tbody></table>
 <div class="summary">Gesamtzahl: ${kinder.length} Kinder · ${totalTage} Tage</div>
@@ -103,11 +103,11 @@ const printTagesansicht = (date, kinder, blockName, hasAbgleich) => {
       }
     } else {
       if (k.inA && k.inB) {
-        statusHtml = `<span class="status-a">Liste A</span> &amp; <span class="status-b">Liste B</span>`;
+        statusHtml = `<span class="status-a">Angemeldet</span> &amp; <span class="status-b">Essen</span>`;
       } else if (k.inA) {
-        statusHtml = `<span class="status-a">Liste A</span>`;
+        statusHtml = `<span class="status-a">Angemeldet</span>`;
       } else if (k.inB) {
-        statusHtml = `<span class="status-b">Liste B</span>`;
+        statusHtml = `<span class="status-b">Essen</span>`;
       }
     }
 
@@ -136,8 +136,8 @@ const printTagesansicht = (date, kinder, blockName, hasAbgleich) => {
 `;
   } else {
     html += `
-  <b>Liste A</b> = Kind steht auf der Anmeldeliste &nbsp;|&nbsp;
-  <b>Liste B</b> = Essen ist gebucht
+  <b>Angemeldet</b> = Kind steht auf der Anmeldeliste &nbsp;|&nbsp;
+  <b>Essen</b> = Essen ist gebucht
 `;
   }
 

@@ -82,6 +82,29 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
 
   useEffect(() => { ladeAutomatik(); }, []);
 
+  // ─── Gemerkte Namenszuordnungen ───────────────────────────
+  // Entscheidungen, die auch per Mail-Link getroffen werden können. Ohne diese
+  // Ansicht wären sie unsichtbar und unumkehrbar — samt Fehlklicks.
+  const [zuordnungen, setZuordnungen] = useState([]);
+
+  const ladeZuordnungen = async () => {
+    const res = await API.post('zuordnung', { action: 'liste' });
+    if (res && !res.error) setZuordnungen(res.zuordnungen || []);
+  };
+
+  useEffect(() => { ladeZuordnungen(); }, []);
+
+  const loescheZuordnung = async (z) => {
+    const ok = await confirmDialog(
+      'Zuordnung zurücknehmen',
+      `„${z.name_a}" und „${z.name_b}" werden künftig wieder als unsicher gemeldet.`,
+      'Zurücknehmen'
+    );
+    if (!ok) return;
+    const res = await API.post('zuordnung', { action: 'loeschen', id: z.id });
+    if (res && !res.error) { toast.success('Zuordnung zurückgenommen'); ladeZuordnungen(); }
+  };
+
   const speichereAutomatik = async (aktiv, empfaengerText) => {
     setAutoLoading(true);
     const adressen = empfaengerText.split(',').map(s => s.trim()).filter(Boolean);
@@ -391,7 +414,7 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
             </div>
             <div>
               <h3 className="text-lg font-extrabold text-on-surface">kitafino-Anbindung</h3>
-              <p className="text-xs text-on-surface-variant">Liste B direkt aus dem Portal holen</p>
+              <p className="text-xs text-on-surface-variant">Essensbuchungen direkt aus dem Portal holen</p>
             </div>
           </div>
           <div className="space-y-3">
@@ -453,7 +476,7 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
               <span className="text-sm text-on-surface">
                 Täglich um 09:01 automatisch abgleichen
                 <span className="block text-xs text-on-surface-variant mt-0.5">
-                  Holt Liste A aus Firebase und Liste B aus kitafino, speichert einen neuen
+                  Holt die Anmeldungen aus Firebase und die Essensbuchungen aus kitafino, speichert einen neuen
                   Abgleich über den ganzen Block und verschickt den Bericht — dieser zeigt
                   die Abweichungen des <strong>heutigen Tages</strong>. Läuft nur, wenn gerade
                   ein Ferienblock aktiv ist.
@@ -513,6 +536,7 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
                           <span className="block text-on-surface-variant">
                             {l.kennzahlen.nurInA} ohne Essen · {l.kennzahlen.nurInB} nicht angemeldet
                             {l.kennzahlen.unsicher > 0 && ` · ${l.kennzahlen.unsicher} unsicher`}
+                            {l.kennzahlen.kinder_sync > 0 && ` · ${l.kennzahlen.kinder_sync} Kinder abgeglichen`}
                           </span>
                         )}
                         {l.meldung && !l.erfolg && <span className="block text-error">{l.meldung}</span>}
@@ -523,6 +547,50 @@ const EinstellungenPage = ({ user, onLogout, theme, setTheme }) => {
                 </div>
               </div>
             )}
+
+            {/* Gemerkte Namenszuordnungen — auch per Mail-Link entstanden,
+                deshalb hier sichtbar und widerrufbar. */}
+            <div className="pt-4 border-t border-outline-variant/20">
+              <h4 className="text-[11px] font-black uppercase text-on-surface-variant tracking-wider mb-1">
+                Gemerkte Namenszuordnungen
+              </h4>
+              <p className="text-xs text-on-surface-variant mb-3">
+                Einmal entschiedene Namenspaare. Sie gelten dauerhaft und werden nicht mehr als unsicher gemeldet.
+              </p>
+
+              {zuordnungen.length === 0 ? (
+                <p className="text-xs text-on-surface-variant italic">
+                  Noch keine Entscheidungen. Unsichere Paare lassen sich direkt aus der täglichen Mail entscheiden.
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {zuordnungen.map(z => (
+                    <div key={z.id} className="flex items-start gap-2 text-xs p-2 rounded-lg bg-surface-container-low">
+                      <span className={`material-symbols-outlined text-sm mt-0.5 ${z.entscheidung === 'gleich' ? 'text-emerald-600' : 'text-on-surface-variant'}`}>
+                        {z.entscheidung === 'gleich' ? 'link' : 'link_off'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-on-surface font-medium">{z.name_a}</span>
+                        <span className="text-on-surface-variant"> ↔ </span>
+                        <span className="text-on-surface font-medium">{z.name_b}</span>
+                        <span className="block text-on-surface-variant">
+                          {z.entscheidung === 'gleich' ? 'dasselbe Kind' : 'verschiedene Kinder'}
+                          {' · '}{fmtDateTime(z.entschieden_am)}
+                          {z.entschieden_von === 'mail' && ' · per Mail'}
+                        </span>
+                      </div>
+                      <button
+                        className="text-on-surface-variant hover:text-error transition-colors shrink-0"
+                        title="Zurücknehmen"
+                        onClick={() => loescheZuordnung(z)}
+                      >
+                        <span className="material-symbols-outlined text-base">close</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

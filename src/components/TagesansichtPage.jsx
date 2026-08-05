@@ -5,8 +5,7 @@ import { printTagesansicht } from '../utils/print';
 import { TagesansichtSkeleton } from './Skeleton';
 
 // ─── TAGESANSICHT ─────────────────────────────────────
-const TagesansichtPage = ({ blocks }) => {
-  const [blockId, setBlockId] = useState(blocks[0]?.id || '');
+const TagesansichtPage = ({ blocks, blockId }) => {
   const [listA, setListA] = useState([]);
   const [listB, setListB] = useState([]);
   const [abgleichMatches, setAbgleichMatches] = useState([]);
@@ -202,12 +201,6 @@ const TagesansichtPage = ({ blocks }) => {
         <div>
           <h2 className="text-3xl lg:text-4xl font-extrabold text-on-surface mt-1 tracking-tight">Tagesansicht</h2>
         </div>
-        <div className="flex items-center bg-surface-container-lowest px-4 py-1.5 rounded-xl border border-outline-variant/20 gap-4">
-          <select className="bg-transparent text-sm border-none focus:ring-0 outline-none font-bold text-on-surface py-2" value={blockId} onChange={e => setBlockId(e.target.value)}>
-            <option value="">– Block wählen –</option>
-            {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-        </div>
       </div>
 
       {loading && <TagesansichtSkeleton />}
@@ -215,7 +208,7 @@ const TagesansichtPage = ({ blocks }) => {
       {!loading && hasAbgleich && letzterAbgleich?.veraltet && (
         <div className="mb-4 px-4 py-3 rounded-xl bg-amber-400/10 border border-amber-400/40 flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
           <span className="material-symbols-outlined text-base">sync_problem</span>
-          <span>Abgleich veraltet — Liste A wurde manuell geändert. Bitte neuen Abgleich durchführen.</span>
+          <span>Abgleich veraltet — die Anmeldungen wurden manuell geändert. Bitte neuen Abgleich durchführen.</span>
         </div>
       )}
       
@@ -349,8 +342,8 @@ const TagesansichtPage = ({ blocks }) => {
                                  </div>
                                ) : (
                                   <div className="flex gap-1 justify-center">
-                                    {k.inA && <span className="font-bold text-on-primary-fixed-variant bg-primary-fixed text-[10px] px-2 py-0.5 rounded-md">Liste A</span>}
-                                    {k.inB && <span className="font-bold text-emerald-500 bg-emerald-500/10 text-[10px] px-2 py-0.5 rounded-md">Liste B</span>}
+                                    {k.inA && <span className="font-bold text-on-primary-fixed-variant bg-primary-fixed text-[10px] px-2 py-0.5 rounded-md">Angemeldet</span>}
+                                    {k.inB && <span className="font-bold text-emerald-500 bg-emerald-500/10 text-[10px] px-2 py-0.5 rounded-md">Essen</span>}
                                   </div>
                                )}
                              </td>

@@ -7,7 +7,6 @@ import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import FerienblockPage from './components/FerienblockPage';
 import AbgleichTool from './components/AbgleichTool';
-import FinanzenPage from './components/FinanzenPage';
 import VerlaufPage from './components/VerlaufPage';
 import TagesansichtPage from './components/TagesansichtPage';
 import KlassenPage from './components/KlassenPage';
@@ -16,17 +15,23 @@ import AuroraLayout from './components/AuroraLayout';
 import KinderVerzeichnis from './components/KinderVerzeichnis';
 import AngebotePage from './components/AngebotePage';
 
+// Flache Liste in Anzeigereihenfolge; `gruppe` steuert nur die
+// Zwischenüberschriften. Bewusst nicht verschachtelt, damit VALID_PAGES
+// weiterhin garantiert jede Seite erfasst — sonst landen gültige URLs
+// stillschweigend auf dem Dashboard.
 const NAV_ITEMS = [
   { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
-  { id: 'ferienblock', icon: 'calendar_month', label: 'Ferienblöcke' },
-  { id: 'kinder', icon: 'child_care', label: 'Kinder' },
-  { id: 'angebote', icon: 'local_offer', label: 'Angebote' },
-  { id: 'abgleich', icon: 'sync_alt', label: 'Abgleich' },
-  { id: 'tagesansicht', icon: 'today', label: 'Tagesansicht' },
-  { id: 'klassen', icon: 'groups', label: 'Klassen' },
-  { id: 'finanzen', icon: 'payments', label: 'Finanzen' },
-  { id: 'verlauf', icon: 'history', label: 'Verlauf' },
-  { id: 'einstellungen', icon: 'settings', label: 'Einstellungen' },
+
+  { id: 'tagesansicht', icon: 'today', label: 'Tagesansicht', gruppe: 'Täglich' },
+  { id: 'abgleich', icon: 'sync_alt', label: 'Abgleich', gruppe: 'Täglich' },
+
+  { id: 'ferienblock', icon: 'calendar_month', label: 'Ferienblöcke', gruppe: 'Stammdaten' },
+  { id: 'kinder', icon: 'child_care', label: 'Kinder', gruppe: 'Stammdaten' },
+  { id: 'angebote', icon: 'local_offer', label: 'Angebote', gruppe: 'Stammdaten' },
+  { id: 'klassen', icon: 'groups', label: 'Klassen', gruppe: 'Stammdaten' },
+
+  { id: 'verlauf', icon: 'history', label: 'Verlauf', gruppe: 'Auswertung' },
+  { id: 'einstellungen', icon: 'settings', label: 'Einstellungen', gruppe: 'Auswertung' },
 ];
 
 const VALID_PAGES = NAV_ITEMS.map(n => n.id);
@@ -49,7 +54,21 @@ const App = () => {
   const [page, setPage] = useState(() => parseUrl().page);
   const [navParam, setNavParam] = useState(() => parseUrl().param);
   const [blocks, setBlocks] = useState([]);
+  const [blockId, setBlockId] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+  // Der aktive Ferienblock gilt für alle Seiten gemeinsam. Vorbelegung ist der
+  // Block, der heute läuft — das ist fast immer der gemeinte. Nur wenn gerade
+  // keiner läuft, wird der erste genommen.
+  useEffect(() => {
+    if (!blocks.length) { setBlockId(''); return; }
+    if (blocks.some(b => String(b.id) === String(blockId))) return; // Auswahl noch gültig
+    const heute = new Date().toISOString().split('T')[0];
+    const laufend = blocks.find(b =>
+      String(b.startdatum).split('T')[0] <= heute && heute <= String(b.enddatum).split('T')[0]
+    );
+    setBlockId(String((laufend || blocks[0]).id));
+  }, [blocks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cls = '';
@@ -122,6 +141,10 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigate = useCallback((p, param = null) => {
+    // Beim Absprung aufs Abgleich-Tool ist der Parameter ein Ferienblock —
+    // dann zieht die Kopfzeile mit, sonst zeigt sie einen anderen Block als
+    // die Seite.
+    if (p === 'abgleich' && param) setBlockId(String(param));
     setPage(p);
     setNavParam(param);
     setSidebarOpen(false);
@@ -142,17 +165,45 @@ const App = () => {
   if (checking) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><Spinner /></div>;
   if (!user) return <LoginPage onLogin={handleLogin} />;
 
+  // Seiten, die sich auf genau einen Ferienblock beziehen — nur dort wird die
+  // Blockauswahl in der Kopfzeile eingeblendet.
+  const BLOCK_SEITEN = ['tagesansicht', 'abgleich', 'klassen', 'verlauf'];
+  const zeigeBlockwahl = BLOCK_SEITEN.includes(page) && blocks.length > 0;
+
+  const blockWahl = (
+    <select
+      className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer max-w-[240px]"
+      value={blockId}
+      onChange={e => setBlockId(e.target.value)}
+      aria-label="Ferienblock auswählen"
+    >
+      {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+    </select>
+  );
+
+  // Ohne angelegten Ferienblock haben die blockbezogenen Seiten nichts zu
+  // zeigen. Ohne diesen Hinweis blieben sie einfach leer.
+  const ohneBlock = BLOCK_SEITEN.includes(page) && blocks.length === 0;
+
   // Gemeinsamer Page-Content für beide Layouts
-  const pageContent = (
+  const pageContent = ohneBlock ? (
+    <div className="border-2 border-dashed border-outline-variant/30 p-12 rounded-2xl flex flex-col items-center justify-center gap-3 text-center">
+      <span className="material-symbols-outlined text-5xl text-outline-variant">calendar_month</span>
+      <p className="text-sm font-bold text-on-surface-variant">Noch kein Ferienblock angelegt</p>
+      <p className="text-xs text-on-surface-variant max-w-sm">Diese Seite bezieht sich immer auf einen Ferienblock. Lege zuerst einen an.</p>
+      <button className="mt-2 px-4 py-2 rounded-xl bg-primary text-on-primary text-sm font-bold" onClick={() => navigate('ferienblock')}>
+        Ferienblock anlegen
+      </button>
+    </div>
+  ) : (
     <>
       {page === 'dashboard' && <Dashboard blocks={blocks} onNavigate={navigate} onReload={loadBlocks} />}
       {page === 'kinder' && <KinderVerzeichnis blocks={blocks} onNavigate={navigate} initialKindId={navParam} />}
       {page === 'angebote' && <AngebotePage blocks={blocks} />}
-      {page === 'abgleich' && <AbgleichTool blocks={blocks} initialBlockId={navParam} onReload={loadBlocks} />}
-      {page === 'tagesansicht' && <TagesansichtPage blocks={blocks} />}
-      {page === 'klassen' && <KlassenPage blocks={blocks} />}
-      {page === 'finanzen' && <FinanzenPage blocks={blocks} />}
-      {page === 'verlauf' && <VerlaufPage blocks={blocks} />}
+      {page === 'abgleich' && <AbgleichTool blocks={blocks} blockId={blockId} onReload={loadBlocks} />}
+      {page === 'tagesansicht' && <TagesansichtPage blocks={blocks} blockId={blockId} />}
+      {page === 'klassen' && <KlassenPage blocks={blocks} blockId={blockId} />}
+      {page === 'verlauf' && <VerlaufPage blockId={blockId} />}
       {page === 'ferienblock' && <FerienblockPage blocks={blocks} onReload={loadBlocks} />}
       {page === 'einstellungen' && <EinstellungenPage user={user} onLogout={handleLogout} theme={theme} setTheme={setTheme} />}
     </>
@@ -162,7 +213,8 @@ const App = () => {
   if (theme === 'aurora') {
     return (
       <>
-        <AuroraLayout page={page} navigate={navigate} user={user} theme={theme} setTheme={setTheme} onLogout={handleLogout}>
+        <AuroraLayout page={page} navigate={navigate} user={user} theme={theme} setTheme={setTheme} onLogout={handleLogout}
+          blockWahl={zeigeBlockwahl ? blockWahl : null}>
           {pageContent}
         </AuroraLayout>
         <ToastContainer />
@@ -181,19 +233,26 @@ const App = () => {
           <p className="text-[10px] text-indigo-300/60 uppercase tracking-[0.2em] font-semibold">Verwaltungssystem</p>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar">
-          {NAV_ITEMS.map(n => (
-            <button
-              key={n.id}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left ${
-                page === n.id
-                  ? 'bg-indigo-800 text-white font-semibold'
-                  : 'text-indigo-300/70 hover:text-white hover:bg-indigo-900/50'
-              }`}
-              onClick={() => navigate(n.id)}
-            >
-              <span className="material-symbols-outlined text-xl">{n.icon}</span>
-              <span className="text-sm">{n.label}</span>
-            </button>
+          {NAV_ITEMS.map((n, i) => (
+            <React.Fragment key={n.id}>
+              {/* Überschrift nur beim ersten Eintrag einer Gruppe */}
+              {n.gruppe && n.gruppe !== NAV_ITEMS[i - 1]?.gruppe && (
+                <div className="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-indigo-400/50">
+                  {n.gruppe}
+                </div>
+              )}
+              <button
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left ${
+                  page === n.id
+                    ? 'bg-indigo-800 text-white font-semibold'
+                    : 'text-indigo-300/70 hover:text-white hover:bg-indigo-900/50'
+                }`}
+                onClick={() => navigate(n.id)}
+              >
+                <span className="material-symbols-outlined text-xl">{n.icon}</span>
+                <span className="text-sm">{n.label}</span>
+              </button>
+            </React.Fragment>
           ))}
         </nav>
         <div className="pt-4 mt-auto border-t border-indigo-900/50 space-y-2">
@@ -232,6 +291,12 @@ const App = () => {
           </button>
           <span className="ml-3 font-bold text-on-surface text-lg">Prüfer</span>
         </div>
+        {zeigeBlockwahl && (
+          <div className="flex items-center gap-3 px-4 md:px-8 pt-4 md:pt-6">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-on-surface-variant">Ferienblock</span>
+            {blockWahl}
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-12 pt-4 md:pt-6 space-y-6 md:space-y-8 no-scrollbar">
           {pageContent}
         </div>

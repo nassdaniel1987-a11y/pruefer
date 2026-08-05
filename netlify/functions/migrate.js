@@ -246,6 +246,31 @@ exports.handler = async (event) => {
       results.push('⚠ Automatik-Tabellen: ' + e.message);
     }
 
+    // ── Migration 12: Gemerkte Namenszuordnungen ──
+    // Entscheidungen über unsichere Namenspaare ("Müller" vs "Mueller").
+    // Ohne diese Tabelle leitet der Abgleich dieselben unsicheren Paare jeden
+    // Morgen neu her und meldet sie wochenlang erneut.
+    //
+    // Bewusst ohne ferienblock_id: ein Namenspaar bedeutet blockübergreifend
+    // dasselbe, sonst müsste jede Entscheidung pro Ferienblock wiederholt
+    // werden. Namen werden normalisiert (kleingeschrieben, getrimmt) abgelegt.
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS namens_zuordnung (
+          id SERIAL PRIMARY KEY,
+          name_a TEXT NOT NULL,
+          name_b TEXT NOT NULL,
+          entscheidung VARCHAR(20) NOT NULL,
+          entschieden_am TIMESTAMPTZ DEFAULT NOW(),
+          entschieden_von TEXT,
+          UNIQUE (name_a, name_b)
+        );
+      `);
+      results.push('✓ Tabelle "namens_zuordnung" erstellt');
+    } catch (e) {
+      results.push('⚠ namens_zuordnung: ' + e.message);
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },

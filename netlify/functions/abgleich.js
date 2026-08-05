@@ -2,10 +2,12 @@
 // GET  ?ferienblock_id=X          -> Abgleiche des Blocks laden
 // GET  ?abgleich_id=X             -> Einzelnen Abgleich mit Matches laden
 // POST -> Abgleich-Ergebnis speichern
+// POST action:jetzt_abgleichen -> kompletter Lauf auf Knopfdruck (ohne Mail)
 // GET  ?ferienblock_id=X&action=dashboard -> Dashboard-Statistiken
 
 const { Client } = require('pg');
 const { toYmd } = require('./utils/datum');
+const { fuehreAbgleichAus } = require('./utils/abgleichLauf');
 
 const getClient = () => new Client({
   connectionString: process.env.DATABASE_URL,
@@ -206,6 +208,32 @@ exports.handler = async (event) => {
     // POST - Abgleich-Ergebnis speichern oder löschen
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body);
+
+      // ── Jetzt abgleichen: der komplette Lauf auf Knopfdruck ──
+      // Holt beide Listen, vergleicht und speichert — dasselbe, was der
+      // Nachtlauf tut, nur ohne Mail und für den gewählten Block.
+      if (body.action === 'jetzt_abgleichen') {
+        const fbId = parseInt(body.ferienblock_id, 10);
+        if (isNaN(fbId)) return respond(400, { error: 'Ungültige ferienblock_id' });
+        try {
+          const r = await fuehreAbgleichAus(client, {
+            heute: toYmd(new Date()),
+            blockId: fbId,
+            erzwingen: true,   // hier hat der Automatik-Schalter nichts zu sagen
+            mailSenden: false, // wer selbst klickt, sieht das Ergebnis vor sich
+          });
+          if (r.uebersprungen) return respond(400, { error: r.meldung });
+          return respond(200, {
+            success: true,
+            abgleich_id: r.abgleichId,
+            kennzahlen: r.kennzahlen,
+            unsicher: r.ergebnis.unsicher,
+          });
+        } catch (e) {
+          console.error('jetzt_abgleichen:', e);
+          return respond(500, { error: e.message });
+        }
+      }
 
       // ── Delete: Einzelnen Abgleich löschen ──
       if (body.action === 'delete') {

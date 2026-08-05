@@ -5,6 +5,7 @@
 // Wochen nicht mehr" unterscheiden.
 
 const { proKind } = require('./vergleich');
+const { baueToken } = require('./zuordnungToken');
 
 const fmtDatum = (ymd) => {
   if (!ymd) return '';
@@ -70,6 +71,15 @@ const baueBericht = ({ block, ergebnis, appUrl, fokus }) => {
 
   const ohneBefund = fehltEssen.length === 0 && nichtAngemeldet.length === 0 && unsicher.length === 0;
 
+  // Entscheidungslink für ein unsicheres Paar. Ohne SETUP_SECRET liefert
+  // baueToken null — dann bleibt die Mail ohne Links, statt ungeschützte
+  // auszuliefern, die jeder selbst nachbauen könnte.
+  const entscheidungsLink = (u, entscheidung) => {
+    const t = baueToken({ nameA: u.nameA, nameB: u.nameB, entscheidung });
+    return t ? `${appUrl}/.netlify/functions/zuordnung?t=${encodeURIComponent(t)}` : null;
+  };
+  const hatLinks = unsicher.length > 0 && entscheidungsLink(unsicher[0], 'gleich') !== null;
+
   const betreff = ohneBefund
     ? `Prüfer ${fmtDatum(tag)}: keine Abweichungen`
     : `Prüfer ${fmtDatum(tag)}: ${fehltEssen.length} ohne Essen, ${nichtAngemeldet.length} nicht angemeldet`;
@@ -100,14 +110,17 @@ const baueBericht = ({ block, ergebnis, appUrl, fokus }) => {
   <h3 style="margin:0 0 2px;font-size:15px">Unsicher — bitte prüfen (${unsicher.length})</h3>
   <p style="color:#666;font-size:13px;margin:0 0 8px">
     Diese Namenspaare ähneln sich, wurden aber nicht automatisch zugeordnet.
-    Sie erscheinen deshalb oben in beiden Listen.
+    Sie erscheinen deshalb oben in beiden Listen.${hatLinks
+      ? ' Ein Klick genügt — die Entscheidung gilt dauerhaft, das Paar wird dann nicht mehr gemeldet.'
+      : ''}
   </p>
   <table style="border-collapse:collapse;width:100%;margin:4px 0 20px;font-size:14px">
     <thead><tr style="text-align:left;background:#fff4e5">
-      <th style="padding:6px 10px;font-size:12px;color:#8a5a00">Liste A</th>
-      <th style="padding:6px 10px;font-size:12px;color:#8a5a00">Liste B</th>
+      <th style="padding:6px 10px;font-size:12px;color:#8a5a00">Anmeldung</th>
+      <th style="padding:6px 10px;font-size:12px;color:#8a5a00">Essensbuchung</th>
       <th style="padding:6px 10px;font-size:12px;color:#8a5a00">Punkte</th>
       <th style="padding:6px 10px;font-size:12px;color:#8a5a00">Tage</th>
+      ${hatLinks ? '<th style="padding:6px 10px;font-size:12px;color:#8a5a00">Entscheiden</th>' : ''}
     </tr></thead>
     <tbody>${unsicher.map(u => `
       <tr>
@@ -115,6 +128,11 @@ const baueBericht = ({ block, ergebnis, appUrl, fokus }) => {
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(u.nameB)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee">${u.score}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;color:#666">${u.tage.map(fmtDatum).join(', ')}</td>
+        ${hatLinks ? `<td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap">
+          <a href="${esc(entscheidungsLink(u, 'gleich'))}" style="color:#1b5e20;text-decoration:none;font-weight:600">Dasselbe Kind</a>
+          <span style="color:#ccc"> · </span>
+          <a href="${esc(entscheidungsLink(u, 'verschieden'))}" style="color:#8a5a00;text-decoration:none;font-weight:600">Verschiedene</a>
+        </td>` : ''}
       </tr>`).join('')}
     </tbody>
   </table>` : ''}
@@ -139,7 +157,13 @@ const baueBericht = ({ block, ergebnis, appUrl, fokus }) => {
     textListe(nichtAngemeldet),
     ...(unsicher.length > 0 ? [
       `UNSICHER - BITTE PRUEFEN (${unsicher.length})`,
-      unsicher.map(u => `  - "${u.nameA}" <-> "${u.nameB}" (${u.score} Punkte): ${u.tage.map(fmtDatum).join(', ')}\n`).join(''),
+      unsicher.map(u => {
+        const kopf = `  - "${u.nameA}" <-> "${u.nameB}" (${u.score} Punkte): ${u.tage.map(fmtDatum).join(', ')}\n`;
+        if (!hatLinks) return kopf;
+        return kopf
+          + `      Dasselbe Kind:  ${entscheidungsLink(u, 'gleich')}\n`
+          + `      Verschiedene:   ${entscheidungsLink(u, 'verschieden')}\n`;
+      }).join(''),
     ] : []),
     `${appUrl}/abgleich`,
   ].join('\n');
